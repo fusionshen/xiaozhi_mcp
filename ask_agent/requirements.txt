@@ -1,0 +1,9 @@
+dateparser==1.2.2
+fastapi==0.119.0
+jieba==0.42.1
+langchain_ollama==0.3.10
+numpy==2.3.3
+pandas==2.3.3
+rapidfuzz==3.14.1
+sentence_transformers==5.1.1
+torch==2.8.0
