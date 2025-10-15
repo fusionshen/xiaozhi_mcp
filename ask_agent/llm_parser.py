@@ -70,32 +70,75 @@ async def parse_user_input(user_input: str, now: datetime = None):
 
 要求：
 1. indicator 必须保留原文，包括数字和文字，不要丢失任何信息。
+   - 如果数字紧跟在指标词中（如“2030酸轧纯水使用量”、“3030连退纯水使用量”），则视为指标一部分，而非时间。
+   - 只有当数字后面带有“年”“月份”“月”“周”“季度”“日”等时间修饰词时，才视为时间。
+   - 不要因为指标中包含数字就将其误判为时间。
+
 2. timeString 必须根据 timeType 精确格式化：
    - HOUR → "YYYY-MM-DD HH"
    - SHIFT → "YYYY-MM-DD 早班/白班/夜班"
    - DAY → "YYYY-MM-DD"
    - WEEK → "YYYY-W##"
-     - 使用 ISO 标准周号（周一为一周开始）
-     - "本周" → 当前日期所在的 ISO 周号
-     - "上周" → 当前日期减一周后的 ISO 周号
-     - "下周" → 当前日期加一周后的 ISO 周号
-     - 示例：
-       - 如果今天是 2025-10-15（星期三）：
-         "上周" → "2025-W41"
-         "本周" → "2025-W42"
-         "下周" → "2025-W43"
+     - 使用 ISO 标准周号（周一为一周开始）。
+     - “本周” 表示当前日期所在周号： now.isocalendar().week
+     - “上周” 表示前一周： (now - timedelta(weeks=1)).isocalendar().week
+     - “下周” 表示后一周： (now + timedelta(weeks=1)).isocalendar().week
+     - 年份应对应该周的 ISO 年份： now.isocalendar().year
    - MONTH → "YYYY-MM"
-     - “8月份” → "{now.year}-08"
-     - “去年8月份” → "{now.year-1}-08"
-     - “明年3月份” → "{now.year+1}-03"
+     - 如果输入中只出现月份（如“8月份”、“9月”），则补上当前年份，例如："2025-08"
+     - 如果出现“去年8月份”，则使用去年年份："2024-08"
+     - 如果出现“明年3月份”，则使用明年年份："2026-03"
+     - 如果输入中出现“月”后跟“日”，例如“10月14日”，则优先判断为 DAY：
+       输出格式：{{"timeString":"YYYY-MM-DD","timeType":"DAY"}}
    - QUARTER → "YYYY Q#"
    - TENDAYS → "YYYY-MM 上旬/中旬/下旬"
    - YEAR → "YYYY"
    - 若无法推算则为 null
-3. timeType ∈ ["HOUR","SHIFT","DAY","WEEK","MONTH","QUARTER","TENDAYS","YEAR"]。
-4. 不添加无关字段。
-5. 当前时间为参考，支持相对时间词。
-6. 指标中时间词不应被截断。
+
+3. timeType 取值必须为以下之一：
+   ["HOUR","SHIFT","DAY","WEEK","MONTH","QUARTER","TENDAYS","YEAR"]
+   若无法判断则为 null。
+
+4. 只解析输入中真正的指标和时间，不要添加无关字符。
+   - 如果出现“今天”、“昨天”、“明天”、“上周”、“本周”、“下周”、“上月”、“本月”、“今年”、“去年”等相对时间，
+     请基于当前时间 {now_str} 推算出精确日期。
+   - 指标中的时间词不要删除或修改指标内部数字。
+
+5. 输出格式必须严格为 JSON，不要添加多余文字、解释或注释。
+
+示例：
+输入："查询今年的3030连退纯水使用量"
+输出：{{"indicator":"3030连退纯水使用量","timeString":"{now.year}","timeType":"YEAR"}}
+
+输入："今天的连退纯水使用量"
+输出：{{"indicator":"连退纯水使用量","timeString":"{now.strftime('%Y-%m-%d')}","timeType":"DAY"}}
+
+输入："今天"
+输出：{{"indicator":null,"timeString":"{now.strftime('%Y-%m-%d')}","timeType":"DAY"}}
+
+输入："冷轧蒸汽消耗"
+输出：{{"indicator":"冷轧蒸汽消耗","timeString":null,"timeType":null}}
+
+输入："8月份冷轧蒸汽消耗"
+输出：{{"indicator":"冷轧蒸汽消耗","timeString":"{now.year}-08","timeType":"MONTH"}}
+
+输入："2024年第31周纯水损失率"
+输出：{{"indicator":"纯水损失率","timeString":"2024-W31","timeType":"WEEK"}}
+
+输入："2017年第1季度纯水损失率"
+输出：{{"indicator":"纯水损失率","timeString":"2017 Q1","timeType":"QUARTER"}}
+
+输入："2019年8月下旬冷轧蒸汽消耗"
+输出：{{"indicator":"冷轧蒸汽消耗","timeString":"2019-08 下旬","timeType":"TENDAYS"}}
+
+输入："前天晚班的冷轧蒸汽消耗"
+输出：{{"indicator":"冷轧蒸汽消耗","timeString":"{(now - timedelta(days=2)).strftime('%Y-%m-%d')} 晚班","timeType":"SHIFT"}}
+
+输入："下周的吨钢用水量"
+输出：{{"indicator":"吨钢用水量","timeString":"{(now + timedelta(weeks=1)).isocalendar()[0]}-W{(now + timedelta(weeks=1)).isocalendar()[1]}","timeType":"WEEK"}}
+
+输入："今年10月14日酸轧纯水使用量"
+输出：{{"indicator":"酸轧纯水使用量","timeString":"2025-10-14","timeType":"DAY"}}
 
 用户输入："{user_input}"
 """
