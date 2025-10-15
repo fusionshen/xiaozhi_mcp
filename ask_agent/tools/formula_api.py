@@ -1,4 +1,3 @@
-# formula_api.py
 import re
 import logging
 import os
@@ -9,6 +8,7 @@ import numpy as np
 import jieba
 import torch
 import time
+import asyncio
 
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -33,17 +33,16 @@ app.add_middleware(
 )
 
 # ================= 全局配置 =================
-CSV_PATH = os.environ.get("FORMULA_CSV", "FORMULAINFO_202503121558.csv")
+CSV_PATH = os.environ.get("FORMULA_CSV", "data/FORMULAINFO_202503121558.csv")
 EMBEDDING_MODEL_NAME = "paraphrase-multilingual-MiniLM-L12-v2"
-EMBEDDING_CACHE_PATH = "formula_embeddings.pkl"
+EMBEDDING_CACHE_PATH = "data/formula_embeddings.pkl"
 ENV_EMBEDDING_DEVICE = os.environ.get("EMBEDDING_DEVICE", "").lower()
 
-# 🔹多关键词加权表（支持叠加）
 TEXT_SCORE_WEIGHT_MAP = {
-    "实绩": 0.08,  # 实绩优先
-    "报出": 0.01,  # 报出次优
-    "计划": -0.01,  # 计划稍弱
-    "累计": -0.02,  # 累计略减分
+    "实绩": 0.08,
+    "报出": 0.01,
+    "计划": -0.01,
+    "累计": -0.02,
 }
 ENABLE_TEXT_SCORE_WEIGHT = True
 
@@ -54,12 +53,12 @@ _formulanames_clean: List[str] = []
 _formulanames_tokens: List[str] = []
 _embeddings: Optional[np.ndarray] = None
 _embedding_model = None
+_initialized = False  # 懒加载标记
 
 # ===========================================================
 # 工具函数
 # ===========================================================
 def normalize_text(s: str) -> str:
-    """标准化文本：去符号、空格"""
     if s is None:
         return ""
     s = str(s).strip().strip('"').strip("'")
@@ -68,24 +67,18 @@ def normalize_text(s: str) -> str:
     s = re.sub(r"\s+", " ", s).strip()
     return s
 
-
 def tokens_by_jieba(s: str) -> str:
-    """用 jieba 分词"""
     if not s:
         return ""
     segs = jieba.cut(s, cut_all=False)
     return " ".join([t for t in segs if t.strip()])
 
-
 def l2_normalize_matrix(mat: np.ndarray) -> np.ndarray:
-    """L2 归一化矩阵"""
     norms = np.linalg.norm(mat, axis=1, keepdims=True)
     norms[norms == 0] = 1.0
     return mat / norms
 
-
 def select_embedding_device() -> str:
-    """检测可用设备：优先 CUDA GPU"""
     device = "cpu"
     if ENV_EMBEDDING_DEVICE in ["cuda", "mps", "cpu"]:
         device = ENV_EMBEDDING_DEVICE
@@ -98,41 +91,47 @@ def select_embedding_device() -> str:
         logger.info(f"Auto-selected embedding device: {device}")
     return device
 
+def apply_text_weights(formula_name: str, base_score: float) -> float:
+    if not ENABLE_TEXT_SCORE_WEIGHT or base_score <= 0:
+        return base_score
+    weighted_score = base_score
+    for key, w in TEXT_SCORE_WEIGHT_MAP.items():
+        if key in formula_name:
+            weighted_score *= (1 + w)
+    return weighted_score
 
 # ===========================================================
-# 启动加载 CSV 与 Embeddings
+# 初始化函数
 # ===========================================================
-@app.on_event("startup")
-def load_csv_and_prepare():
-    """启动时加载 CSV + 向量缓存"""
+def initialize():
+    """独立启动时同步加载 CSV + embeddings"""
     global df, _formulanames_raw, _formulanames_clean, _formulanames_tokens
-    global HAVE_ST, _embedding_model, _embeddings
+    global _embedding_model, _embeddings, HAVE_ST
 
     start_time = time.time()
-    logger.info("🔄 Initializing formula data...")
+    logger.info("🔄 Initializing formula data (full)...")
 
     # ---- 加载 CSV ----
+    if not os.path.exists(CSV_PATH):
+        raise RuntimeError(f"⚠️ 找不到公式数据文件: {os.path.abspath(CSV_PATH)}")
     try:
         try:
             df = pd.read_csv(CSV_PATH, dtype=str, quoting=3, engine="python", on_bad_lines="skip")
         except Exception:
             df = pd.read_csv(CSV_PATH, sep="\t", dtype=str, quoting=3, engine="python", on_bad_lines="skip")
-
         df.columns = [c.strip().replace('"', '') for c in df.columns]
         if not {"FORMULAID", "FORMULANAME"}.issubset(df.columns):
             raise RuntimeError(f"CSV 缺少必要列: {list(df.columns)}")
-
         df = df[["FORMULAID", "FORMULANAME"]].fillna("")
         _formulanames_raw = df["FORMULANAME"].astype(str).tolist()
         _formulanames_clean = [normalize_text(s) for s in _formulanames_raw]
         _formulanames_tokens = [tokens_by_jieba(s) for s in _formulanames_clean]
-
         logger.info(f"✅ Loaded {len(df)} formulas. Tokenization ready.")
     except Exception as e:
         logger.exception("❌ Failed to load CSV")
         raise RuntimeError(f"Failed to load CSV: {e}")
 
-    # ---- 加载或生成 Embeddings ----
+    # ---- 加载 embeddings ----
     if HAVE_ST:
         device = select_embedding_device()
         try:
@@ -146,20 +145,11 @@ def load_csv_and_prepare():
                     return
                 else:
                     logger.warning("⚠️ Embedding cache formula count mismatch, recalculating embeddings...")
-
-            # 重新计算
-            emb_list = _embedding_model.encode(
-                _formulanames_raw,
-                batch_size=64,
-                show_progress_bar=True,
-                convert_to_numpy=True
-            )
+            emb_list = _embedding_model.encode(_formulanames_raw, batch_size=64, show_progress_bar=True, convert_to_numpy=True)
             _embeddings = l2_normalize_matrix(np.asarray(emb_list, dtype=np.float32))
             with open(EMBEDDING_CACHE_PATH, "wb") as f:
                 pickle.dump({"formula_count": len(_formulanames_raw), "embeddings": _embeddings}, f)
-
             logger.info(f"✅ Computed and cached embeddings ({_embeddings.shape}) in {time.time()-start_time:.2f}s")
-
         except Exception as e:
             logger.exception("❌ Failed to load or compute embeddings. Semantic mode disabled.")
             HAVE_ST = False
@@ -168,26 +158,56 @@ def load_csv_and_prepare():
     else:
         logger.warning("⚠️ sentence-transformers not installed — semantic mode DISABLED.")
 
+def initialize_lazy():
+    """main.py 调用时，非阻塞初始化：只加载 CSV，embeddings 延迟加载"""
+    global df, _formulanames_raw, _formulanames_clean, _formulanames_tokens, _initialized
+    if _initialized:
+        return
+    start_time = time.time()
+    logger.info("🔄 Initializing formula data (lazy, CSV only)...")
+    # CSV 部分快速加载
+    if df is None:
+        if not os.path.exists(CSV_PATH):
+            raise RuntimeError(f"⚠️ 找不到公式数据文件: {os.path.abspath(CSV_PATH)}")
+        try:
+            try:
+                df = pd.read_csv(CSV_PATH, dtype=str, quoting=3, engine="python", on_bad_lines="skip")
+            except Exception:
+                df = pd.read_csv(CSV_PATH, sep="\t", dtype=str, quoting=3, engine="python", on_bad_lines="skip")
+            df.columns = [c.strip().replace('"', '') for c in df.columns]
+            df = df[["FORMULAID", "FORMULANAME"]].fillna("")
+            _formulanames_raw = df["FORMULANAME"].astype(str).tolist()
+            _formulanames_clean = [normalize_text(s) for s in _formulanames_raw]
+            _formulanames_tokens = [tokens_by_jieba(s) for s in _formulanames_clean]
+        except Exception as e:
+            raise RuntimeError(f"CSV 初始化失败: {e}")
+    _initialized = True
+    logger.info(f"✅ Lazy CSV init done in {time.time()-start_time:.2f}s")
+
+def get_embedding_model():
+    """懒加载 embeddings"""
+    global _embedding_model, _embeddings, HAVE_ST
+    if _embedding_model is not None:
+        return _embedding_model
+    if not HAVE_ST:
+        raise RuntimeError("Semantic mode not available.")
+    device = select_embedding_device()
+    _embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME, device=device)
+    if os.path.exists(EMBEDDING_CACHE_PATH):
+        with open(EMBEDDING_CACHE_PATH, "rb") as f:
+            cached_data = pickle.load(f)
+        _embeddings = cached_data["embeddings"]
+    else:
+        emb_list = _embedding_model.encode(_formulanames_raw, batch_size=64, show_progress_bar=True, convert_to_numpy=True)
+        _embeddings = l2_normalize_matrix(np.asarray(emb_list, dtype=np.float32))
+        with open(EMBEDDING_CACHE_PATH, "wb") as f:
+            pickle.dump({"formula_count": len(_formulanames_raw), "embeddings": _embeddings}, f)
+    return _embedding_model
 
 # ===========================================================
-# 加权函数
-# ===========================================================
-def apply_text_weights(formula_name: str, base_score: float) -> float:
-    """对包含特定关键词的名称加权，可叠加"""
-    if not ENABLE_TEXT_SCORE_WEIGHT or base_score <= 0:
-        return base_score
-    weighted_score = base_score
-    for key, w in TEXT_SCORE_WEIGHT_MAP.items():
-        if key in formula_name:
-            weighted_score *= (1 + w)
-    return weighted_score
-
-
-# ===========================================================
-# 检索函数
+# 搜索函数
 # ===========================================================
 def fuzzy_search(user_input: str, topn: int = 5):
-    """模糊检索"""
     key_clean = normalize_text(user_input)
     key_tokens = tokens_by_jieba(key_clean)
     if not key_tokens:
@@ -197,7 +217,7 @@ def fuzzy_search(user_input: str, topn: int = 5):
     candidates = []
     for rank, (match_text, score, match_index) in enumerate(results, start=1):
         row = df.iloc[match_index]
-        clean_name = str(row["FORMULANAME"]).strip().strip('"').strip("'")  # ✅ 去除多余引号
+        clean_name = str(row["FORMULANAME"]).strip().strip('"').strip("'")
         final_score = apply_text_weights(clean_name, float(score))
         candidates.append({
             "number": rank,
@@ -208,38 +228,34 @@ def fuzzy_search(user_input: str, topn: int = 5):
         })
     return sorted(candidates, key=lambda x: x["score"], reverse=True)[:topn]
 
-
 def semantic_search(user_input: str, topn: int = 5):
-    """语义检索"""
-    if not HAVE_ST or _embeddings is None or _embedding_model is None:
-        raise RuntimeError("Semantic mode not available.")
-    vec = _embedding_model.encode([user_input], convert_to_numpy=True).astype(np.float32)
+    model = get_embedding_model()
+    vec = model.encode([user_input], convert_to_numpy=True).astype(np.float32)
     vec = vec / (np.linalg.norm(vec, axis=1, keepdims=True) + 1e-12)
     sims = np.dot(_embeddings, vec[0])
     top_idx = np.argsort(-sims)[:topn * 3]
     candidates = []
     for rank, idx in enumerate(top_idx, start=1):
         row = df.iloc[int(idx)]
-        clean_name = str(row["FORMULANAME"]).strip().strip('"').strip("'")  # ✅ 去除多余引号
+        clean_name = str(row["FORMULANAME"]).strip().strip('"').strip("'")
         base_score = float(sims[idx]) * 100.0
         final_score = apply_text_weights(clean_name, base_score)
         candidates.append({
             "number": rank,
             "FORMULAID": row["FORMULAID"],
-            "FORMULANAME": row["FORMULANAME"],
+            "FORMULANAME": clean_name,
             "score": round(final_score, 4),
             "match_kind": "semantic_cosine"
         })
     return sorted(candidates, key=lambda x: x["score"], reverse=True)[:topn]
 
-
 def hybrid_search(user_input: str, topn: int = 5, fuzzy_weight: float = 0.4, semantic_weight: float = 0.6):
-    """混合检索"""
     fuzzy_candidates = fuzzy_search(user_input, topn=topn * 3)
     if not HAVE_ST or _embeddings is None:
         return fuzzy_candidates[:topn]
 
-    vec = _embedding_model.encode([user_input], convert_to_numpy=True).astype(np.float32)
+    model = get_embedding_model()
+    vec = model.encode([user_input], convert_to_numpy=True).astype(np.float32)
     vec = vec / (np.linalg.norm(vec, axis=1, keepdims=True) + 1e-12)
     sims = np.dot(_embeddings, vec[0]) * 100.0
 
@@ -252,12 +268,9 @@ def hybrid_search(user_input: str, topn: int = 5, fuzzy_weight: float = 0.4, sem
         idx = int(matched_rows[0])
         semantic_score = float(sims[idx])
         fuzzy_score = float(c["score"])
-
-        # 🔹 动态调整权重（当模糊度高时，语义占比提升）
         if fuzzy_score > 95:
             fuzzy_weight, semantic_weight = 0.4, 0.6
-
-        clean_name = str(df.iloc[idx]["FORMULANAME"]).strip().strip('"').strip("'")  # ✅ 去除多余引号
+        clean_name = str(df.iloc[idx]["FORMULANAME"]).strip().strip('"').strip("'")
         final_score = fuzzy_weight * fuzzy_score + semantic_weight * semantic_score
         final_score = apply_text_weights(clean_name, final_score)
         merged.append((final_score, fuzzy_score, semantic_score, idx))
@@ -266,7 +279,7 @@ def hybrid_search(user_input: str, topn: int = 5, fuzzy_weight: float = 0.4, sem
     candidates = []
     for rank, (final_score, fuzzy_score, semantic_score, idx) in enumerate(merged[:topn], start=1):
         row = df.iloc[idx]
-        clean_name = str(row["FORMULANAME"]).strip().strip('"').strip("'")  # ✅ 去除多余引号
+        clean_name = str(row["FORMULANAME"]).strip().strip('"').strip("'")
         candidates.append({
             "number": rank,
             "FORMULAID": row["FORMULAID"],
@@ -278,7 +291,6 @@ def hybrid_search(user_input: str, topn: int = 5, fuzzy_weight: float = 0.4, sem
         })
     return candidates
 
-
 # ===========================================================
 # API 接口
 # ===========================================================
@@ -288,12 +300,11 @@ def formula_query(
     topn: int = Query(5, ge=1, le=50, description="Number of candidates to return"),
     method: str = Query("hybrid", description="Search method: fuzzy | semantic | hybrid")
 ):
-    """统一查询接口"""
     user_input = user_input.strip().strip('"').strip("'")
     if not user_input:
         return JSONResponse(content={"done": False, "message": "Empty input."})
 
-    # ---------- 精确匹配 ----------
+    # 精确匹配
     exact = df[df["FORMULANAME"] == user_input]
     if exact.empty:
         clean_input = normalize_text(user_input)
@@ -303,14 +314,14 @@ def formula_query(
     if not exact.empty:
         exact_matches = exact[["FORMULAID", "FORMULANAME"]].to_dict(orient="records")
         for item in exact_matches:
-            item["FORMULANAME"] = str(item["FORMULANAME"]).strip().strip('"').strip("'")  # ✅ 去除多余引号
+            item["FORMULANAME"] = str(item["FORMULANAME"]).strip().strip('"').strip("'")
         return JSONResponse(content={
             "done": True,
             "message": f"Exact match found: {exact_matches[0]['FORMULANAME']}",
             "exact_matches": exact_matches
         })
 
-    # ---------- 模糊 / 语义 / 混合 ----------
+    # 模糊 / 语义 / 混合
     try:
         method = method.lower()
         if method == "fuzzy":
@@ -325,16 +336,13 @@ def formula_query(
         logger.exception("❌ Search error")
         return JSONResponse(content={"done": False, "message": f"Search error: {e}", "candidates": []})
 
-    # ---------- 输出 ----------
     if not candidates:
         return JSONResponse(content={"done": False, "message": "No matches found.", "candidates": []})
 
     msg_lines = ["Multiple candidates found, choose by number:"]
     for c in candidates:
         if c.get("match_kind") == "hybrid":
-            msg_lines.append(
-                f"{c['number']}) {c['FORMULANAME']} (final {c['score']}, fuzzy {c['fuzzy_score']}, semantic {c['semantic_score']})"
-            )
+            msg_lines.append(f"{c['number']}) {c['FORMULANAME']} (final {c['score']}, fuzzy {c['fuzzy_score']}, semantic {c['semantic_score']})")
         else:
             msg_lines.append(f"{c['number']}) {c['FORMULANAME']} (score {c['score']})")
 
@@ -344,3 +352,7 @@ def formula_query(
         "candidates": candidates
     })
 
+# 保留原 startup
+@app.on_event("startup")
+def load_csv_and_prepare():
+    initialize()
