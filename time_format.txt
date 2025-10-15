@@ -7,7 +7,7 @@
     }
   },
   {
-    clock: '2025-10-14 2白',
+    clock: '2025-10-14 白',
     timegranId: 'SHIFT',
     expressionList: {
       'GXNHLT1100.IXRL': 'GXNHLT1100.IXRL'
@@ -37,6 +37,20 @@
   {
     clock: '2025',
     timegranId: 'YEAR',
+    expressionList: {
+      'GXNHLT1100.IXRL': 'GXNHLT1100.IXRL'
+    }
+  }，
+  {
+    clock: '2025 Q4',
+    timegranId: 'QUARTER',
+    expressionList: {
+      'GXNHLT1100.IXRL': 'GXNHLT1100.IXRL'
+    }
+  }，
+  {
+    clock: '2025-10 上旬',
+    timegranId: 'TENDAYS',
     expressionList: {
       'GXNHLT1100.IXRL': 'GXNHLT1100.IXRL'
     }
