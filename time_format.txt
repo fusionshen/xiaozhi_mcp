@@ -1,0 +1,44 @@
+[
+  {
+    clock: '2025-10-14 02',
+    timegranId: 'HOUR',
+    expressionList: {
+      'GXNHLT1100.IXRL': 'GXNHLT1100.IXRL'
+    }
+  },
+  {
+    clock: '2025-10-14 2白',
+    timegranId: 'SHIFT',
+    expressionList: {
+      'GXNHLT1100.IXRL': 'GXNHLT1100.IXRL'
+    }
+  },
+  {
+    clock: '2025 W41',
+    timegranId: 'WEEK',
+    expressionList: {
+      'GXNHLT1100.IXRL': 'GXNHLT1100.IXRL'
+    }
+  },
+  {
+    clock: '2025-10-14',
+    timegranId: 'DAY',
+    expressionList: {
+      'GXNHLT1100.IXRL': 'GXNHLT1100.IXRL'
+    }
+  },
+  {
+    clock: '2025-10',
+    timegranId: 'MONTH',
+    expressionList: {
+      'GXNHLT1100.IXRL': 'GXNHLT1100.IXRL'
+    }
+  },
+  {
+    clock: '2025',
+    timegranId: 'YEAR',
+    expressionList: {
+      'GXNHLT1100.IXRL': 'GXNHLT1100.IXRL'
+    }
+  }
+];
