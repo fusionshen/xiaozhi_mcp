@@ -55,4 +55,4 @@
       'GXNHLT1100.IXRL': 'GXNHLT1100.IXRL'
     }
   }
-];
+]

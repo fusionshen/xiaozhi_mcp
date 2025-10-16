@@ -1,3 +1,4 @@
+"450酸轧纯水使用量",
 "查询今年的2030酸轧纯水使用量",
 "今天的酸轧纯水使用量",
 "9月份热轧蒸汽消耗",
@@ -11,5 +12,156 @@
 "明天凌晨2点的轧制水耗",
 "去年12月份的吨钢用水量",
 "2025年第4季度纯水损失率",
-"2025年10月上旬热轧蒸汽消耗"
-]
+"2025年10月上旬热轧蒸汽消耗",
+"今天的高炉工序能耗是多少",
+"高炉今天的工序能耗是多少",
+"本月累计的高炉工序能耗是多少",
+"1号高炉昨天的工序能耗是多少",
+"去年今天的高炉工序能耗是多少",
+"2021年10月23日的1高炉工序能耗是多少",
+"2023年10月22日的2高炉工序能耗是多少",
+"时间：2021-10-23，1高炉工序能耗是多少",
+"高炉工序能耗是多少",
+"本月1、2号高炉工序能耗是多少",
+"高炉工序能耗本月计划是多少",
+"本月高炉工序能耗的计划值是多少",
+"本月的高炉电耗是多少",
+"本月的高炉电使用量是多少",
+"高炉的煤气耗是多少",
+"10号高炉今天的工序能耗是多少",
+"今年累计的冷轧蒸汽消耗是多少",
+"前天晚班的吨钢用水量"
+----------------------------------------------------------------------------------------------------------
+✅450酸轧纯水使用量 => {'indicator': '450酸轧纯水使用量', 'timeString': None, 'timeType': None}
+✅查询今年的2030酸轧纯水使用量 => {'indicator': '2030酸轧纯水使用量', 'timeString': '2025', 'timeType': 'YEAR'}
+✅今天的酸轧纯水使用量 => {'indicator': '酸轧纯水使用量', 'timeString': '2025-10-16', 'timeType': 'DAY'}
+✅9月份热轧蒸汽消耗 => {'indicator': '热轧蒸汽消耗', 'timeString': '2025-09', 'timeType': 'MONTH'}
+✅酸轧纯水使用量 => {'indicator': '酸轧纯水使用量', 'timeString': None, 'timeType': None}
+✅昨天 => {'indicator': None, 'timeString': '2025-10-15', 'timeType': 'DAY'}
+✅2025年第41周纯水损失率 => {'indicator': '纯水损失率', 'timeString': '2025-W41', 'timeType': 'WEEK'}
+✅今年10月14日酸轧纯水使用量 => {'indicator': '酸轧纯水使用量', 'timeString': '2025-10-14', 'timeType': 'DAY'}
+✅本周 => {'indicator': None, 'timeString': '2025-W42', 'timeType': 'WEEK'}
+✅上周的吨钢用水量 => {'indicator': '吨钢用水量', 'timeString': '2025-W41', 'timeType': 'WEEK'}
+昨天早班的热轧蒸汽消耗 => {'indicator': '热轧蒸汽消耗', 'timeString': '2025-10-15 07', 'timeType': 'HOUR'}   # 不稳定  昨天早班的热轧蒸汽消耗 => {'indicator': '热轧蒸汽消耗', 'timeString': '2025-10-15 早班', 'timeType': 'SHIFT'}
+✅明天凌晨2点的轧制水耗 => {'indicator': '轧制水耗', 'timeString': '2025-10-17 02', 'timeType': 'HOUR'}
+✅去年12月份的吨钢用水量 => {'indicator': '吨钢用水量', 'timeString': '2024-12', 'timeType': 'MONTH'}
+✅2025年第4季度纯水损失率 => {'indicator': '纯水损失率', 'timeString': '2025 Q4', 'timeType': 'QUARTER'}
+✅2025年10月上旬热轧蒸汽消耗 => {'indicator': '热轧蒸汽消耗', 'timeString': '2025-10 上旬', 'timeType': 'TENDAYS'}
+✅今天的高炉工序能耗是多少 => {'indicator': '高炉工序能耗', 'timeString': '2025-10-16', 'timeType': 'DAY'}
+✅高炉今天的工序能耗是多少 => {'indicator': '高炉工序能耗', 'timeString': '2025-10-16', 'timeType': 'DAY'}
+本月累计的高炉工序能耗是多少 => {'indicator': '高炉工序能耗', 'timeString': '2025-10', 'timeType': 'MONTH'}     # 当前prompt[无示例]无法组合累计|计划
+✅1号高炉昨天的工序能耗是多少 => {'indicator': '1号高炉工序能耗', 'timeString': '2025-10-15', 'timeType': 'DAY'}
+✅去年今天的高炉工序能耗是多少 => {'indicator': '高炉工序能耗', 'timeString': '2024-10-16', 'timeType': 'DAY'}
+✅2021年10月23日的1高炉工序能耗是多少 => {'indicator': '1高炉工序能耗', 'timeString': '2021-10-23', 'timeType': 'DAY'}
+✅2023年10月22日的2高炉工序能耗是多少 => {'indicator': '2高炉工序能耗', 'timeString': '2023-10-22', 'timeType': 'DAY'}
+✅时间：2021-10-23，1高炉工序能耗是多少 => {'indicator': '1高炉工序能耗', 'timeString': '2021-10-23', 'timeType': 'DAY'}
+✅高炉工序能耗是多少 => {'indicator': '高炉工序能耗', 'timeString': None, 'timeType': None}
+本月1、2号高炉工序能耗是多少 => {'indicator': '高炉工序能耗', 'timeString': '2025-10-01', 'timeType': 'DAY'}  # 多轮次待定
+高炉工序能耗本月计划是多少 => {'indicator': '高炉工序能耗', 'timeString': '2025-10', 'timeType': 'MONTH'}     # 当前prompt[无示例]无法组合累计|计划
+✅本月高炉工序能耗的计划值是多少 => {'indicator': '高炉工序能耗的计划值', 'timeString': '2025-10', 'timeType': 'MONTH'}
+✅本月的高炉电耗是多少 => {'indicator': '高炉电耗', 'timeString': '2025-10', 'timeType': 'MONTH'}
+✅本月的高炉电使用量是多少 => {'indicator': '高炉电使用量', 'timeString': '2025-10', 'timeType': 'MONTH'}
+✅高炉的煤气耗是多少 => {'indicator': '高炉的煤气耗', 'timeString': None, 'timeType': None}
+✅10号高炉今天的工序能耗是多少 => {'indicator': '10号高炉工序能耗', 'timeString': '2025-10-16', 'timeType': 'DAY'}
+
+-----------------------------------------加入累计|计划规则----------------------------------------------------------------------------
+
+✅450酸轧纯水使用量 => {'indicator': '450酸轧纯水使用量', 'timeString': None, 'timeType': None}
+✅查询今年的2030酸轧纯水使用量 => {'indicator': '2030酸轧纯水使用量', 'timeString': '2025', 'timeType': 'YEAR'}
+今天的酸轧纯水使用量 => {'indicator': '酸轧纯水使用量', 'timeString': '2025-10-16 10', 'timeType': 'HOUR'}  # 不稳定 今天的酸轧纯水使用量 => {'indicator': '酸轧纯水使用量', 'timeString': '2025-10-16', 'timeType': 'DAY'}
+✅9月份热轧蒸汽消耗 => {'indicator': '热轧蒸汽消耗', 'timeString': '2025-09', 'timeType': 'MONTH'}
+✅酸轧纯水使用量 => {'indicator': '酸轧纯水使用量', 'timeString': None, 'timeType': None}
+✅昨天 => {'indicator': None, 'timeString': '2025-10-15', 'timeType': 'DAY'}
+✅2025年第41周纯水损失率 => {'indicator': '纯水损失率', 'timeString': '2025-W41', 'timeType': 'WEEK'}
+✅今年10月14日酸轧纯水使用量 => {'indicator': '酸轧纯水使用量', 'timeString': '2025-10-14', 'timeType': 'DAY'}
+✅本周 => {'indicator': None, 'timeString': '2025-W42', 'timeType': 'WEEK'}
+✅上周的吨钢用水量 => {'indicator': '吨钢用水量', 'timeString': '2025-W41', 'timeType': 'WEEK'}
+昨天早班的热轧蒸汽消耗 => {'indicator': '热轧蒸汽消耗', 'timeString': '2025-10-15 05:00', 'timeType': 'SHIFT'}
+✅明天凌晨2点的轧制水耗 => {'indicator': '轧制水耗', 'timeString': '2025-10-17 02', 'timeType': 'HOUR'}
+✅去年12月份的吨钢用水量 => {'indicator': '吨钢用水量', 'timeString': '2024-12', 'timeType': 'MONTH'}
+✅2025年第4季度纯水损失率 => {'indicator': '纯水损失率', 'timeString': '2025 Q4', 'timeType': 'QUARTER'}
+✅2025年10月上旬热轧蒸汽消耗 => {'indicator': '热轧蒸汽消耗', 'timeString': '2025-10 上旬', 'timeType': 'TENDAYS'}
+✅今天的高炉工序能耗是多少 => {'indicator': '高炉工序能耗', 'timeString': '2025-10-16', 'timeType': 'DAY'}
+✅高炉今天的工序能耗是多少 => {'indicator': '高炉工序能耗', 'timeString': '2025-10-16 10', 'timeType': 'HOUR'}
+✅本月累计的高炉工序能耗是多少 => {'indicator': '高炉工序能耗累计', 'timeString': '2025-10', 'timeType': 'MONTH'}
+✅1号高炉昨天的工序能耗是多少 => {'indicator': '1号高炉工序能耗', 'timeString': '2025-10-15', 'timeType': 'DAY'}
+✅去年今天的高炉工序能耗是多少 => {'indicator': '高炉工序能耗', 'timeString': '2024-10-16', 'timeType': 'DAY'}
+✅2021年10月23日的1高炉工序能耗是多少 => {'indicator': '1高炉工序能耗', 'timeString': '2021-10-23', 'timeType': 'DAY'}
+✅2023年10月22日的2高炉工序能耗是多少 => {'indicator': '2高炉工序能耗', 'timeString': '2023-10-22', 'timeType': 'DAY'}
+✅时间：2021-10-23，1高炉工序能耗是多少 => {'indicator': '1高炉工序能耗', 'timeString': '2021-10-23', 'timeType': 'DAY'}
+✅高炉工序能耗是多少 => {'indicator': '高炉工序能耗', 'timeString': None, 'timeType': None}
+本月1、2号高炉工序能耗是多少 => {'indicator': '1、2号高炉工序能耗', 'timeString': '2025-10', 'timeType': 'MONTH'}
+✅高炉工序能耗本月计划是多少 => {'indicator': '高炉工序能耗计划', 'timeString': '2025-10', 'timeType': 'MONTH'}
+✅本月高炉工序能耗的计划值是多少 => {'indicator': '高炉工序能耗计划值', 'timeString': '2025-10', 'timeType': 'MONTH'}
+✅本月的高炉电耗是多少 => {'indicator': '高炉电耗', 'timeString': '2025-10', 'timeType': 'MONTH'}
+✅本月的高炉电使用量是多少 => {'indicator': '高炉电使用量', 'timeString': '2025-10', 'timeType': 'MONTH'}
+高炉的煤气耗是多少 => {'indicator': '高炉的煤气耗', 'timeString': None, 'timeType': None}
+✅10号高炉今天的工序能耗是多少 => {'indicator': '10号高炉工序能耗', 'timeString': '2025-10-16', 'timeType': 'DAY'}
+
+-----------------------------------------细化班次规则----------------------------------------------------------------------------
+✅450酸轧纯水使用量 => {'indicator': '450酸轧纯水使用量', 'timeString': None, 'timeType': None}
+✅查询今年的2030酸轧纯水使用量 => {'indicator': '2030酸轧纯水使用量', 'timeString': '2025', 'timeType': 'YEAR'}
+✅今天的酸轧纯水使用量 => {'indicator': '酸轧纯水使用量', 'timeString': '2025-10-16', 'timeType': 'DAY'}
+✅9月份热轧蒸汽消耗 => {'indicator': '热轧蒸汽消耗', 'timeString': '2025-09', 'timeType': 'MONTH'}
+✅酸轧纯水使用量 => {'indicator': '酸轧纯水使用量', 'timeString': None, 'timeType': None}
+✅昨天 => {'indicator': None, 'timeString': '2025-10-15', 'timeType': 'DAY'}
+✅2025年第41周纯水损失率 => {'indicator': '纯水损失率', 'timeString': '2025-W41', 'timeType': 'WEEK'}
+✅今年10月14日酸轧纯水使用量 => {'indicator': '酸轧纯水使用量', 'timeString': '2025-10-14', 'timeType': 'DAY'}
+✅本周 => {'indicator': None, 'timeString': '2025-W42', 'timeType': 'WEEK'}
+✅上周的吨钢用水量 => {'indicator': '吨钢用水量', 'timeString': '2025-W41', 'timeType': 'WEEK'}
+✅昨天早班的热轧蒸汽消耗 => {'indicator': '热轧蒸汽消耗', 'timeString': '2025-10-15 早班', 'timeType': 'SHIFT'}
+✅明天凌晨2点的轧制水耗 => {'indicator': '轧制水耗', 'timeString': '2025-10-17 02', 'timeType': 'HOUR'}
+✅去年12月份的吨钢用水量 => {'indicator': '吨钢用水量', 'timeString': '2024-12', 'timeType': 'MONTH'}
+✅2025年第4季度纯水损失率 => {'indicator': '纯水损失率', 'timeString': '2025 Q4', 'timeType': 'QUARTER'}
+✅2025年10月上旬热轧蒸汽消耗 => {'indicator': '热轧蒸汽消耗', 'timeString': '2025-10 上旬', 'timeType': 'TENDAYS'}
+✅今天的高炉工序能耗是多少 => {'indicator': '高炉工序能耗', 'timeString': '2025-10-16', 'timeType': 'DAY'}
+✅高炉今天的工序能耗是多少 => {'indicator': '高炉工序能耗', 'timeString': '2025-10-16', 'timeType': 'DAY'}
+✅本月累计的高炉工序能耗是多少 => {'indicator': '高炉工序能耗累计', 'timeString': '2025-10', 'timeType': 'MONTH'}
+✅1号高炉昨天的工序能耗是多少 => {'indicator': '1号高炉工序能耗', 'timeString': '2025-10-15', 'timeType': 'DAY'}
+✅去年今天的高炉工序能耗是多少 => {'indicator': '高炉工序能耗', 'timeString': '2024-10-16', 'timeType': 'DAY'}
+✅2021年10月23日的1高炉工序能耗是多少 => {'indicator': '1高炉工序能耗', 'timeString': '2021-10-23', 'timeType': 'DAY'}
+✅2023年10月22日的2高炉工序能耗是多少 => {'indicator': '2高炉工序能耗', 'timeString': '2023-10-22', 'timeType': 'DAY'}
+✅时间：2021-10-23，1高炉工序能耗是多少 => {'indicator': '1高炉工序能耗', 'timeString': '2021-10-23', 'timeType': 'DAY'}
+✅高炉工序能耗是多少 => {'indicator': '高炉工序能耗', 'timeString': None, 'timeType': None}
+本月1、2号高炉工序能耗是多少 => {'indicator': '高炉工序能耗', 'timeString': '2025-10', 'timeType': 'MONTH'}
+✅高炉工序能耗本月计划是多少 => {'indicator': '高炉工序能耗计划', 'timeString': '2025-10', 'timeType': 'MONTH'}
+✅本月高炉工序能耗的计划值是多少 => {'indicator': '高炉工序能耗计划值', 'timeString': '2025-10', 'timeType': 'MONTH'}
+✅本月的高炉电耗是多少 => {'indicator': '高炉电耗', 'timeString': '2025-10', 'timeType': 'MONTH'}
+✅本月的高炉电使用量是多少 => {'indicator': '高炉电使用量', 'timeString': '2025-10', 'timeType': 'MONTH'}
+✅高炉的煤气耗是多少 => {'indicator': '高炉的煤气耗', 'timeString': None, 'timeType': None}
+✅10号高炉今天的工序能耗是多少 => {'indicator': '10号高炉工序能耗', 'timeString': '2025-10-16', 'timeType': 'DAY'}
+
+-----------------------------------------新增两个用例----------------------------------------------------------------------------
+✅450酸轧纯水使用量 => {'indicator': '450酸轧纯水使用量', 'timeString': None, 'timeType': None}
+✅查询今年的2030酸轧纯水使用量 => {'indicator': '2030酸轧纯水使用量', 'timeString': '2025', 'timeType': 'YEAR'}
+✅今天的酸轧纯水使用量 => {'indicator': '酸轧纯水使用量', 'timeString': '2025-10-16', 'timeType': 'DAY'}
+✅9月份热轧蒸汽消耗 => {'indicator': '热轧蒸汽消耗', 'timeString': '2025-09', 'timeType': 'MONTH'}
+✅酸轧纯水使用量 => {'indicator': '酸轧纯水使用量', 'timeString': None, 'timeType': None}
+✅昨天 => {'indicator': None, 'timeString': '2025-10-15', 'timeType': 'DAY'}
+✅2025年第41周纯水损失率 => {'indicator': '纯水损失率', 'timeString': '2025-W41', 'timeType': 'WEEK'}
+✅今年10月14日酸轧纯水使用量 => {'indicator': '酸轧纯水使用量', 'timeString': '2025-10-14', 'timeType': 'DAY'}
+✅本周 => {'indicator': None, 'timeString': '2025-W42', 'timeType': 'WEEK'}
+✅上周的吨钢用水量 => {'indicator': '吨钢用水量', 'timeString': '2025-W41', 'timeType': 'WEEK'}
+✅昨天早班的热轧蒸汽消耗 => {'indicator': '热轧蒸汽消耗', 'timeString': '2025-10-15 早班', 'timeType': 'SHIFT'}
+✅明天凌晨2点的轧制水耗 => {'indicator': '轧制水耗', 'timeString': '2025-10-17 02', 'timeType': 'HOUR'}
+✅去年12月份的吨钢用水量 => {'indicator': '吨钢用水量', 'timeString': '2024-12', 'timeType': 'MONTH'}
+✅2025年第4季度纯水损失率 => {'indicator': '纯水损失率', 'timeString': '2025 Q4', 'timeType': 'QUARTER'}
+✅2025年10月上旬热轧蒸汽消耗 => {'indicator': '热轧蒸汽消耗', 'timeString': '2025-10 上旬', 'timeType': 'TENDAYS'}
+✅今天的高炉工序能耗是多少 => {'indicator': '高炉工序能耗', 'timeString': '2025-10-16', 'timeType': 'DAY'}
+✅高炉今天的工序能耗是多少 => {'indicator': '高炉工序能耗', 'timeString': '2025-10-16', 'timeType': 'DAY'}
+✅本月累计的高炉工序能耗是多少 => {'indicator': '高炉工序能耗累计', 'timeString': '2025-10', 'timeType': 'MONTH'}
+✅1号高炉昨天的工序能耗是多少 => {'indicator': '1号高炉工序能耗', 'timeString': '2025-10-15', 'timeType': 'DAY'}
+✅去年今天的高炉工序能耗是多少 => {'indicator': '高炉工序能耗', 'timeString': '2024-10-16', 'timeType': 'DAY'}
+✅2021年10月23日的1高炉工序能耗是多少 => {'indicator': '1高炉工序能耗', 'timeString': '2021-10-23', 'timeType': 'DAY'}
+✅2023年10月22日的2高炉工序能耗是多少 => {'indicator': '2高炉工序能耗', 'timeString': '2023-10-22', 'timeType': 'DAY'}
+✅时间：2021-10-23，1高炉工序能耗是多少 => {'indicator': '1高炉工序能耗', 'timeString': '2021-10-23', 'timeType': 'DAY'}
+✅高炉工序能耗是多少 => {'indicator': '高炉工序能耗', 'timeString': None, 'timeType': None}
+本月1、2号高炉工序能耗是多少 => {'indicator': '高炉工序能耗', 'timeString': '2025-10', 'timeType': 'MONTH'}
+✅高炉工序能耗本月计划是多少 => {'indicator': '高炉工序能耗计划', 'timeString': '2025-10', 'timeType': 'MONTH'}
+✅本月高炉工序能耗的计划值是多少 => {'indicator': '高炉工序能耗计划值', 'timeString': '2025-10', 'timeType': 'MONTH'}
+✅本月的高炉电耗是多少 => {'indicator': '高炉电耗', 'timeString': '2025-10', 'timeType': 'MONTH'}
+✅本月的高炉电使用量是多少 => {'indicator': '高炉电使用量', 'timeString': '2025-10', 'timeType': 'MONTH'}
+✅高炉的煤气耗是多少 => {'indicator': '高炉的煤气耗', 'timeString': None, 'timeType': None}
+✅10号高炉今天的工序能耗是多少 => {'indicator': '10号高炉工序能耗', 'timeString': '2025-10-16', 'timeType': 'DAY'}
+✅今年累计的冷轧蒸汽消耗是多少 => {'indicator': '冷轧蒸汽消耗累计', 'timeString': '2025', 'timeType': 'YEAR'}
+✅前天晚班的吨钢用水量 => {'indicator': '吨钢用水量', 'timeString': '2025-10-14 晚班', 'timeType': 'SHIFT'}
