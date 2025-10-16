@@ -106,39 +106,10 @@ async def parse_user_input(user_input: str, now: datetime = None):
 
 5. 输出格式必须严格为 JSON，不要添加多余文字、解释或注释。
 
-示例：
-输入："查询今年的3030连退纯水使用量"
-输出：{{"indicator":"3030连退纯水使用量","timeString":"{now.year}","timeType":"YEAR"}}
+注意：
+- “indicator” 必须只包含指标名称，不包含时间相关词（如“今年”、“9月份”、“昨天”、“上周”、“第3季度”等）。
+- 例如，“十月份热轧蒸汽消耗”应解析为 indicator="热轧蒸汽消耗"，timeString="2025-10"，timeType="MONTH"。
 
-输入："今天的连退纯水使用量"
-输出：{{"indicator":"连退纯水使用量","timeString":"{now.strftime('%Y-%m-%d')}","timeType":"DAY"}}
-
-输入："今天"
-输出：{{"indicator":null,"timeString":"{now.strftime('%Y-%m-%d')}","timeType":"DAY"}}
-
-输入："冷轧蒸汽消耗"
-输出：{{"indicator":"冷轧蒸汽消耗","timeString":null,"timeType":null}}
-
-输入："8月份冷轧蒸汽消耗"
-输出：{{"indicator":"冷轧蒸汽消耗","timeString":"{now.year}-08","timeType":"MONTH"}}
-
-输入："2024年第31周纯水损失率"
-输出：{{"indicator":"纯水损失率","timeString":"2024-W31","timeType":"WEEK"}}
-
-输入："2017年第1季度纯水损失率"
-输出：{{"indicator":"纯水损失率","timeString":"2017 Q1","timeType":"QUARTER"}}
-
-输入："2019年8月下旬冷轧蒸汽消耗"
-输出：{{"indicator":"冷轧蒸汽消耗","timeString":"2019-08 下旬","timeType":"TENDAYS"}}
-
-输入："前天晚班的冷轧蒸汽消耗"
-输出：{{"indicator":"冷轧蒸汽消耗","timeString":"{(now - timedelta(days=2)).strftime('%Y-%m-%d')} 晚班","timeType":"SHIFT"}}
-
-输入："下周的吨钢用水量"
-输出：{{"indicator":"吨钢用水量","timeString":"{(now + timedelta(weeks=1)).isocalendar()[0]}-W{(now + timedelta(weeks=1)).isocalendar()[1]}","timeType":"WEEK"}}
-
-输入："今年10月14日酸轧纯水使用量"
-输出：{{"indicator":"酸轧纯水使用量","timeString":"2025-10-14","timeType":"DAY"}}
 
 用户输入："{user_input}"
 """
