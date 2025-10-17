@@ -1,8 +1,12 @@
-dateparser==1.2.2
+aiohttp==3.12.15
 fastapi==0.119.0
+httpx==0.28.1
 jieba==0.42.1
+langchain==0.3.27
+langchain_community==0.3.31
 langchain_ollama==0.3.10
-numpy==2.3.3
+nest_asyncio==1.6.0
+numpy==2.3.4
 pandas==2.3.3
 rapidfuzz==3.14.1
 sentence_transformers==5.1.1

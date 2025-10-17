@@ -6,7 +6,7 @@ import asyncio
 from fastapi import FastAPI, Query, Request
 from agent_state import get_state, update_state, cleanup_expired_sessions
 from llm_parser import parse_user_input
-from tools import formula_api, date_api, platform_api
+from tools import formula_api, platform_api
 
 TOP_N = 5  # 显示候选数量
 
@@ -44,7 +44,7 @@ async def chat_post(request: Request):
 # ================= Chat 处理逻辑 =================
 async def handle_chat(user_id: str, user_input: str):
     if not user_input:
-        return {"message": "请输入指标名称或时间。", "state": get_state(user_id)}
+        return {"message": "请输入指标名称或时间。", "state": await get_state(user_id)}
 
     # 初始化 state，确保公式 slot 和时间 slot 分开
     state = get_state(user_id)
@@ -53,9 +53,9 @@ async def handle_chat(user_id: str, user_input: str):
         "formula": None,        # 确认公式ID
         "formula_candidates": None,
         "awaiting_confirmation": False,
-        "date": None            # 用户时间
+        "timeString": None,
+        "timeType": None
     })
-
     slots = state["slots"]
 
     # Step0: 等待用户确认 top1
@@ -66,7 +66,7 @@ async def handle_chat(user_id: str, user_input: str):
             slots["indicator"] = chosen["FORMULANAME"]
             slots["formula_candidates"] = None
             slots["awaiting_confirmation"] = False
-            update_state(user_id, state)
+            await update_state(user_id, state)
         elif user_input.lower() in ["否", "n", "no"]:
             candidates = slots["formula_candidates"][:TOP_N]
             msg_lines = ["请从以下候选公式选择编号："]
@@ -76,7 +76,7 @@ async def handle_chat(user_id: str, user_input: str):
         else:
             return {"message": "请输入“是”或“否”进行确认。", "state": state}
 
-    # Step1: 检查是否存在候选编号选择
+    # Step1: 检查候选编号选择
     elif slots.get("formula_candidates"):
         if user_input.isdigit():
             idx = int(user_input.strip()) - 1
@@ -86,28 +86,29 @@ async def handle_chat(user_id: str, user_input: str):
                 slots["formula"] = chosen["FORMULAID"]
                 slots["indicator"] = chosen["FORMULANAME"]
                 slots["formula_candidates"] = None
-                update_state(user_id, state)
+                await update_state(user_id, state)
             else:
                 return {"message": f"请输入编号 1-{len(candidates)} 选择公式。", "state": state}
         else:
             return {"message": f"请输入编号 1-{len(slots['formula_candidates'])} 选择公式。", "state": state}
 
-    # Step2: 用 LLM 解析用户输入（无候选时）
-    elif not slots.get("indicator") or not slots.get("date"):
+    # Step2: 用 LLM 解析用户输入
+    if not slots.get("indicator") or not slots.get("timeString") or not slots.get("timeType"):
         parsed = await parse_user_input(user_input)
         slots["indicator"] = parsed.get("indicator") or slots.get("indicator")
-        slots["date"] = parsed.get("date") or slots.get("date")
-        update_state(user_id, state)
+        slots["timeString"] = parsed.get("timeString") or slots.get("timeString")
+        slots["timeType"] = parsed.get("timeType") or slots.get("timeType")
+        await update_state(user_id, state)
 
     # Step3: 检查指标 slot
     if not slots["indicator"]:
         return {"message": "请告诉我你要查询的指标名称。", "state": state}
 
     # Step4: 检查时间 slot
-    if not slots["date"]:
+    if not (slots["timeString"] and slots["timeType"]):
         return {"message": f"好的，要查【{slots['indicator']}】，请告诉我时间。", "state": state}
 
-    # 查询公式（可触发 embeddings 懒加载）
+    # Step5: 查询公式
     formula_task = asyncio.to_thread(formula_api.formula_query, slots["indicator"])
     formula_resp = await formula_task
 
@@ -120,11 +121,11 @@ async def handle_chat(user_id: str, user_input: str):
             if candidates[0]["score"] > 95:
                 slots["formula_candidates"] = candidates[:TOP_N]
                 slots["awaiting_confirmation"] = True
-                update_state(user_id, state)
+                await update_state(user_id, state)
                 return {"message": f"我找到最匹配的公式 `{candidates[0]['FORMULANAME']}`，是否使用？（是/否）", "state": state}
             else:
                 slots["formula_candidates"] = candidates[:TOP_N]
-                update_state(user_id, state)
+                await update_state(user_id, state)
                 msg_lines = ["请从以下候选公式选择编号："]
                 for c in candidates[:TOP_N]:
                     msg_lines.append(f"{c['number']}) {c['FORMULANAME']} (score {c.get('score', 0)})")
@@ -132,17 +133,20 @@ async def handle_chat(user_id: str, user_input: str):
         else:
             return {"message": "未找到匹配公式，请重新输入指标名称。", "state": state}
 
-    update_state(user_id, state)
+    await update_state(user_id, state)
 
-    # Step6: 解析时间 & 调用平台 API
-    parsed_date = await date_api.parse_date(slots["date"])
-    result = await platform_api.query_platform(slots["formula"], parsed_date)
+    # Step6: 调用平台 API
+    result = await platform_api.query_platform(
+        formula=slots["formula"],
+        timeString=slots["timeString"],
+        timeType=slots["timeType"]
+    )
 
     # Step7: 返回结果
     reply_lines = [
         f"✅ 指标: {slots['indicator']}",
         f"公式编码: {slots['formula']}",
-        f"时间: {parsed_date}",
-        f"结果: {result['value']} {result['unit']}"
+        f"时间: {slots['timeString']} ({slots['timeType']})",
+        f"结果: {result.get('value')} {result.get('unit', '')}"
     ]
     return {"message": "\n".join(reply_lines), "state": state}

@@ -310,12 +310,11 @@ dist
 cypress/videos
 cypress/screenshots
 .vscode/settings.json
-openapi-servers/
 .~lock.*
 formula_embeddings.pkl
-simple_formula.csv
-技术路线手写Demo/chroma_db/
+chroma_db/
 FORMULAINFO_202503121558.csv
 *.pdf
 近期大模型研发任务.docx
 sbert_offline_models/
+openapi-servers/

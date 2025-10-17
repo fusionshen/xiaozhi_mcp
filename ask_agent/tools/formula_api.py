@@ -33,9 +33,18 @@ app.add_middleware(
 )
 
 # ================= 全局配置 =================
-CSV_PATH = os.environ.get("FORMULA_CSV", "data/FORMULAINFO_202503121558.csv")
+# 获取当前文件所在目录（而不是工作目录）
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# 项目根目录（假设 tools 与 data 同级）
+PROJECT_ROOT = os.path.abspath(os.path.join(BASE_DIR, ".."))
+
+# 拼出 data 路径
+EMBEDDING_CACHE_PATH = os.path.join(PROJECT_ROOT, "data", "formula_embeddings.pkl")
+FORMULA_CSV_PATH = os.path.join(PROJECT_ROOT, "data", "FORMULAINFO_202503121558.csv")
+
+CSV_PATH = os.environ.get("FORMULA_CSV", FORMULA_CSV_PATH)
 EMBEDDING_MODEL_NAME = "paraphrase-multilingual-MiniLM-L12-v2"
-EMBEDDING_CACHE_PATH = "data/formula_embeddings.pkl"
 ENV_EMBEDDING_DEVICE = os.environ.get("EMBEDDING_DEVICE", "").lower()
 
 TEXT_SCORE_WEIGHT_MAP = {
