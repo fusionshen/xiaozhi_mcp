@@ -32,21 +32,26 @@ app.add_middleware(
     allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"]
 )
 
-# ================= 全局配置 =================
-# 获取当前文件所在目录（而不是工作目录）
+# ================= 全局路径配置 =================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-# 项目根目录（假设 tools 与 data 同级）
 PROJECT_ROOT = os.path.abspath(os.path.join(BASE_DIR, ".."))
 
-# 拼出 data 路径
-EMBEDDING_CACHE_PATH = os.path.join(PROJECT_ROOT, "data", "formula_embeddings.pkl")
-FORMULA_CSV_PATH = os.path.join(PROJECT_ROOT, "data", "FORMULAINFO_202503121558.csv")
+DATA_DIR = os.path.join(PROJECT_ROOT, "data")
+MODELS_DIR = os.path.join(PROJECT_ROOT, "models", "sbert_offline_models")
 
-CSV_PATH = os.environ.get("FORMULA_CSV", FORMULA_CSV_PATH)
+EMBEDDING_CACHE_PATH = os.path.join(DATA_DIR, "formula_embeddings.pkl")
+FORMULA_CSV_PATH = os.path.join(DATA_DIR, "FORMULAINFO_202503121558.csv")
+
+# ---- 离线模型优先路径 ----
+OFFLINE_MODEL_PATH = os.path.join(MODELS_DIR, "86741b4e3f5cb7765a600d3a3d55a0f6a6cb443d")
+
+# ---- 在线模型备用 ----
 EMBEDDING_MODEL_NAME = "paraphrase-multilingual-MiniLM-L12-v2"
+
+# 环境变量设备控制
 ENV_EMBEDDING_DEVICE = os.environ.get("EMBEDDING_DEVICE", "").lower()
 
+# 文本权重规则
 TEXT_SCORE_WEIGHT_MAP = {
     "实绩": 0.08,
     "报出": 0.01,
@@ -62,8 +67,8 @@ _formulanames_clean: List[str] = []
 _formulanames_tokens: List[str] = []
 _embeddings: Optional[np.ndarray] = None
 _embedding_model = None
-
 _initialized = False  # ✅ 防止重复初始化
+
 
 # ===========================================================
 # 工具函数
@@ -92,6 +97,7 @@ def l2_normalize_matrix(mat: np.ndarray) -> np.ndarray:
 
 
 def select_embedding_device() -> str:
+    """自动选择设备（优先环境变量）"""
     device = "cpu"
     if ENV_EMBEDDING_DEVICE in ["cuda", "mps", "cpu"]:
         device = ENV_EMBEDDING_DEVICE
@@ -116,7 +122,7 @@ def apply_text_weights(formula_name: str, base_score: float) -> float:
 
 
 # ===========================================================
-# 初始化函数（改为单例式）
+# 初始化函数（核心改动）
 # ===========================================================
 def initialize():
     """初始化公式数据与嵌入，只执行一次"""
@@ -132,14 +138,11 @@ def initialize():
     logger.info("🔄 正在初始化公式数据（full load）...")
 
     # ---- 加载 CSV ----
-    if not os.path.exists(CSV_PATH):
-        raise RuntimeError(f"⚠️ 找不到公式数据文件: {os.path.abspath(CSV_PATH)}")
+    if not os.path.exists(FORMULA_CSV_PATH):
+        raise RuntimeError(f"⚠️ 找不到公式数据文件: {os.path.abspath(FORMULA_CSV_PATH)}")
 
     try:
-        try:
-            df = pd.read_csv(CSV_PATH, dtype=str, quoting=3, engine="python", on_bad_lines="skip")
-        except Exception:
-            df = pd.read_csv(CSV_PATH, sep="\t", dtype=str, quoting=3, engine="python", on_bad_lines="skip")
+        df = pd.read_csv(FORMULA_CSV_PATH, dtype=str, quoting=3, engine="python", on_bad_lines="skip")
         df.columns = [c.strip().replace('"', '') for c in df.columns]
         if not {"FORMULAID", "FORMULANAME"}.issubset(df.columns):
             raise RuntimeError(f"CSV 缺少必要列: {list(df.columns)}")
@@ -153,64 +156,57 @@ def initialize():
         logger.exception("❌ Failed to load CSV")
         raise RuntimeError(f"Failed to load CSV: {e}")
 
-    # ---- 加载 / 计算 embeddings ----
+    # ---- 尝试加载嵌入模型 ----
     if HAVE_ST:
         device = select_embedding_device()
         try:
-            _embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME, device=device)
-            if os.path.exists(EMBEDDING_CACHE_PATH):
-                with open(EMBEDDING_CACHE_PATH, "rb") as f:
-                    cached_data = pickle.load(f)
-                if cached_data.get("formula_count") == len(_formulanames_raw):
-                    _embeddings = cached_data["embeddings"]
-                    logger.info(f"✅ Loaded embeddings from cache ({_embeddings.shape})")
-                else:
-                    logger.warning("⚠️ Embedding cache formula count mismatch, recalculating...")
-                    emb_list = _embedding_model.encode(
-                        _formulanames_raw, batch_size=64, show_progress_bar=True, convert_to_numpy=True
-                    )
-                    _embeddings = l2_normalize_matrix(np.asarray(emb_list, dtype=np.float32))
-                    with open(EMBEDDING_CACHE_PATH, "wb") as f:
-                        pickle.dump({"formula_count": len(_formulanames_raw), "embeddings": _embeddings}, f)
-                    logger.info(f"✅ Recomputed and cached embeddings ({_embeddings.shape})")
+            # ✅ 优先加载本地模型
+            if os.path.exists(OFFLINE_MODEL_PATH):
+                logger.info(f"🧩 尝试加载本地模型: {OFFLINE_MODEL_PATH}")
+                _embedding_model = SentenceTransformer(OFFLINE_MODEL_PATH, device=device)
+                logger.info("✅ 已成功加载离线模型。")
             else:
-                emb_list = _embedding_model.encode(
-                    _formulanames_raw, batch_size=64, show_progress_bar=True, convert_to_numpy=True
-                )
-                _embeddings = l2_normalize_matrix(np.asarray(emb_list, dtype=np.float32))
-                with open(EMBEDDING_CACHE_PATH, "wb") as f:
-                    pickle.dump({"formula_count": len(_formulanames_raw), "embeddings": _embeddings}, f)
-                logger.info(f"✅ Computed and cached embeddings ({_embeddings.shape})")
+                logger.warning("⚠️ 离线模型未找到，使用默认在线模型。")
+                _embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME, device=device)
+                logger.info("✅ 已加载在线模型。")
         except Exception as e:
-            logger.exception("❌ Failed to load or compute embeddings.")
-            HAVE_ST = False
-            _embedding_model = None
-            _embeddings = None
+            logger.warning(f"⚠️ 本地模型加载失败，回退到在线模型。错误: {e}")
+            _embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME, device=device)
+            logger.info("✅ 已加载在线模型。")
+
+        # ---- 加载或生成嵌入缓存 ----
+        if os.path.exists(EMBEDDING_CACHE_PATH):
+            with open(EMBEDDING_CACHE_PATH, "rb") as f:
+                cached_data = pickle.load(f)
+            if cached_data.get("formula_count") == len(_formulanames_raw):
+                _embeddings = cached_data["embeddings"]
+                logger.info(f"✅ Loaded embeddings from cache ({_embeddings.shape})")
+            else:
+                logger.warning("⚠️ Embedding cache formula count mismatch, recalculating...")
+                _embeddings = _compute_and_cache_embeddings()
+        else:
+            _embeddings = _compute_and_cache_embeddings()
     else:
         logger.warning("⚠️ sentence-transformers not installed — semantic mode DISABLED.")
+        _embedding_model = None
+        _embeddings = None
 
     _initialized = True
     logger.info(f"✅ 初始化完成，用时 {time.time() - start_time:.2f}s")
 
-def get_embedding_model():
-    """懒加载 embeddings"""
-    global _embedding_model, _embeddings, HAVE_ST
-    if _embedding_model is not None:
-        return _embedding_model
-    if not HAVE_ST:
-        raise RuntimeError("Semantic mode not available.")
-    device = select_embedding_device()
-    _embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME, device=device)
-    if os.path.exists(EMBEDDING_CACHE_PATH):
-        with open(EMBEDDING_CACHE_PATH, "rb") as f:
-            cached_data = pickle.load(f)
-        _embeddings = cached_data["embeddings"]
-    else:
-        emb_list = _embedding_model.encode(_formulanames_raw, batch_size=64, show_progress_bar=True, convert_to_numpy=True)
-        _embeddings = l2_normalize_matrix(np.asarray(emb_list, dtype=np.float32))
-        with open(EMBEDDING_CACHE_PATH, "wb") as f:
-            pickle.dump({"formula_count": len(_formulanames_raw), "embeddings": _embeddings}, f)
-    return _embedding_model
+
+def _compute_and_cache_embeddings():
+    """重新计算并缓存嵌入"""
+    logger.info("🔄 Computing new embeddings...")
+    emb_list = _embedding_model.encode(
+        _formulanames_raw, batch_size=64, show_progress_bar=True, convert_to_numpy=True
+    )
+    embeddings = l2_normalize_matrix(np.asarray(emb_list, dtype=np.float32))
+    with open(EMBEDDING_CACHE_PATH, "wb") as f:
+        pickle.dump({"formula_count": len(_formulanames_raw), "embeddings": embeddings}, f)
+    logger.info(f"✅ Cached new embeddings ({embeddings.shape})")
+    return embeddings
+
 
 # ===========================================================
 # 搜索函数（未改动）
@@ -236,8 +232,11 @@ def fuzzy_search(user_input: str, topn: int = 5):
         })
     return sorted(candidates, key=lambda x: x["score"], reverse=True)[:topn]
 
+
 def semantic_search(user_input: str, topn: int = 5):
-    model = get_embedding_model()
+    model = _embedding_model
+    if model is None:
+        raise RuntimeError("Semantic model not available.")
     vec = model.encode([user_input], convert_to_numpy=True).astype(np.float32)
     vec = vec / (np.linalg.norm(vec, axis=1, keepdims=True) + 1e-12)
     sims = np.dot(_embeddings, vec[0])
@@ -257,12 +256,13 @@ def semantic_search(user_input: str, topn: int = 5):
         })
     return sorted(candidates, key=lambda x: x["score"], reverse=True)[:topn]
 
+
 def hybrid_search(user_input: str, topn: int = 5, fuzzy_weight: float = 0.4, semantic_weight: float = 0.6):
     fuzzy_candidates = fuzzy_search(user_input, topn=topn * 3)
     if not HAVE_ST or _embeddings is None:
         return fuzzy_candidates[:topn]
 
-    model = get_embedding_model()
+    model = _embedding_model
     vec = model.encode([user_input], convert_to_numpy=True).astype(np.float32)
     vec = vec / (np.linalg.norm(vec, axis=1, keepdims=True) + 1e-12)
     sims = np.dot(_embeddings, vec[0]) * 100.0
@@ -298,6 +298,7 @@ def hybrid_search(user_input: str, topn: int = 5, fuzzy_weight: float = 0.4, sem
             "match_kind": "hybrid"
         })
     return candidates
+
 
 # ===========================================================
 # API 接口
@@ -360,7 +361,7 @@ def formula_query(
         "candidates": candidates
     })
 
-# 保留原 startup
+
 @app.on_event("startup")
 def load_csv_and_prepare():
     """FastAPI 启动时自动调用"""
