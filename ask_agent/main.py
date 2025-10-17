@@ -47,7 +47,7 @@ async def handle_chat(user_id: str, user_input: str):
         return {"message": "请输入指标名称或时间。", "state": await get_state(user_id)}
 
     # 初始化 state，确保公式 slot 和时间 slot 分开
-    state = get_state(user_id)
+    state = await get_state(user_id)
     state.setdefault("slots", {
         "indicator": None,      # 用户指标名称
         "formula": None,        # 确认公式ID
