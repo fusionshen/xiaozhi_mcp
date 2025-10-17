@@ -62,7 +62,8 @@ _formulanames_clean: List[str] = []
 _formulanames_tokens: List[str] = []
 _embeddings: Optional[np.ndarray] = None
 _embedding_model = None
-_initialized = False  # 懒加载标记
+
+_initialized = False  # ✅ 防止重复初始化
 
 # ===========================================================
 # 工具函数
@@ -76,16 +77,19 @@ def normalize_text(s: str) -> str:
     s = re.sub(r"\s+", " ", s).strip()
     return s
 
+
 def tokens_by_jieba(s: str) -> str:
     if not s:
         return ""
     segs = jieba.cut(s, cut_all=False)
     return " ".join([t for t in segs if t.strip()])
 
+
 def l2_normalize_matrix(mat: np.ndarray) -> np.ndarray:
     norms = np.linalg.norm(mat, axis=1, keepdims=True)
     norms[norms == 0] = 1.0
     return mat / norms
+
 
 def select_embedding_device() -> str:
     device = "cpu"
@@ -100,6 +104,7 @@ def select_embedding_device() -> str:
         logger.info(f"Auto-selected embedding device: {device}")
     return device
 
+
 def apply_text_weights(formula_name: str, base_score: float) -> float:
     if not ENABLE_TEXT_SCORE_WEIGHT or base_score <= 0:
         return base_score
@@ -109,20 +114,27 @@ def apply_text_weights(formula_name: str, base_score: float) -> float:
             weighted_score *= (1 + w)
     return weighted_score
 
+
 # ===========================================================
-# 初始化函数
+# 初始化函数（改为单例式）
 # ===========================================================
 def initialize():
-    """独立启动时同步加载 CSV + embeddings"""
+    """初始化公式数据与嵌入，只执行一次"""
     global df, _formulanames_raw, _formulanames_clean, _formulanames_tokens
-    global _embedding_model, _embeddings, HAVE_ST
+    global _embedding_model, _embeddings, HAVE_ST, _initialized
+
+    # ✅ 避免重复加载（从 main.py 导入不会执行第二次）
+    if _initialized:
+        logger.info("✅ formula_api 已初始化，跳过重复加载。")
+        return
 
     start_time = time.time()
-    logger.info("🔄 Initializing formula data (full)...")
+    logger.info("🔄 正在初始化公式数据（full load）...")
 
     # ---- 加载 CSV ----
     if not os.path.exists(CSV_PATH):
         raise RuntimeError(f"⚠️ 找不到公式数据文件: {os.path.abspath(CSV_PATH)}")
+
     try:
         try:
             df = pd.read_csv(CSV_PATH, dtype=str, quoting=3, engine="python", on_bad_lines="skip")
@@ -135,12 +147,13 @@ def initialize():
         _formulanames_raw = df["FORMULANAME"].astype(str).tolist()
         _formulanames_clean = [normalize_text(s) for s in _formulanames_raw]
         _formulanames_tokens = [tokens_by_jieba(s) for s in _formulanames_clean]
+        _ = list(jieba.cut("测试"))  # 触发 jieba 初始化
         logger.info(f"✅ Loaded {len(df)} formulas. Tokenization ready.")
     except Exception as e:
         logger.exception("❌ Failed to load CSV")
         raise RuntimeError(f"Failed to load CSV: {e}")
 
-    # ---- 加载 embeddings ----
+    # ---- 加载 / 计算 embeddings ----
     if HAVE_ST:
         device = select_embedding_device()
         try:
@@ -150,48 +163,34 @@ def initialize():
                     cached_data = pickle.load(f)
                 if cached_data.get("formula_count") == len(_formulanames_raw):
                     _embeddings = cached_data["embeddings"]
-                    logger.info(f"✅ Loaded embeddings from cache ({_embeddings.shape}) in {time.time()-start_time:.2f}s")
-                    return
+                    logger.info(f"✅ Loaded embeddings from cache ({_embeddings.shape})")
                 else:
-                    logger.warning("⚠️ Embedding cache formula count mismatch, recalculating embeddings...")
-            emb_list = _embedding_model.encode(_formulanames_raw, batch_size=64, show_progress_bar=True, convert_to_numpy=True)
-            _embeddings = l2_normalize_matrix(np.asarray(emb_list, dtype=np.float32))
-            with open(EMBEDDING_CACHE_PATH, "wb") as f:
-                pickle.dump({"formula_count": len(_formulanames_raw), "embeddings": _embeddings}, f)
-            logger.info(f"✅ Computed and cached embeddings ({_embeddings.shape}) in {time.time()-start_time:.2f}s")
+                    logger.warning("⚠️ Embedding cache formula count mismatch, recalculating...")
+                    emb_list = _embedding_model.encode(
+                        _formulanames_raw, batch_size=64, show_progress_bar=True, convert_to_numpy=True
+                    )
+                    _embeddings = l2_normalize_matrix(np.asarray(emb_list, dtype=np.float32))
+                    with open(EMBEDDING_CACHE_PATH, "wb") as f:
+                        pickle.dump({"formula_count": len(_formulanames_raw), "embeddings": _embeddings}, f)
+                    logger.info(f"✅ Recomputed and cached embeddings ({_embeddings.shape})")
+            else:
+                emb_list = _embedding_model.encode(
+                    _formulanames_raw, batch_size=64, show_progress_bar=True, convert_to_numpy=True
+                )
+                _embeddings = l2_normalize_matrix(np.asarray(emb_list, dtype=np.float32))
+                with open(EMBEDDING_CACHE_PATH, "wb") as f:
+                    pickle.dump({"formula_count": len(_formulanames_raw), "embeddings": _embeddings}, f)
+                logger.info(f"✅ Computed and cached embeddings ({_embeddings.shape})")
         except Exception as e:
-            logger.exception("❌ Failed to load or compute embeddings. Semantic mode disabled.")
+            logger.exception("❌ Failed to load or compute embeddings.")
             HAVE_ST = False
             _embedding_model = None
             _embeddings = None
     else:
         logger.warning("⚠️ sentence-transformers not installed — semantic mode DISABLED.")
 
-def initialize_lazy():
-    """main.py 调用时，非阻塞初始化：只加载 CSV，embeddings 延迟加载"""
-    global df, _formulanames_raw, _formulanames_clean, _formulanames_tokens, _initialized
-    if _initialized:
-        return
-    start_time = time.time()
-    logger.info("🔄 Initializing formula data (lazy, CSV only)...")
-    # CSV 部分快速加载
-    if df is None:
-        if not os.path.exists(CSV_PATH):
-            raise RuntimeError(f"⚠️ 找不到公式数据文件: {os.path.abspath(CSV_PATH)}")
-        try:
-            try:
-                df = pd.read_csv(CSV_PATH, dtype=str, quoting=3, engine="python", on_bad_lines="skip")
-            except Exception:
-                df = pd.read_csv(CSV_PATH, sep="\t", dtype=str, quoting=3, engine="python", on_bad_lines="skip")
-            df.columns = [c.strip().replace('"', '') for c in df.columns]
-            df = df[["FORMULAID", "FORMULANAME"]].fillna("")
-            _formulanames_raw = df["FORMULANAME"].astype(str).tolist()
-            _formulanames_clean = [normalize_text(s) for s in _formulanames_raw]
-            _formulanames_tokens = [tokens_by_jieba(s) for s in _formulanames_clean]
-        except Exception as e:
-            raise RuntimeError(f"CSV 初始化失败: {e}")
     _initialized = True
-    logger.info(f"✅ Lazy CSV init done in {time.time()-start_time:.2f}s")
+    logger.info(f"✅ 初始化完成，用时 {time.time() - start_time:.2f}s")
 
 def get_embedding_model():
     """懒加载 embeddings"""
@@ -214,7 +213,7 @@ def get_embedding_model():
     return _embedding_model
 
 # ===========================================================
-# 搜索函数
+# 搜索函数（未改动）
 # ===========================================================
 def fuzzy_search(user_input: str, topn: int = 5):
     key_clean = normalize_text(user_input)
@@ -364,4 +363,13 @@ def formula_query(
 # 保留原 startup
 @app.on_event("startup")
 def load_csv_and_prepare():
+    """FastAPI 启动时自动调用"""
     initialize()
+
+
+# ===========================================================
+# 独立运行支持（python formula_api.py）
+# ===========================================================
+if __name__ == "__main__":
+    initialize()
+    print("✅ formula_api 独立运行模式启动完成。")

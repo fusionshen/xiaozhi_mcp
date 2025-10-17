@@ -1,3 +1,11 @@
+"""
+main.py
+---------------------------------
+主服务入口，整合 LLM 解析、公式匹配、平台查询。
+支持 GET/POST 调用。
+确保 formula_api 初始化只执行一次。
+"""
+
 import os
 for key in ["HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy"]:
     os.environ.pop(key, None)
@@ -12,20 +20,30 @@ TOP_N = 5  # 显示候选数量
 
 app = FastAPI(title="轻量智能体服务")
 
-# ================= Startup =================
+# ===========================================================
+# 启动事件：初始化公式数据 + 定期清理
+# ===========================================================
 @app.on_event("startup")
 async def startup_event():
-    # 初始化 formula_api（只加载 CSV，不阻塞）
+    """
+    在服务启动时执行：
+      - 初始化公式数据（同步加载）；
+      - 启动清理任务；
+    """
     try:
-        await asyncio.to_thread(formula_api.initialize_lazy)
+        # 只初始化一次，不会重复加载
+        formula_api.initialize()
     except Exception as e:
         import logging
-        logging.exception("Failed to lazy-initialize formula_api: %s", e)
+        logging.exception("Failed to initialize formula_api: %s", e)
 
-    # 启动定期清理 session 任务
+    # 定期清理过期 session
     asyncio.create_task(cleanup_expired_sessions())
 
-# ================= Chat API =================
+
+# ===========================================================
+# Chat API 接口
+# ===========================================================
 @app.get("/chat")
 async def chat_get(
     user_id: str = Query(..., description="用户唯一标识，例如 test1"),
@@ -34,22 +52,34 @@ async def chat_get(
     """GET 版本 - 用于调试"""
     return await handle_chat(user_id, message)
 
+
 @app.post("/chat")
 async def chat_post(request: Request):
+    """POST 版本 - 用于前端调用"""
     data = await request.json()
     user_id = data.get("user_id")
     message = data.get("message", "").strip()
     return await handle_chat(user_id, message)
 
-# ================= Chat 处理逻辑 =================
+
+# ===========================================================
+# Chat 核心处理逻辑
+# ===========================================================
 async def handle_chat(user_id: str, user_input: str):
+    """
+    处理与用户的对话逻辑，包括：
+      1. 状态管理；
+      2. 解析输入；
+      3. 匹配公式；
+      4. 调用平台查询；
+    """
     if not user_input:
         return {"message": "请输入指标名称或时间。", "state": await get_state(user_id)}
 
-    # 初始化 state，确保公式 slot 和时间 slot 分开
-    state = await get_state(user_id)
+    # 获取或初始化用户状态
+    state = await get_state(user_id)  # 注意此处加 await
     state.setdefault("slots", {
-        "indicator": None,      # 用户指标名称
+        "indicator": None,      # 指标名称
         "formula": None,        # 确认公式ID
         "formula_candidates": None,
         "awaiting_confirmation": False,
@@ -92,7 +122,7 @@ async def handle_chat(user_id: str, user_input: str):
         else:
             return {"message": f"请输入编号 1-{len(slots['formula_candidates'])} 选择公式。", "state": state}
 
-    # Step2: 用 LLM 解析用户输入
+    # Step2: 解析用户输入（使用 LLM）
     if not slots.get("indicator") or not slots.get("timeString") or not slots.get("timeType"):
         parsed = await parse_user_input(user_input)
         slots["indicator"] = parsed.get("indicator") or slots.get("indicator")
@@ -100,17 +130,16 @@ async def handle_chat(user_id: str, user_input: str):
         slots["timeType"] = parsed.get("timeType") or slots.get("timeType")
         await update_state(user_id, state)
 
-    # Step3: 检查指标 slot
+    # Step3: 检查指标
     if not slots["indicator"]:
         return {"message": "请告诉我你要查询的指标名称。", "state": state}
 
-    # Step4: 检查时间 slot
+    # Step4: 检查时间
     if not (slots["timeString"] and slots["timeType"]):
         return {"message": f"好的，要查【{slots['indicator']}】，请告诉我时间。", "state": state}
 
-    # Step5: 查询公式
-    formula_task = asyncio.to_thread(formula_api.formula_query, slots["indicator"])
-    formula_resp = await formula_task
+    # Step5: 查询公式（调用 formula_api）
+    formula_resp = await asyncio.to_thread(formula_api.formula_query, slots["indicator"])
 
     if formula_resp.get("done"):
         slots["formula"] = formula_resp["exact_matches"][0]["FORMULAID"]
@@ -135,7 +164,7 @@ async def handle_chat(user_id: str, user_input: str):
 
     await update_state(user_id, state)
 
-    # Step6: 调用平台 API
+    # Step6: 调用平台 API 查询结果
     result = await platform_api.query_platform(
         formula=slots["formula"],
         timeString=slots["timeString"],
