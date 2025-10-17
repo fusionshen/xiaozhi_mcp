@@ -309,9 +309,15 @@ def formula_query(
     topn: int = Query(5, ge=1, le=50, description="Number of candidates to return"),
     method: str = Query("hybrid", description="Search method: fuzzy | semantic | hybrid")
 ):
+       return JSONResponse(content=formula_query_dict(user_input, topn, method))
+
+
+# 新增一个函数，main.py 调用
+def formula_query_dict(user_input: str, topn: int = 5, method: str = "hybrid") -> dict:
+    """返回 dict 而不是 JSONResponse"""
     user_input = user_input.strip().strip('"').strip("'")
     if not user_input:
-        return JSONResponse(content={"done": False, "message": "Empty input."})
+        return {"done": False, "message": "Empty input."}
 
     # 精确匹配
     exact = df[df["FORMULANAME"] == user_input]
@@ -324,42 +330,27 @@ def formula_query(
         exact_matches = exact[["FORMULAID", "FORMULANAME"]].to_dict(orient="records")
         for item in exact_matches:
             item["FORMULANAME"] = str(item["FORMULANAME"]).strip().strip('"').strip("'")
-        return JSONResponse(content={
-            "done": True,
-            "message": f"Exact match found: {exact_matches[0]['FORMULANAME']}",
-            "exact_matches": exact_matches
-        })
+        return {"done": True, "message": f"Exact match found: {exact_matches[0]['FORMULANAME']}", "exact_matches": exact_matches}
 
     # 模糊 / 语义 / 混合
     try:
-        method = method.lower()
-        if method == "fuzzy":
+        method_str = str(method).lower()  # ✅ 确保是 str
+        if method_str == "fuzzy":
             candidates = fuzzy_search(user_input, topn=topn)
-        elif method == "semantic":
+        elif method_str == "semantic":
             candidates = semantic_search(user_input, topn=topn)
-        elif method == "hybrid":
+        elif method_str == "hybrid":
             candidates = hybrid_search(user_input, topn=topn)
         else:
-            return JSONResponse(content={"done": False, "message": f"Unknown method: {method}"})
+            return {"done": False, "message": f"Unknown method: {method_str}"}
     except Exception as e:
         logger.exception("❌ Search error")
-        return JSONResponse(content={"done": False, "message": f"Search error: {e}", "candidates": []})
+        return {"done": False, "message": f"Search error: {e}", "candidates": []}
 
     if not candidates:
-        return JSONResponse(content={"done": False, "message": "No matches found.", "candidates": []})
+        return {"done": False, "message": "No matches found.", "candidates": []}
 
-    msg_lines = ["Multiple candidates found, choose by number:"]
-    for c in candidates:
-        if c.get("match_kind") == "hybrid":
-            msg_lines.append(f"{c['number']}) {c['FORMULANAME']} (final {c['score']}, fuzzy {c['fuzzy_score']}, semantic {c['semantic_score']})")
-        else:
-            msg_lines.append(f"{c['number']}) {c['FORMULANAME']} (score {c['score']})")
-
-    return JSONResponse(content={
-        "done": False,
-        "message": "\n".join(msg_lines),
-        "candidates": candidates
-    })
+    return {"done": False, "candidates": candidates}
 
 
 @app.on_event("startup")

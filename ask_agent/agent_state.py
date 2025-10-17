@@ -44,7 +44,21 @@ async def get_state(user_id: str) -> SessionState:
 
 async def update_state(user_id: str, new_data: dict) -> SessionState:
     async with _state_lock:
-        state = await get_state(user_id)
+        state = conversation_state.get(user_id)
+        if not state:
+            state = {
+                "slots": {
+                    "indicator": None,
+                    "formula": None,
+                    "formula_candidates": None,
+                    "awaiting_confirmation": False,
+                    "timeString": None,
+                    "timeType": None
+                },
+                "last_active": now()
+            }
+            conversation_state[user_id] = state
+
         for k, v in new_data.items():
             if v is not None:
                 state[k] = v
