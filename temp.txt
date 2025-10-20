@@ -1,0 +1,228 @@
+http://www.shbaoenergy.com:8081/api/api/services/Runtime/Authentication/UserTrustLoginAsync
+
+192.168.122.7 www.shbaoenergy.com
+
+{
+    "appId":"EC",
+    "userName":"ec@share",
+    "tenancyName":"zjis",
+    "timestamp":1755593290049,
+    "enc":"B1F6BCE403B31D8E75D834F90C9B990B"
+}
+
+
+
+
+
+package com.baosight.demo.controller;
+
+import com.baosight.iplat4j.core.web.threadlocal.UserSession;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.http.*;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
+
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.HashMap;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/NGOAuth")
+public class NGOAuthController {
+
+    @Value("${NGOAuth.TenantName}")
+    private String tenantName;
+
+    @Value("${NGOAuth.AppKey}")
+    private String appKey;
+
+    @Value("${NGOAuth.AppSecret}")
+    private String appSecret;
+
+    @Value("${NGOAuth.PlatformApiDomain}")
+    private String platformApiDomain;
+
+    @Value("${NGOAuth.PlatformDomain}")
+    private String platformDomain;
+
+    private final RestTemplate restTemplate = new RestTemplate();
+    private final ObjectMapper mapper = new ObjectMapper();
+
+    /**
+     * 合并后的 OAuth 登录入口：
+     * 直接用 code 换用户信息，生成 ENC，并重定向到 TrustLogin
+     */
+    @GetMapping("/Login")
+    public void login(@RequestParam(required = false) String returnUrl,
+                      HttpServletRequest request,
+                      HttpServletResponse response) throws Exception {
+        // 保证 returnUrl 格式正确
+        if (returnUrl != null) {
+            returnUrl = returnUrl.replaceAll("^https?://[^/]+", "");
+        }
+        String redirectUrl = (returnUrl == null || returnUrl.trim().isEmpty())
+                ? platformDomain + "/"
+                : platformDomain + returnUrl;
+        // 获取当前java4j用户信息，TODO:需要调用能源查询当前用户存在，然后做新增用户操作，贵叔让我先用用户管理的测，但是肯定没有匿名接口掉
+        String loginName = UserSession.getLoginName();
+        String loginCName = UserSession.getLoginCName();
+        String userId = UserSession.getUserUuid();
+        // 构造参数
+        String userName = "liyin";
+        long ts = System.currentTimeMillis();
+        String enc = md5(tenantName + ":" + appKey + ":" + userName + ":" + ts + ":" + appSecret);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("appId", appKey);
+        body.put("userName", userName);
+        body.put("tenancyName", tenantName);
+        body.put("timestamp", ts);
+        body.put("enc", enc);
+
+        // 构造 HTTP 请求
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+
+        String apiUrl = platformApiDomain + "/api/services/Runtime/Authentication/UserTrustLoginAsync";
+
+        ResponseEntity<String> apiResponse = restTemplate.postForEntity(apiUrl, requestEntity, String.class);
+
+        if (apiResponse.getStatusCode() == HttpStatus.OK) {
+            JsonNode json = mapper.readTree(apiResponse.getBody());
+            if (json.has("status") && "200".equals(json.get("status").asText()) &&
+                    json.has("data") && json.get("data").has("token")) {
+                String token = json.get("data").get("token").asText();
+                // 写入 Cookie
+                Cookie cookie = new Cookie("acct", token);
+                cookie.setPath("/");
+                //cookie.setDomain("localhost"); // 这里必须和 nginx 对外域名一致
+                cookie.setHttpOnly(true);
+                response.addCookie(cookie);
+
+                // 重定向回原始 returnUrl
+                response.sendRedirect(redirectUrl);
+                return;
+            }
+        }
+
+        response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "登录失败");
+    }
+
+    // 判断是否已经有 AuthToken cookie
+    private boolean hasAuthToken(HttpServletRequest request) {
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if ("acct".equals(cookie.getName()) && cookie.getValue() != null && !cookie.getValue().isEmpty()) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 自定义登录在nginx代理情况下会不停重定向
+     */
+    public void trustLogin(@RequestParam(required = false) String returnUrl,
+                      HttpServletRequest request,
+                      HttpServletResponse response) throws Exception {
+
+        HttpSession session = request.getSession(true);
+
+        // 已经登录过，直接跳转目标页面，不再拼 TrustLogin
+        if ("true".equals(session.getAttribute("loggedIn"))) {
+            String redirectUrl = platformDomain; // 默认首页
+            if (returnUrl != null && !returnUrl.trim().isEmpty()) {
+                // 去掉远端协议/IP/端口，只保留路径
+                String path = returnUrl.replaceAll("^https?://[^/]+", "");
+                // 拼接本地 platformDomain（含端口）
+                redirectUrl = platformDomain + path;
+            }
+            response.sendRedirect(redirectUrl);
+            return;
+        }
+
+        // 1. 去掉 returnUrl 中的协议/IP/端口，只保留路径
+        if (returnUrl != null) {
+            returnUrl = returnUrl.replaceAll("^https?://[^/]+", "");
+        }
+        // 2. 如果 returnUrl 为空，则跳到首页
+        //if (returnUrl == null || returnUrl.trim().isEmpty()) {
+        //    returnUrl = "/";
+        //}
+        // ⚠️ 这里不要对完整 URL 再做 URLEncoder.encode(platformDomain + returnUrl) From chatgpt
+        // 这里必须要URLEncoder.encode，不然会跳转到http://192.168.122.179:8081/EP.Web/EC.Web/v/EC/NYMC42
+        returnUrl = (returnUrl == null || returnUrl.trim().isEmpty()) ? "/" : URLEncoder.encode(platformDomain + returnUrl, "UTF-8");
+
+        // 3. 获取用户名（示例）
+        String userName = "liyin";
+
+        // 4. 生成 ENC
+        long ts = System.currentTimeMillis();
+        String enc = md5(tenantName + ":" + appKey + ":" + userName + ":" + ts + ":" + appSecret);
+
+        // 5. 拼接 TrustLogin URL
+        String trustLoginUrl = platformApiDomain + "/TrustLogin/Login"
+                + "?appId=" + appKey
+                + "&username=" + URLEncoder.encode(userName, "UTF-8") // query 参数编码
+                + "&TenancyName=" + tenantName
+                + "&Timestamp=" + ts
+                + "&Enc=" + enc
+                + "&returnUrl=" + returnUrl; // 保留原路径，不再编码
+
+        // 6. 设置登录标记
+        session.setAttribute("loggedIn", "true");
+
+        // 7. 重定向
+        response.sendRedirect(trustLoginUrl);
+    }
+
+
+    /** 登出 */
+    @GetMapping("/Logout")
+    public void logout(HttpServletRequest request, HttpServletResponse response) throws Exception {
+        // 1. 获取当前会话
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            // 标记已注销（iPlat4J 可用此标识在前端拦截）
+            session.setAttribute("iplat.logout", "1");
+            // 销毁会话
+            session.invalidate();
+        }
+        // 2. 清除 Spring Security 登录信息
+        SecurityContextHolder.clearContext();
+        // 3. 统一认证登出地址（可从配置文件读取）
+        String logoutUrl = "https://sso.example.com/logout"; // 改成实际 SSO 登出地址
+        // 4. 登出后回跳地址（这里跳回系统首页或登录页）
+        String returnUrl = "http://localhost:8090/kqenergy"; // 改成实际应用入口
+        //String redirectUrl = logoutUrl + "?service=" + URLEncoder.encode(returnUrl, "UTF-8");
+        // 5. 重定向到 SSO 登出
+        response.sendRedirect(returnUrl);
+    }
+
+    /** 生成 MD5（大写） */
+    private String md5(String text) throws Exception {
+        MessageDigest md = MessageDigest.getInstance("MD5");
+        byte[] digest = md.digest(text.getBytes(StandardCharsets.UTF_8));
+        StringBuilder sb = new StringBuilder();
+        for (byte b : digest) {
+            sb.append(String.format("%02X", b));
+        }
+        return sb.toString();
+    }
+
+    /** Java 8 兼容 isBlank */
+    private static boolean isBlank(String str) {
+        return str == null || str.trim().isEmpty();
+    }
+}
