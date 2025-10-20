@@ -1,3 +1,9 @@
+🟢 登录返回： {'error': None, 'data': {'token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiIxMDU0IiwidGVuYW50aWQiOiIxMDUiLCJ1bmFtZSI6IuW8gOaUvuaOiOadg--8muiDvea6kOeuoeeQhiIsInRuYW1lIjoi5a6d6ZKi5rmb5rGf6ZKi6ZOB5pyJ6ZmQ5YWs5Y-4IiwidHNpZGUiOiIxIiwiZ3JvdXBpZCI6IjAiLCJzbGlkaW5nIjoiMCIsInJzaW5jZSI6IjE3NjEwOTkxODQiLCJuYmYiOjE3NjA5NTQ4ODQsImV4cCI6MTc2MTA3MDY4NCwiaXNzIjoic2hiYW9uZW5nIiwiYXVkIjoic2hiYW9uZW5nIn0.HuQp7cPscuyHyVW-6uO71YDkG6-FeRvw-0u6bMtCN-I', 'expiresAt': '2025-10-22 02:17:04', 'tenantId': 105, 'tenancyName': 'zjis', 'userId': 1054, 'userName': 'ecshare'}, 'status': 200, 'msg': '操作成功', 'duration': -1}
+{'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiIxMDU0IiwidGVuYW50aWQiOiIxMDUiLCJ1bmFtZSI6IuW8gOaUvuaOiOadg--8muiDvea6kOeuoeeQhiIsInRuYW1lIjoi5a6d6ZKi5rmb5rGf6ZKi6ZOB5pyJ6ZmQ5YWs5Y-4IiwidHNpZGUiOiIxIiwiZ3JvdXBpZCI6IjAiLCJzbGlkaW5nIjoiMCIsInJzaW5jZSI6IjE3NjEwOTkxODQiLCJuYmYiOjE3NjA5NTQ4ODQsImV4cCI6MTc2MTA3MDY4NCwiaXNzIjoic2hiYW9uZW5nIiwiYXVkIjoic2hiYW9uZW5nIn0.HuQp7cPscuyHyVW-6uO71YDkG6-FeRvw-0u6bMtCN-I', 'Content-Type': 'application/json'}
+{'expressionList': {'GXNHLT1100.IXRL': 'GXNHLT1100.IXRL'}, 'clock': '2022-10-02', 'timegranId': 'DAY'}
+{'error': None, 'data': None, 'status': 500, 'msg': '调用失败', 'duration': 0}
+查询结果： None
+
 http://www.shbaoenergy.com:8081/api/api/services/Runtime/Authentication/UserTrustLoginAsync
 
 192.168.122.7 www.shbaoenergy.com
@@ -9,8 +15,6 @@ http://www.shbaoenergy.com:8081/api/api/services/Runtime/Authentication/UserTrus
     "timestamp":1755593290049,
     "enc":"B1F6BCE403B31D8E75D834F90C9B990B"
 }
-
-
 
 
 
