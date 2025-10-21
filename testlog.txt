@@ -1,0 +1,253 @@
+----------------------------openwebui测试，vpn断后候选列表又进行了一次llm_parser-------------------------------------
+2025-10-21 10:56:58,368 | INFO | 🟢 [handle_chat] 开始处理 user=test1, input='帮我查看2022年10月2日的高炉工序能耗'
+2025-10-21 10:56:58,368 | INFO | ✅ 当前 slots: {'indicator': None, 'formula': None, 'formula_candidates': None, 'awaiting_confirmation': False, 'timeString': None, 'timeType': None}
+2025-10-21 10:56:58,408 | INFO | HTTP Request: GET http://192.168.92.13:11434/api/tags "HTTP/1.1 200 OK"
+2025-10-21 10:56:59,127 | INFO | HTTP Request: POST http://192.168.92.13:11434/api/chat "HTTP/1.1 200 OK"
+2025-10-21 10:57:00,438 | INFO | 🔍 LLM 解析结果: {'indicator': '高炉工序能耗', 'timeString': '2022-10-02', 'timeType': 'DAY'}
+Batches: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 45.35it/s]
+2025-10-21 10:57:01,238 | INFO | ✅ formula_api.formula_query_dict 用时 0.80s
+INFO:     127.0.0.1:36676 - "GET /chat?user_id=test1&message=%E5%B8%AE%E6%88%91%E6%9F%A5%E7%9C%8B2022%E5%B9%B410%E6%9C%882%E6%97%A5%E7%9A%84%E9%AB%98%E7%82%89%E5%B7%A5%E5%BA%8F%E8%83%BD%E8%80%97 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53436 - "GET /openapi.json HTTP/1.1" 200 OK
+2025-10-21 10:57:38,940 | INFO | 🟢 [handle_chat] 开始处理 user=test1, input='1'
+2025-10-21 10:57:38,940 | INFO | ✅ 当前 slots: {'indicator': '高炉工序能耗', 'formula': None, 'formula_candidates': [{'number': 1, 'FORMULAID': 'GXNHLT1100.IXRL', 'FORMULANAME': '高炉工序能耗实绩报出值', 'score': 102.3371, 'fuzzy_score': 109.08, 'semantic_score': 83.6439, 'match_kind': 'hybrid'}, {'number': 2, 'FORMULAID': 'GXNHLT1100.IXRL.SUMVALUE', 'FORMULANAME': '高炉工序能耗实绩累计值', 'score': 99.7119, 'fuzzy_score': 105.84, 'semantic_score': 86.4568, 'match_kind': 'hybrid'}, {'number': 3, 'FORMULAID': 'NDJHZBGLLTGXNH.IXRL', 'FORMULANAME': '年度计划指标高炉炼铁工序能耗能源指标实绩报出值', 'score': 91.6973, 'fuzzy_score': 107.9892, 'semantic_score': 69.5295, 'match_kind': 'hybrid'}, {'number': 4, 'FORMULAID': 'GXNHLT1101.IXRL', 'FORMULANAME': '1高炉工序能耗实绩报出值', 'score': 90.8078, 'fuzzy_score': 109.08, 'semantic_score': 66.028, 'match_kind': 'hybrid'}, {'number': 5, 'FORMULAID': 'PHNHLT1101.IXRL', 'FORMULANAME': '1高炉工序平衡能耗实绩报出值', 'score': 90.4678, 'fuzzy_score': 109.08, 'semantic_score': 65.5086, 'match_kind': 'hybrid'}], 'awaiting_confirmation': False, 'timeString': '2022-10-02', 'timeType': 'DAY'}
+2025-10-21 10:57:38,940 | INFO | ✅ 用户选择公式编号 1: 高炉工序能耗实绩报出值
+{'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiIxNDMiLCJ0ZW5hbnRpZCI6IjEwNSIsInVuYW1lIjoi566h55CG5ZGYIiwidG5hbWUiOiLlrp3pkqLmuZvmsZ_pkqLpk4HmnInpmZDlhazlj7giLCJ0c2lkZSI6IjEiLCJncm91cGlkIjoiMCIsInNsaWRpbmciOiIwIiwicnNpbmNlIjoiMTc2MTE1NzM1OSIsIm5iZiI6MTc2MTAxMzA1OSwiZXhwIjoxNzYxMTI4ODU5LCJpc3MiOiJzaGJhb25lbmciLCJhdWQiOiJzaGJhb25lbmcifQ.ye3HBJ3x90TW3IEC8OoKXUeuXAHXlrFfHlE29GtD784', 'Content-Type': 'application/json'}
+{'expressionList': {'GXNHLT1100.IXRL': 'GXNHLT1100.IXRL'}, 'clock': '2022-10-02', 'timegranId': 'DAY'}
+[agent_state] 清理过期会话: ['shenlan']
+2025-10-21 10:58:09,296 | ERROR | ❌ handle_chat 异常: Connection timeout to host http://www.shbaoenergy.com:8081/emscore/api/services/nYMC/calcData/QueryItemValuesAsync
+Traceback (most recent call last):
+  File "/home/fusionshen/myenv/lib/python3.12/site-packages/aiohttp/connector.py", line 1268, in _wrap_create_connection
+    sock = await aiohappyeyeballs.start_connection(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fusionshen/myenv/lib/python3.12/site-packages/aiohappyeyeballs/impl.py", line 73, in start_connection
+    sock = await _connect_sock(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/fusionshen/myenv/lib/python3.12/site-packages/aiohappyeyeballs/impl.py", line 208, in _connect_sock
+    await loop.sock_connect(sock, address)
+  File "uvloop/loop.pyx", line 2633, in sock_connect
+asyncio.exceptions.CancelledError
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/fusionshen/myenv/lib/python3.12/site-packages/aiohttp/client.py", line 725, in _connect_and_send_request
+    conn = await self._connector.connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fusionshen/myenv/lib/python3.12/site-packages/aiohttp/connector.py", line 642, in connect
+    proto = await self._create_connection(req, traces, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fusionshen/myenv/lib/python3.12/site-packages/aiohttp/connector.py", line 1209, in _create_connection
+    _, proto = await self._create_direct_connection(req, traces, timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fusionshen/myenv/lib/python3.12/site-packages/aiohttp/connector.py", line 1581, in _create_direct_connection
+    raise last_exc
+  File "/home/fusionshen/myenv/lib/python3.12/site-packages/aiohttp/connector.py", line 1550, in _create_direct_connection
+    transp, proto = await self._wrap_create_connection(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fusionshen/myenv/lib/python3.12/site-packages/aiohttp/connector.py", line 1265, in _wrap_create_connection
+    async with ceil_timeout(
+  File "/usr/lib/python3.12/asyncio/timeouts.py", line 115, in __aexit__
+    raise TimeoutError from exc_val
+TimeoutError
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/fusionshen/Desktop/LLM/ask_agent/main.py", line 127, in handle_chat
+    result = await platform_api.query_platform(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fusionshen/Desktop/LLM/ask_agent/tools/platform_api.py", line 81, in query_platform
+    async with session.post(QUERY_URL, json=payload, headers=headers) as resp:
+  File "/home/fusionshen/myenv/lib/python3.12/site-packages/aiohttp/client.py", line 1488, in __aenter__
+    self._resp: _RetType = await self._coro
+                           ^^^^^^^^^^^^^^^^
+  File "/home/fusionshen/myenv/lib/python3.12/site-packages/aiohttp/client.py", line 770, in _request
+    resp = await handler(req)
+           ^^^^^^^^^^^^^^^^^^
+  File "/home/fusionshen/myenv/lib/python3.12/site-packages/aiohttp/client.py", line 729, in _connect_and_send_request
+    raise ConnectionTimeoutError(
+aiohttp.client_exceptions.ConnectionTimeoutError: Connection timeout to host http://www.shbaoenergy.com:8081/emscore/api/services/nYMC/calcData/QueryItemValuesAsync
+INFO:     127.0.0.1:53438 - "GET /chat?user_id=test1&message=1 HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:34682 - "GET /openapi.json HTTP/1.1" 200 OK
+2025-10-21 10:58:17,048 | INFO | 🟢 [handle_chat] 开始处理 user=test1, input='1'
+2025-10-21 10:58:17,048 | INFO | ✅ 当前 slots: {'indicator': '高炉工序能耗实绩报出值', 'formula': 'GXNHLT1100.IXRL', 'formula_candidates': None, 'awaiting_confirmation': False, 'timeString': '2022-10-02', 'timeType': 'DAY'}
+2025-10-21 10:58:17,112 | INFO | HTTP Request: GET http://192.168.92.13:11434/api/tags "HTTP/1.1 200 OK"
+2025-10-21 10:58:17,844 | INFO | HTTP Request: POST http://192.168.92.13:11434/api/chat "HTTP/1.1 200 OK"
+2025-10-21 10:58:18,669 | INFO | 🔍 LLM 解析结果: {'indicator': '1', 'timeString': None, 'timeType': None}
+{'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiIxNDMiLCJ0ZW5hbnRpZCI6IjEwNSIsInVuYW1lIjoi566h55CG5ZGYIiwidG5hbWUiOiLlrp3pkqLmuZvmsZ_pkqLpk4HmnInpmZDlhazlj7giLCJ0c2lkZSI6IjEiLCJncm91cGlkIjoiMCIsInNsaWRpbmciOiIwIiwicnNpbmNlIjoiMTc2MTE1NzM1OSIsIm5iZiI6MTc2MTAxMzA1OSwiZXhwIjoxNzYxMTI4ODU5LCJpc3MiOiJzaGJhb25lbmciLCJhdWQiOiJzaGJhb25lbmcifQ.ye3HBJ3x90TW3IEC8OoKXUeuXAHXlrFfHlE29GtD784', 'Content-Type': 'application/json'}
+{'expressionList': {'GXNHLT1100.IXRL': 'GXNHLT1100.IXRL'}, 'clock': '2022-10-02', 'timegranId': 'DAY'}
+{'error': None, 'data': {'GXNHLT1100.IXRL': '374.41'}, 'status': 200, 'msg': '操作成功', 'duration': -1}
+2025-10-21 10:58:21,281 | INFO | ✅ platform_api.query_platform 用时 2.61s, result={'GXNHLT1100.IXRL': '374.41'}
+2025-10-21 10:58:21,281 | INFO | ✅ handle_chat 全流程完成，用时 4.23s
+INFO:     127.0.0.1:34684 - "GET /chat?user_id=test1&message=1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53106 - "GET /openapi.json HTTP/1.1" 200 OK
+2025-10-21 11:01:22,074 | INFO | 🟢 [handle_chat] 开始处理 user=test1, input='帮我查看2022年10月3日的'
+2025-10-21 11:01:22,074 | INFO | ✅ 当前 slots: {'indicator': None, 'formula': None, 'formula_candidates': None, 'awaiting_confirmation': False, 'timeString': None, 'timeType': None}
+2025-10-21 11:01:22,111 | INFO | HTTP Request: GET http://192.168.92.13:11434/api/tags "HTTP/1.1 200 OK"
+2025-10-21 11:01:22,775 | INFO | HTTP Request: POST http://192.168.92.13:11434/api/chat "HTTP/1.1 200 OK"
+2025-10-21 11:01:24,142 | INFO | 🔍 LLM 解析结果: {'indicator': '2022年10月3日的', 'timeString': '2022-10-03', 'timeType': 'DAY'}
+Batches: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 34.96it/s]
+2025-10-21 11:01:25,002 | INFO | ✅ formula_api.formula_query_dict 用时 0.86s
+INFO:     127.0.0.1:53374 - "GET /chat?user_id=test1&message=%E5%B8%AE%E6%88%91%E6%9F%A5%E7%9C%8B2022%E5%B9%B410%E6%9C%883%E6%97%A5%E7%9A%84 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54638 - "GET /openapi.json HTTP/1.1" 200 OK
+2025-10-21 11:01:56,497 | INFO | 🟢 [handle_chat] 开始处理 user=test1, input='1'
+2025-10-21 11:01:56,497 | INFO | ✅ 当前 slots: {'indicator': '2022年10月3日的', 'formula': None, 'formula_candidates': [{'number': 1, 'FORMULAID': 'XYMN22.GIRL.GROCERYVALUE', 'FORMULANAME': '下月计划22实绩值', 'score': 58.419, 'fuzzy_score': 55.1845, 'semantic_score': 54.2737, 'match_kind': 'hybrid'}, {'number': 2, 'FORMULAID': 'XYMN10.GIRL.GROCERYVALUE', 'FORMULANAME': '下月计划10实绩值', 'score': 57.3565, 'fuzzy_score': 55.1845, 'semantic_score': 52.6176, 'match_kind': 'hybrid'}, {'number': 3, 'FORMULAID': 'XYMN12.GIRL.GROCERYVALUE', 'FORMULANAME': '下月计划12实绩值', 'score': 57.0853, 'fuzzy_score': 55.1845, 'semantic_score': 52.1948, 'match_kind': 'hybrid'}, {'number': 4, 'FORMULAID': 'XYMN20.GIRL.GROCERYVALUE', 'FORMULANAME': '下月计划20实绩值', 'score': 54.5728, 'fuzzy_score': 55.1845, 'semantic_score': 48.2783, 'match_kind': 'hybrid'}, {'number': 5, 'FORMULAID': 'DCZYZBY_320Y.IXRL', 'FORMULANAME': '1/2用脱硫年度实绩报出值', 'score': 50.5933, 'fuzzy_score': 54.54, 'semantic_score': 40.943, 'match_kind': 'hybrid'}], 'awaiting_confirmation': False, 'timeString': '2022-10-03', 'timeType': 'DAY'}
+2025-10-21 11:01:56,497 | INFO | ✅ 用户选择公式编号 1: 下月计划22实绩值
+{'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiIxNDMiLCJ0ZW5hbnRpZCI6IjEwNSIsInVuYW1lIjoi566h55CG5ZGYIiwidG5hbWUiOiLlrp3pkqLmuZvmsZ_pkqLpk4HmnInpmZDlhazlj7giLCJ0c2lkZSI6IjEiLCJncm91cGlkIjoiMCIsInNsaWRpbmciOiIwIiwicnNpbmNlIjoiMTc2MTE1NzM1OSIsIm5iZiI6MTc2MTAxMzA1OSwiZXhwIjoxNzYxMTI4ODU5LCJpc3MiOiJzaGJhb25lbmciLCJhdWQiOiJzaGJhb25lbmcifQ.ye3HBJ3x90TW3IEC8OoKXUeuXAHXlrFfHlE29GtD784', 'Content-Type': 'application/json'}
+{'expressionList': {'XYMN22.GIRL.GROCERYVALUE': 'XYMN22.GIRL.GROCERYVALUE'}, 'clock': '2022-10-03', 'timegranId': 'DAY'}
+{'error': None, 'data': {'XYMN22.GIRL.GROCERYVALUE': ''}, 'status': 200, 'msg': '操作成功', 'duration': -1}
+2025-10-21 11:01:56,764 | INFO | ✅ platform_api.query_platform 用时 0.27s, result={'XYMN22.GIRL.GROCERYVALUE': ''}
+2025-10-21 11:01:56,764 | INFO | ✅ handle_chat 全流程完成，用时 0.27s
+INFO:     127.0.0.1:54640 - "GET /chat?user_id=test1&message=1 HTTP/1.1" 200 OK
+
+----------------------------备选列表选择后不再进行了llm_parser-------------------------------------
+2025-10-21 10:27:00,283 | INFO | 🟢 [handle_chat] 开始处理 user=shenlan, input='帮我查看2022年10月2日的高炉工序能耗'
+2025-10-21 10:27:00,284 | INFO | ✅ 当前 slots: {'indicator': None, 'formula': None, 'formula_candidates': None, 'awaiting_confirmation': False, 'timeString': None, 'timeType': None}
+2025-10-21 10:27:00,553 | INFO | HTTP Request: GET http://192.168.92.13:11434/api/tags "HTTP/1.1 200 OK"
+2025-10-21 10:27:08,754 | INFO | HTTP Request: POST http://192.168.92.13:11434/api/chat "HTTP/1.1 200 OK"
+2025-10-21 10:27:10,058 | INFO | 🔍 LLM 解析结果: {'indicator': '高炉工序能耗', 'timeString': '2022-10-02', 'timeType': 'DAY'}
+Batches: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 31.04it/s]
+2025-10-21 10:27:11,249 | INFO | ✅ formula_api.formula_query_dict 用时 1.19s
+INFO:     127.0.0.1:50886 - "GET /chat?user_id=shenlan&message=%E5%B8%AE%E6%88%91%E6%9F%A5%E7%9C%8B2022%E5%B9%B410%E6%9C%882%E6%97%A5%E7%9A%84%E9%AB%98%E7%82%89%E5%B7%A5%E5%BA%8F%E8%83%BD%E8%80%97 HTTP/1.1" 200 OK
+2025-10-21 10:27:39,356 | INFO | 🟢 [handle_chat] 开始处理 user=shenlan, input='1'
+2025-10-21 10:27:39,356 | INFO | ✅ 当前 slots: {'indicator': '高炉工序能耗', 'formula': None, 'formula_candidates': [{'number': 1, 'FORMULAID': 'GXNHLT1100.IXRL', 'FORMULANAME': '高炉工序能耗实绩报出值', 'score': 102.3371, 'fuzzy_score': 109.08, 'semantic_score': 83.6439, 'match_kind': 'hybrid'}, {'number': 2, 'FORMULAID': 'GXNHLT1100.IXRL.SUMVALUE', 'FORMULANAME': '高炉工序能耗实绩累计值', 'score': 99.7119, 'fuzzy_score': 105.84, 'semantic_score': 86.4568, 'match_kind': 'hybrid'}, {'number': 3, 'FORMULAID': 'NDJHZBGLLTGXNH.IXRL', 'FORMULANAME': '年度计划指标高炉炼铁工序能耗能源指标实绩报出值', 'score': 91.6973, 'fuzzy_score': 107.9892, 'semantic_score': 69.5295, 'match_kind': 'hybrid'}, {'number': 4, 'FORMULAID': 'GXNHLT1101.IXRL', 'FORMULANAME': '1高炉工序能耗实绩报出值', 'score': 90.8078, 'fuzzy_score': 109.08, 'semantic_score': 66.028, 'match_kind': 'hybrid'}, {'number': 5, 'FORMULAID': 'PHNHLT1101.IXRL', 'FORMULANAME': '1高炉工序平衡能耗实绩报出值', 'score': 90.4678, 'fuzzy_score': 109.08, 'semantic_score': 65.5086, 'match_kind': 'hybrid'}], 'awaiting_confirmation': False, 'timeString': '2022-10-02', 'timeType': 'DAY'}
+2025-10-21 10:27:39,356 | INFO | ✅ 用户选择公式编号 1: 高炉工序能耗实绩报出值
+🟢 登录返回： {'error': None, 'data': {'token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiIxNDMiLCJ0ZW5hbnRpZCI6IjEwNSIsInVuYW1lIjoi566h55CG5ZGYIiwidG5hbWUiOiLlrp3pkqLmuZvmsZ_pkqLpk4HmnInpmZDlhazlj7giLCJ0c2lkZSI6IjEiLCJncm91cGlkIjoiMCIsInNsaWRpbmciOiIwIiwicnNpbmNlIjoiMTc2MTE1NzM1OSIsIm5iZiI6MTc2MTAxMzA1OSwiZXhwIjoxNzYxMTI4ODU5LCJpc3MiOiJzaGJhb25lbmciLCJhdWQiOiJzaGJhb25lbmcifQ.ye3HBJ3x90TW3IEC8OoKXUeuXAHXlrFfHlE29GtD784', 'expiresAt': '2025-10-22 18:26:39', 'tenantId': 105, 'tenancyName': 'zjis', 'userId': 143, 'userName': 'admin'}, 'status': 200, 'msg': '操作成功', 'duration': -1}
+{'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiIxNDMiLCJ0ZW5hbnRpZCI6IjEwNSIsInVuYW1lIjoi566h55CG5ZGYIiwidG5hbWUiOiLlrp3pkqLmuZvmsZ_pkqLpk4HmnInpmZDlhazlj7giLCJ0c2lkZSI6IjEiLCJncm91cGlkIjoiMCIsInNsaWRpbmciOiIwIiwicnNpbmNlIjoiMTc2MTE1NzM1OSIsIm5iZiI6MTc2MTAxMzA1OSwiZXhwIjoxNzYxMTI4ODU5LCJpc3MiOiJzaGJhb25lbmciLCJhdWQiOiJzaGJhb25lbmcifQ.ye3HBJ3x90TW3IEC8OoKXUeuXAHXlrFfHlE29GtD784', 'Content-Type': 'application/json'}
+{'expressionList': {'GXNHLT1100.IXRL': 'GXNHLT1100.IXRL'}, 'clock': '2022-10-02', 'timegranId': 'DAY'}
+{'error': None, 'data': {'GXNHLT1100.IXRL': '374.41'}, 'status': 200, 'msg': '操作成功', 'duration': -1}
+2025-10-21 10:27:39,583 | INFO | ✅ platform_api.query_platform 用时 0.23s, result={'GXNHLT1100.IXRL': '374.41'}
+2025-10-21 10:27:39,583 | INFO | ✅ handle_chat 全流程完成，用时 0.23s
+INFO:     127.0.0.1:33310 - "GET /chat?user_id=shenlan&message=1 HTTP/1.1" 200 OK
+
+-------------------------备选列表选择后又进行了一次llm_parser----------------------------------
+(myenv) fusionshen@fusionshen-ThinkPad-T14-Gen-1:~/Desktop/LLM/ask_agent$ uvicorn main:app --host 0.0.0.0 --port 9000
+✅ Using ChatOllama from langchain-ollama
+/home/fusionshen/myenv/lib/python3.12/site-packages/jieba/_compat.py:18: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+INFO:     Started server process [2799104]
+INFO:     Waiting for application startup.
+2025-10-21 10:10:18,879 | INFO | 🔄 正在初始化公式数据（full load）...
+Building prefix dict from the default dictionary ...
+2025-10-21 10:10:23,163 | DEBUG | Building prefix dict from the default dictionary ...
+Loading model from cache /tmp/jieba.cache
+2025-10-21 10:10:23,163 | DEBUG | Loading model from cache /tmp/jieba.cache
+Loading model cost 0.605 seconds.
+2025-10-21 10:10:23,769 | DEBUG | Loading model cost 0.605 seconds.
+Prefix dict has been built successfully.
+2025-10-21 10:10:23,769 | DEBUG | Prefix dict has been built successfully.
+2025-10-21 10:10:36,709 | INFO | ✅ Loaded 270817 formulas. Tokenization ready.
+2025-10-21 10:10:36,709 | INFO | Auto-selected embedding device: cpu
+2025-10-21 10:10:36,709 | INFO | 🧩 尝试加载本地模型: /home/fusionshen/Desktop/LLM/ask_agent/models/sbert_offline_models/86741b4e3f5cb7765a600d3a3d55a0f6a6cb443d
+2025-10-21 10:10:36,710 | INFO | Load pretrained SentenceTransformer: /home/fusionshen/Desktop/LLM/ask_agent/models/sbert_offline_models/86741b4e3f5cb7765a600d3a3d55a0f6a6cb443d
+2025-10-21 10:10:37,605 | INFO | ✅ 已成功加载离线模型。
+2025-10-21 10:10:38,164 | INFO | ✅ Loaded embeddings from cache ((270817, 384))
+2025-10-21 10:10:38,164 | INFO | ✅ 初始化完成，用时 19.28s
+2025-10-21 10:10:38,164 | INFO | ✅ formula_api 初始化完成，用时 19.28s
+2025-10-21 10:10:38,164 | INFO | 🧹 已启动 session 定期清理任务。
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:9000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:56656 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56656 - "GET /openapi.json HTTP/1.1" 200 OK
+2025-10-21 10:10:58,482 | INFO | 🟢 [handle_chat] 开始处理 user=shenlan, input='帮我查看2022年10月2日的高炉工序能耗'
+2025-10-21 10:10:58,483 | INFO | ✅ 当前 slots: {'indicator': None, 'formula': None, 'formula_candidates': None, 'awaiting_confirmation': False, 'timeString': None, 'timeType': None}
+2025-10-21 10:10:58,973 | INFO | HTTP Request: GET http://192.168.92.13:11434/api/tags "HTTP/1.1 200 OK"
+2025-10-21 10:11:06,808 | INFO | HTTP Request: POST http://192.168.92.13:11434/api/chat "HTTP/1.1 200 OK"
+2025-10-21 10:11:08,105 | INFO | 🔍 LLM 解析结果: {'indicator': '高炉工序能耗', 'timeString': '2022-10-02', 'timeType': 'DAY'}
+Batches: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 27.49it/s]
+2025-10-21 10:11:09,320 | INFO | ✅ formula_api.formula_query_dict 用时 1.21s
+INFO:     127.0.0.1:45090 - "GET /chat?user_id=shenlan&message=%E5%B8%AE%E6%88%91%E6%9F%A5%E7%9C%8B2022%E5%B9%B410%E6%9C%882%E6%97%A5%E7%9A%84%E9%AB%98%E7%82%89%E5%B7%A5%E5%BA%8F%E8%83%BD%E8%80%97 HTTP/1.1" 200 OK
+2025-10-21 10:11:47,191 | INFO | 🟢 [handle_chat] 开始处理 user=shenlan, input='1'
+2025-10-21 10:11:47,192 | INFO | ✅ 当前 slots: {'indicator': '高炉工序能耗', 'formula': None, 'formula_candidates': [{'number': 1, 'FORMULAID': 'GXNHLT1100.IXRL', 'FORMULANAME': '高炉工序能耗实绩报出值', 'score': 102.3371, 'fuzzy_score': 109.08, 'semantic_score': 83.6439, 'match_kind': 'hybrid'}, {'number': 2, 'FORMULAID': 'GXNHLT1100.IXRL.SUMVALUE', 'FORMULANAME': '高炉工序能耗实绩累计值', 'score': 99.7119, 'fuzzy_score': 105.84, 'semantic_score': 86.4568, 'match_kind': 'hybrid'}, {'number': 3, 'FORMULAID': 'NDJHZBGLLTGXNH.IXRL', 'FORMULANAME': '年度计划指标高炉炼铁工序能耗能源指标实绩报出值', 'score': 91.6973, 'fuzzy_score': 107.9892, 'semantic_score': 69.5295, 'match_kind': 'hybrid'}, {'number': 4, 'FORMULAID': 'GXNHLT1101.IXRL', 'FORMULANAME': '1高炉工序能耗实绩报出值', 'score': 90.8078, 'fuzzy_score': 109.08, 'semantic_score': 66.028, 'match_kind': 'hybrid'}, {'number': 5, 'FORMULAID': 'PHNHLT1101.IXRL', 'FORMULANAME': '1高炉工序平衡能耗实绩报出值', 'score': 90.4678, 'fuzzy_score': 109.08, 'semantic_score': 65.5086, 'match_kind': 'hybrid'}], 'awaiting_confirmation': False, 'timeString': '2022-10-02', 'timeType': 'DAY'}
+2025-10-21 10:11:47,192 | INFO | ✅ 用户选择公式编号 1: 高炉工序能耗实绩报出值
+2025-10-21 10:11:47,291 | INFO | HTTP Request: GET http://192.168.92.13:11434/api/tags "HTTP/1.1 200 OK"
+2025-10-21 10:11:48,019 | INFO | HTTP Request: POST http://192.168.92.13:11434/api/chat "HTTP/1.1 200 OK"
+2025-10-21 10:11:48,849 | INFO | 🔍 LLM 解析结果: {'indicator': '1', 'timeString': None, 'timeType': None}
+🟢 登录返回： {'error': None, 'data': {'token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiIxNDMiLCJ0ZW5hbnRpZCI6IjEwNSIsInVuYW1lIjoi566h55CG5ZGYIiwidG5hbWUiOiLlrp3pkqLmuZvmsZ_pkqLpk4HmnInpmZDlhazlj7giLCJ0c2lkZSI6IjEiLCJncm91cGlkIjoiMCIsInNsaWRpbmciOiIwIiwicnNpbmNlIjoiMTc2MTE1NjQwOCIsIm5iZiI6MTc2MTAxMjEwOCwiZXhwIjoxNzYxMTI3OTA4LCJpc3MiOiJzaGJhb25lbmciLCJhdWQiOiJzaGJhb25lbmcifQ.pr77Orw6jwf0dOWK2XAGkYz8wq_XHhe5wnVHByIRB8I', 'expiresAt': '2025-10-22 18:10:48', 'tenantId': 105, 'tenancyName': 'zjis', 'userId': 143, 'userName': 'admin'}, 'status': 200, 'msg': '操作成功', 'duration': -1}
+{'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiIxNDMiLCJ0ZW5hbnRpZCI6IjEwNSIsInVuYW1lIjoi566h55CG5ZGYIiwidG5hbWUiOiLlrp3pkqLmuZvmsZ_pkqLpk4HmnInpmZDlhazlj7giLCJ0c2lkZSI6IjEiLCJncm91cGlkIjoiMCIsInNsaWRpbmciOiIwIiwicnNpbmNlIjoiMTc2MTE1NjQwOCIsIm5iZiI6MTc2MTAxMjEwOCwiZXhwIjoxNzYxMTI3OTA4LCJpc3MiOiJzaGJhb25lbmciLCJhdWQiOiJzaGJhb25lbmcifQ.pr77Orw6jwf0dOWK2XAGkYz8wq_XHhe5wnVHByIRB8I', 'Content-Type': 'application/json'}
+{'expressionList': {'GXNHLT1100.IXRL': 'GXNHLT1100.IXRL'}, 'clock': '2022-10-02', 'timegranId': 'DAY'}
+{'error': None, 'data': {'GXNHLT1100.IXRL': '374.41'}, 'status': 200, 'msg': '操作成功', 'duration': -1}
+2025-10-21 10:11:49,084 | INFO | ✅ platform_api.query_platform 用时 0.23s, result={'GXNHLT1100.IXRL': '374.41'}
+2025-10-21 10:11:49,084 | INFO | ✅ handle_chat 全流程完成，用时 1.89s
+INFO:     127.0.0.1:57958 - "GET /chat?user_id=shenlan&message=1 HTTP/1.1" 200 OK
+
+----------------------------------------重复询问时间-------------------------------------------------
+(myenv) fusionshen@fusionshen-ThinkPad-T14-Gen-1:~/Desktop/LLM/ask_agent$ uvicorn main:app --host 0.0.0.0 --port 9000
+✅ Using ChatOllama from langchain-ollama
+/home/fusionshen/myenv/lib/python3.12/site-packages/jieba/_compat.py:18: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+INFO:     Started server process [2765693]
+INFO:     Waiting for application startup.
+2025-10-21 09:39:55,003 | INFO | 🔄 正在初始化公式数据（full load）...
+Building prefix dict from the default dictionary ...
+2025-10-21 09:39:58,854 | DEBUG | Building prefix dict from the default dictionary ...
+Loading model from cache /tmp/jieba.cache
+2025-10-21 09:39:58,854 | DEBUG | Loading model from cache /tmp/jieba.cache
+Loading model cost 0.644 seconds.
+2025-10-21 09:39:59,498 | DEBUG | Loading model cost 0.644 seconds.
+Prefix dict has been built successfully.
+2025-10-21 09:39:59,498 | DEBUG | Prefix dict has been built successfully.
+ 2025-10-21 09:40:13,055 | INFO | ✅ Loaded 270817 formulas. Tokenization ready.
+2025-10-21 09:40:13,061 | INFO | Auto-selected embedding device: cpu
+2025-10-21 09:40:13,061 | INFO | 🧩 尝试加载本地模型: /home/fusionshen/Desktop/LLM/ask_agent/models/sbert_offline_models/86741b4e3f5cb7765a600d3a3d55a0f6a6cb443d
+2025-10-21 09:40:13,062 | INFO | Load pretrained SentenceTransformer: /home/fusionshen/Desktop/LLM/ask_agent/models/sbert_offline_models/86741b4e3f5cb7765a600d3a3d55a0f6a6cb443d
+2025-10-21 09:40:13,970 | INFO | ✅ 已成功加载离线模型。
+2025-10-21 09:40:14,670 | INFO | ✅ Loaded embeddings from cache ((270817, 384))
+2025-10-21 09:40:14,670 | INFO | ✅ 初始化完成，用时 19.67s
+2025-10-21 09:40:14,670 | INFO | ✅ formula_api 初始化完成，用时 19.67s
+2025-10-21 09:40:14,670 | INFO | 🧹 已启动 session 定期清理任务。
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:9000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:37970 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36594 - "GET /openapi.json HTTP/1.1" 200 OK
+2025-10-21 09:44:43,742 | INFO | 🟢 [handle_chat] 开始处理 user=shenlan, input='帮我查看2022年10月2日的高炉工序能耗'
+2025-10-21 09:44:43,742 | INFO | ✅ 当前 slots: {'indicator': None, 'formula': None, 'formula_candidates': None, 'awaiting_confirmation': False, 'timeString': None, 'timeType': None}
+2025-10-21 09:44:43,742 | INFO | 🔹 填充 indicator: 帮我查看2022年10月2日的高炉工序能耗
+Batches: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 15.91it/s]
+2025-10-21 09:44:45,304 | INFO | ✅ formula_api.formula_query_dict 用时 1.56s, keys=['done', 'candidates']
+INFO:     127.0.0.1:55356 - "GET /chat?user_id=shenlan&message=%E5%B8%AE%E6%88%91%E6%9F%A5%E7%9C%8B2022%E5%B9%B410%E6%9C%882%E6%97%A5%E7%9A%84%E9%AB%98%E7%82%89%E5%B7%A5%E5%BA%8F%E8%83%BD%E8%80%97 HTTP/1.1" 200 OK
+2025-10-21 09:45:12,147 | INFO | 🟢 [handle_chat] 开始处理 user=shenlan, input='4'
+2025-10-21 09:45:12,147 | INFO | ✅ 当前 slots: {'indicator': '帮我查看2022年10月2日的高炉工序能耗', 'formula': None, 'formula_candidates': [{'number': 1, 'FORMULAID': 'GXNHLT1102.IXRL', 'FORMULANAME': '2高炉工序能耗实绩报出值', 'score': 67.0589, 'fuzzy_score': 77.9143, 'semantic_score': 50.5185, 'match_kind': 'hybrid'}, {'number': 2, 'FORMULAID': 'GXNHLT1102.IXPL.SUMVALUE', 'FORMULANAME': '2高炉工序能耗计划累计值', 'score': 66.7, 'fuzzy_score': 69.3, 'semantic_score': 68.3813, 'match_kind': 'hybrid'}, {'number': 3, 'FORMULAID': 'GXNHLT1100.IXRL.SUMVALUE', 'FORMULANAME': '高炉工序能耗实绩累计值', 'score': 66.046, 'fuzzy_score': 70.56, 'semantic_score': 56.9628, 'match_kind': 'hybrid'}, {'number': 4, 'FORMULAID': 'GXNHLT1100.IXRL', 'FORMULANAME': '高炉工序能耗实绩报出值', 'score': 66.0187, 'fuzzy_score': 72.72, 'semantic_score': 52.3919, 'match_kind': 'hybrid'}, {'number': 5, 'FORMULAID': 'GXNHLT1102.IXPL', 'FORMULANAME': '2高炉工序能耗计划报出值', 'score': 65.9957, 'fuzzy_score': 71.4214, 'semantic_score': 62.3896, 'match_kind': 'hybrid'}], 'awaiting_confirmation': False, 'timeString': None, 'timeType': None}
+2025-10-21 09:45:12,147 | INFO | ✅ 用户选择公式编号 4: 高炉工序能耗实绩报出值
+2025-10-21 09:45:12,673 | INFO | HTTP Request: GET http://192.168.92.13:11434/api/tags "HTTP/1.1 200 OK"
+2025-10-21 09:45:51,442 | INFO | HTTP Request: POST http://192.168.92.13:11434/api/chat "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:45270 - "GET /chat?user_id=shenlan&message=4 HTTP/1.1" 200 OK
+2025-10-21 09:46:34,307 | INFO | 🟢 [handle_chat] 开始处理 user=shenlan, input='2022年10月2日'
+2025-10-21 09:46:34,308 | INFO | ✅ 当前 slots: {'indicator': '高炉工序能耗实绩报出值', 'formula': 'GXNHLT1100.IXRL', 'formula_candidates': None, 'awaiting_confirmation': False, 'timeString': None, 'timeType': None}
+2025-10-21 09:46:34,377 | INFO | HTTP Request: GET http://192.168.92.13:11434/api/tags "HTTP/1.1 200 OK"
+2025-10-21 09:46:35,127 | INFO | HTTP Request: POST http://192.168.92.13:11434/api/chat "HTTP/1.1 200 OK"
+🟢 登录返回： {'error': None, 'data': {'token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiIxNDMiLCJ0ZW5hbnRpZCI6IjEwNSIsInVuYW1lIjoi566h55CG5ZGYIiwidG5hbWUiOiLlrp3pkqLmuZvmsZ_pkqLpk4HmnInpmZDlhazlj7giLCJ0c2lkZSI6IjEiLCJncm91cGlkIjoiMCIsInNsaWRpbmciOiIwIiwicnNpbmNlIjoiMTc2MTE1NDg5NiIsIm5iZiI6MTc2MTAxMDU5NiwiZXhwIjoxNzYxMTI2Mzk2LCJpc3MiOiJzaGJhb25lbmciLCJhdWQiOiJzaGJhb25lbmcifQ.D88Z3Cosp6ZwmPjscCZxchAl0v8-WEXWdawheD6byQw', 'expiresAt': '2025-10-22 17:45:36', 'tenantId': 105, 'tenancyName': 'zjis', 'userId': 143, 'userName': 'admin'}, 'status': 200, 'msg': '操作成功', 'duration': -1}
+{'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiIxNDMiLCJ0ZW5hbnRpZCI6IjEwNSIsInVuYW1lIjoi566h55CG5ZGYIiwidG5hbWUiOiLlrp3pkqLmuZvmsZ_pkqLpk4HmnInpmZDlhazlj7giLCJ0c2lkZSI6IjEiLCJncm91cGlkIjoiMCIsInNsaWRpbmciOiIwIiwicnNpbmNlIjoiMTc2MTE1NDg5NiIsIm5iZiI6MTc2MTAxMDU5NiwiZXhwIjoxNzYxMTI2Mzk2LCJpc3MiOiJzaGJhb25lbmciLCJhdWQiOiJzaGJhb25lbmcifQ.D88Z3Cosp6ZwmPjscCZxchAl0v8-WEXWdawheD6byQw', 'Content-Type': 'application/json'}
+{'expressionList': {'GXNHLT1100.IXRL': 'GXNHLT1100.IXRL'}, 'clock': '2022-10-02', 'timegranId': 'DAY'}
+{'error': None, 'data': {'GXNHLT1100.IXRL': '374.41'}, 'status': 200, 'msg': '操作成功', 'duration': -1}
+2025-10-21 09:46:37,116 | INFO | ✅ platform_api.query_platform 用时 0.58s, result={'GXNHLT1100.IXRL': '374.41'}
+2025-10-21 09:46:37,116 | INFO | ✅ handle_chat 全流程完成，用时 2.81s
+INFO:     127.0.0.1:56244 - "GET /chat?user_id=shenlan&message=2022%E5%B9%B410%E6%9C%882%E6%97%A5 HTTP/1.1" 200 OK
+
+
+🟢 登录返回： {'error': None, 'data': {'token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiIxMDU0IiwidGVuYW50aWQiOiIxMDUiLCJ1bmFtZSI6IuW8gOaUvuaOiOadg--8muiDvea6kOeuoeeQhiIsInRuYW1lIjoi5a6d6ZKi5rmb5rGf6ZKi6ZOB5pyJ6ZmQ5YWs5Y-4IiwidHNpZGUiOiIxIiwiZ3JvdXBpZCI6IjAiLCJzbGlkaW5nIjoiMCIsInJzaW5jZSI6IjE3NjEwOTkxODQiLCJuYmYiOjE3NjA5NTQ4ODQsImV4cCI6MTc2MTA3MDY4NCwiaXNzIjoic2hiYW9uZW5nIiwiYXVkIjoic2hiYW9uZW5nIn0.HuQp7cPscuyHyVW-6uO71YDkG6-FeRvw-0u6bMtCN-I', 'expiresAt': '2025-10-22 02:17:04', 'tenantId': 105, 'tenancyName': 'zjis', 'userId': 1054, 'userName': 'ecshare'}, 'status': 200, 'msg': '操作成功', 'duration': -1}
+{'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiIxMDU0IiwidGVuYW50aWQiOiIxMDUiLCJ1bmFtZSI6IuW8gOaUvuaOiOadg--8muiDvea6kOeuoeeQhiIsInRuYW1lIjoi5a6d6ZKi5rmb5rGf6ZKi6ZOB5pyJ6ZmQ5YWs5Y-4IiwidHNpZGUiOiIxIiwiZ3JvdXBpZCI6IjAiLCJzbGlkaW5nIjoiMCIsInJzaW5jZSI6IjE3NjEwOTkxODQiLCJuYmYiOjE3NjA5NTQ4ODQsImV4cCI6MTc2MTA3MDY4NCwiaXNzIjoic2hiYW9uZW5nIiwiYXVkIjoic2hiYW9uZW5nIn0.HuQp7cPscuyHyVW-6uO71YDkG6-FeRvw-0u6bMtCN-I', 'Content-Type': 'application/json'}
+{'expressionList': {'GXNHLT1100.IXRL': 'GXNHLT1100.IXRL'}, 'clock': '2022-10-02', 'timegranId': 'DAY'}
+{'error': None, 'data': None, 'status': 500, 'msg': '调用失败', 'duration': 0}
+查询结果： None
+
+🟢 登录返回： {'error': None, 'data': {'token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiIxNDMiLCJ0ZW5hbnRpZCI6IjEwNSIsInVuYW1lIjoi566h55CG5ZGYIiwidG5hbWUiOiLlrp3pkqLmuZvmsZ_pkqLpk4HmnInpmZDlhazlj7giLCJ0c2lkZSI6IjEiLCJncm91cGlkIjoiMCIsInNsaWRpbmciOiIwIiwicnNpbmNlIjoiMTc2MTA5OTk1MCIsIm5iZiI6MTc2MDk1NTY1MCwiZXhwIjoxNzYxMDcxNDUwLCJpc3MiOiJzaGJhb25lbmciLCJhdWQiOiJzaGJhb25lbmcifQ.6BCSZMkwutpR-QYTzvkxz8gXGlLcS28Eyj2m21gq1-Q', 'expiresAt': '2025-10-22 02:29:50', 'tenantId': 105, 'tenancyName': 'zjis', 'userId': 143, 'userName': 'admin'}, 'status': 200, 'msg': '操作成功', 'duration': -1}
+{'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiIxNDMiLCJ0ZW5hbnRpZCI6IjEwNSIsInVuYW1lIjoi566h55CG5ZGYIiwidG5hbWUiOiLlrp3pkqLmuZvmsZ_pkqLpk4HmnInpmZDlhazlj7giLCJ0c2lkZSI6IjEiLCJncm91cGlkIjoiMCIsInNsaWRpbmciOiIwIiwicnNpbmNlIjoiMTc2MTA5OTk1MCIsIm5iZiI6MTc2MDk1NTY1MCwiZXhwIjoxNzYxMDcxNDUwLCJpc3MiOiJzaGJhb25lbmciLCJhdWQiOiJzaGJhb25lbmcifQ.6BCSZMkwutpR-QYTzvkxz8gXGlLcS28Eyj2m21gq1-Q', 'Content-Type': 'application/json'}
+{'expressionList': {'GXNHLT1100.IXRL': 'GXNHLT1100.IXRL'}, 'clock': '2022-10-02', 'timegranId': 'DAY'}
+{'error': None, 'data': {'GXNHLT1100.IXRL': '374.41'}, 'status': 200, 'msg': '操作成功', 'duration': -1}
+查询结果： {'GXNHLT1100.IXRL': '374.41'}
+
+http://www.shbaoenergy.com:8081/api/api/services/Runtime/Authentication/UserTrustLoginAsync
+
+高炉工序能耗实绩累计值
+
+192.168.122.7 www.shbaoenergy.com
+
+{
+    "appId":"EC",
+    "userName":"ec@share",
+    "tenancyName":"zjis",
+    "timestamp":1755593290049,
+    "enc":"B1F6BCE403B31D8E75D834F90C9B990B"
+}
+
