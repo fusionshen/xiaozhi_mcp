@@ -57,7 +57,7 @@ async def startup_event():
 
 
 # ----------------------
-# GET 接口
+# GET/POST 接口
 # ----------------------
 @app.get("/chat")
 async def chat_get(
@@ -66,16 +66,10 @@ async def chat_get(
 ):
     return await handle_chat(user_id, message)
 
-
-# ----------------------
-# POST 接口
-# ----------------------
 @app.post("/chat")
 async def chat_post(request: Request):
     data = await request.json()
-    user_id = data.get("user_id")
-    message = data.get("message", "").strip()
-    return await handle_chat(user_id, message)
+    return await handle_chat(data.get("user_id"), data.get("message", "").strip())
 
 
 # ----------------------
@@ -109,7 +103,7 @@ async def handle_chat(user_id: str, user_input: str):
         slots = state["slots"]
         logger.info(f"✅ 当前 slots: {slots}")
 
-        # Step1: 用户在选择候选公式
+        # Step1️⃣ 用户在选择候选公式
         if slots.get("formula_candidates"):
             if user_input.isdigit():
                 idx = int(user_input.strip()) - 1
@@ -125,19 +119,33 @@ async def handle_chat(user_id: str, user_input: str):
                 else:
                     return {"message": f"请输入编号 1-{len(candidates)} 选择公式。", "state": state}
             else:
-                return {"message": f"请输入编号 1-{len(slots['formula_candidates'])} 选择公式。", "state": state}
+                # 🧩 FIX: 若不是数字，说明用户继续输入自然语言，则清空候选并重新解析输入
+                logger.info("🧩 非数字输入，清空候选列表并重新解析输入。")
+                slots["formula_candidates"] = None
+                slots["formula"] = None
+                await update_state(user_id, state)
 
-        # Step2: slots 中没有公式，用户输入视为指标名称
+        # Step2️⃣ 调用 llm_parser 解析当前输入
+        # 🧩 FIX: 所有非数字输入都应该经过 llm_parser
+        parsed = await parse_user_input(user_input)
+        logger.info(f"🔍 LLM 解析结果: {parsed}")
+
+        # 合并 slots（仅补全缺失信息，不覆盖已有）
+        for key in ["indicator", "timeString", "timeType"]:
+            if parsed.get(key):
+                slots[key] = parsed[key]
+
+        await update_state(user_id, state)
+
+        # Step3️⃣ 若 indicator 缺失
         if not slots.get("indicator"):
-            slots["indicator"] = user_input.strip()
-            await update_state(user_id, state)
-            logger.info(f"🔹 填充 indicator: {slots['indicator']}")
+            return {"message": "我没有识别到要查询的指标名称，请重新输入。", "state": state}
 
-        # Step3: 调用 formula_api 查询公式
+        # Step4️⃣ 调用 formula_api 查询公式
         if not slots.get("formula") and slots.get("indicator"):
             t0 = time.time()
             formula_resp = await asyncio.to_thread(formula_api.formula_query_dict, slots["indicator"])
-            logger.info(f"✅ formula_api.formula_query_dict 用时 {time.time() - t0:.2f}s, keys={list(formula_resp.keys())}")
+            logger.info(f"✅ formula_api.formula_query_dict 用时 {time.time() - t0:.2f}s")
 
             if formula_resp.get("done"):
                 slots["formula"] = formula_resp["exact_matches"][0]["FORMULAID"]
@@ -156,16 +164,11 @@ async def handle_chat(user_id: str, user_input: str):
                 else:
                     return {"message": "未找到匹配公式，请重新输入指标名称。", "state": state}
 
-        # Step4: 检查时间信息
+        # Step5️⃣ 检查时间信息
         if not (slots.get("timeString") and slots.get("timeType")):
-            parsed = await parse_user_input(user_input)
-            slots["timeString"] = parsed.get("timeString") or slots.get("timeString")
-            slots["timeType"] = parsed.get("timeType") or slots.get("timeType")
-            await update_state(user_id, state)
-            if not (slots.get("timeString") and slots.get("timeType")):
-                return {"message": f"好的，要查【{slots['indicator']}】，请告诉我时间。", "state": state}
+            return {"message": f"好的，要查【{slots['indicator']}】，请告诉我时间。", "state": state}
 
-        # Step5: slots 完整，调用平台接口
+        # Step6️⃣ 调用平台接口
         t1 = time.time()
         result = await platform_api.query_platform(
             formula=slots["formula"],
@@ -174,7 +177,7 @@ async def handle_chat(user_id: str, user_input: str):
         )
         logger.info(f"✅ platform_api.query_platform 用时 {time.time() - t1:.2f}s, result={result}")
 
-        # Step6: 返回结果  {'error': None, 'data': {'GXNHLT1100.IXRL': '374.41'}, 'status': 200, 'msg': '操作成功', 'duration': -1}
+        # 返回结果  {'error': None, 'data': {'GXNHLT1100.IXRL': '374.41'}, 'status': 200, 'msg': '操作成功', 'duration': -1}
         reply_lines = [
             f"✅ 指标: {slots['indicator']}",
             f"公式编码: {slots['formula']}",
@@ -182,7 +185,7 @@ async def handle_chat(user_id: str, user_input: str):
             f"结果: {result.get(slots['formula'])} {result.get('unit', '')}"
         ]
 
-        # Step7: 调用完成，清空 slots
+        # Step7️⃣ 清空 slots
         state["slots"] = {
             "indicator": None,
             "formula": None,
