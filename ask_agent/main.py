@@ -174,12 +174,12 @@ async def handle_chat(user_id: str, user_input: str):
         )
         logger.info(f"✅ platform_api.query_platform 用时 {time.time() - t1:.2f}s, result={result}")
 
-        # Step6: 返回结果
+        # Step6: 返回结果  {'error': None, 'data': {'GXNHLT1100.IXRL': '374.41'}, 'status': 200, 'msg': '操作成功', 'duration': -1}
         reply_lines = [
             f"✅ 指标: {slots['indicator']}",
             f"公式编码: {slots['formula']}",
             f"时间: {slots['timeString']} ({slots['timeType']})",
-            f"结果: {result.get('value')} {result.get('unit', '')}"
+            f"结果: {result.get(slots['formula'])} {result.get('unit', '')}"
         ]
 
         # Step7: 调用完成，清空 slots

@@ -1,10 +1,71 @@
+(myenv) fusionshen@fusionshen-ThinkPad-T14-Gen-1:~/Desktop/LLM/ask_agent$ uvicorn main:app --host 0.0.0.0 --port 9000
+✅ Using ChatOllama from langchain-ollama
+/home/fusionshen/myenv/lib/python3.12/site-packages/jieba/_compat.py:18: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+INFO:     Started server process [2765693]
+INFO:     Waiting for application startup.
+2025-10-21 09:39:55,003 | INFO | 🔄 正在初始化公式数据（full load）...
+Building prefix dict from the default dictionary ...
+2025-10-21 09:39:58,854 | DEBUG | Building prefix dict from the default dictionary ...
+Loading model from cache /tmp/jieba.cache
+2025-10-21 09:39:58,854 | DEBUG | Loading model from cache /tmp/jieba.cache
+Loading model cost 0.644 seconds.
+2025-10-21 09:39:59,498 | DEBUG | Loading model cost 0.644 seconds.
+Prefix dict has been built successfully.
+2025-10-21 09:39:59,498 | DEBUG | Prefix dict has been built successfully.
+ 2025-10-21 09:40:13,055 | INFO | ✅ Loaded 270817 formulas. Tokenization ready.
+2025-10-21 09:40:13,061 | INFO | Auto-selected embedding device: cpu
+2025-10-21 09:40:13,061 | INFO | 🧩 尝试加载本地模型: /home/fusionshen/Desktop/LLM/ask_agent/models/sbert_offline_models/86741b4e3f5cb7765a600d3a3d55a0f6a6cb443d
+2025-10-21 09:40:13,062 | INFO | Load pretrained SentenceTransformer: /home/fusionshen/Desktop/LLM/ask_agent/models/sbert_offline_models/86741b4e3f5cb7765a600d3a3d55a0f6a6cb443d
+2025-10-21 09:40:13,970 | INFO | ✅ 已成功加载离线模型。
+2025-10-21 09:40:14,670 | INFO | ✅ Loaded embeddings from cache ((270817, 384))
+2025-10-21 09:40:14,670 | INFO | ✅ 初始化完成，用时 19.67s
+2025-10-21 09:40:14,670 | INFO | ✅ formula_api 初始化完成，用时 19.67s
+2025-10-21 09:40:14,670 | INFO | 🧹 已启动 session 定期清理任务。
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:9000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:37970 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36594 - "GET /openapi.json HTTP/1.1" 200 OK
+2025-10-21 09:44:43,742 | INFO | 🟢 [handle_chat] 开始处理 user=shenlan, input='帮我查看2022年10月2日的高炉工序能耗'
+2025-10-21 09:44:43,742 | INFO | ✅ 当前 slots: {'indicator': None, 'formula': None, 'formula_candidates': None, 'awaiting_confirmation': False, 'timeString': None, 'timeType': None}
+2025-10-21 09:44:43,742 | INFO | 🔹 填充 indicator: 帮我查看2022年10月2日的高炉工序能耗
+Batches: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 15.91it/s]
+2025-10-21 09:44:45,304 | INFO | ✅ formula_api.formula_query_dict 用时 1.56s, keys=['done', 'candidates']
+INFO:     127.0.0.1:55356 - "GET /chat?user_id=shenlan&message=%E5%B8%AE%E6%88%91%E6%9F%A5%E7%9C%8B2022%E5%B9%B410%E6%9C%882%E6%97%A5%E7%9A%84%E9%AB%98%E7%82%89%E5%B7%A5%E5%BA%8F%E8%83%BD%E8%80%97 HTTP/1.1" 200 OK
+2025-10-21 09:45:12,147 | INFO | 🟢 [handle_chat] 开始处理 user=shenlan, input='4'
+2025-10-21 09:45:12,147 | INFO | ✅ 当前 slots: {'indicator': '帮我查看2022年10月2日的高炉工序能耗', 'formula': None, 'formula_candidates': [{'number': 1, 'FORMULAID': 'GXNHLT1102.IXRL', 'FORMULANAME': '2高炉工序能耗实绩报出值', 'score': 67.0589, 'fuzzy_score': 77.9143, 'semantic_score': 50.5185, 'match_kind': 'hybrid'}, {'number': 2, 'FORMULAID': 'GXNHLT1102.IXPL.SUMVALUE', 'FORMULANAME': '2高炉工序能耗计划累计值', 'score': 66.7, 'fuzzy_score': 69.3, 'semantic_score': 68.3813, 'match_kind': 'hybrid'}, {'number': 3, 'FORMULAID': 'GXNHLT1100.IXRL.SUMVALUE', 'FORMULANAME': '高炉工序能耗实绩累计值', 'score': 66.046, 'fuzzy_score': 70.56, 'semantic_score': 56.9628, 'match_kind': 'hybrid'}, {'number': 4, 'FORMULAID': 'GXNHLT1100.IXRL', 'FORMULANAME': '高炉工序能耗实绩报出值', 'score': 66.0187, 'fuzzy_score': 72.72, 'semantic_score': 52.3919, 'match_kind': 'hybrid'}, {'number': 5, 'FORMULAID': 'GXNHLT1102.IXPL', 'FORMULANAME': '2高炉工序能耗计划报出值', 'score': 65.9957, 'fuzzy_score': 71.4214, 'semantic_score': 62.3896, 'match_kind': 'hybrid'}], 'awaiting_confirmation': False, 'timeString': None, 'timeType': None}
+2025-10-21 09:45:12,147 | INFO | ✅ 用户选择公式编号 4: 高炉工序能耗实绩报出值
+2025-10-21 09:45:12,673 | INFO | HTTP Request: GET http://192.168.92.13:11434/api/tags "HTTP/1.1 200 OK"
+2025-10-21 09:45:51,442 | INFO | HTTP Request: POST http://192.168.92.13:11434/api/chat "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:45270 - "GET /chat?user_id=shenlan&message=4 HTTP/1.1" 200 OK
+2025-10-21 09:46:34,307 | INFO | 🟢 [handle_chat] 开始处理 user=shenlan, input='2022年10月2日'
+2025-10-21 09:46:34,308 | INFO | ✅ 当前 slots: {'indicator': '高炉工序能耗实绩报出值', 'formula': 'GXNHLT1100.IXRL', 'formula_candidates': None, 'awaiting_confirmation': False, 'timeString': None, 'timeType': None}
+2025-10-21 09:46:34,377 | INFO | HTTP Request: GET http://192.168.92.13:11434/api/tags "HTTP/1.1 200 OK"
+2025-10-21 09:46:35,127 | INFO | HTTP Request: POST http://192.168.92.13:11434/api/chat "HTTP/1.1 200 OK"
+🟢 登录返回： {'error': None, 'data': {'token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiIxNDMiLCJ0ZW5hbnRpZCI6IjEwNSIsInVuYW1lIjoi566h55CG5ZGYIiwidG5hbWUiOiLlrp3pkqLmuZvmsZ_pkqLpk4HmnInpmZDlhazlj7giLCJ0c2lkZSI6IjEiLCJncm91cGlkIjoiMCIsInNsaWRpbmciOiIwIiwicnNpbmNlIjoiMTc2MTE1NDg5NiIsIm5iZiI6MTc2MTAxMDU5NiwiZXhwIjoxNzYxMTI2Mzk2LCJpc3MiOiJzaGJhb25lbmciLCJhdWQiOiJzaGJhb25lbmcifQ.D88Z3Cosp6ZwmPjscCZxchAl0v8-WEXWdawheD6byQw', 'expiresAt': '2025-10-22 17:45:36', 'tenantId': 105, 'tenancyName': 'zjis', 'userId': 143, 'userName': 'admin'}, 'status': 200, 'msg': '操作成功', 'duration': -1}
+{'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiIxNDMiLCJ0ZW5hbnRpZCI6IjEwNSIsInVuYW1lIjoi566h55CG5ZGYIiwidG5hbWUiOiLlrp3pkqLmuZvmsZ_pkqLpk4HmnInpmZDlhazlj7giLCJ0c2lkZSI6IjEiLCJncm91cGlkIjoiMCIsInNsaWRpbmciOiIwIiwicnNpbmNlIjoiMTc2MTE1NDg5NiIsIm5iZiI6MTc2MTAxMDU5NiwiZXhwIjoxNzYxMTI2Mzk2LCJpc3MiOiJzaGJhb25lbmciLCJhdWQiOiJzaGJhb25lbmcifQ.D88Z3Cosp6ZwmPjscCZxchAl0v8-WEXWdawheD6byQw', 'Content-Type': 'application/json'}
+{'expressionList': {'GXNHLT1100.IXRL': 'GXNHLT1100.IXRL'}, 'clock': '2022-10-02', 'timegranId': 'DAY'}
+{'error': None, 'data': {'GXNHLT1100.IXRL': '374.41'}, 'status': 200, 'msg': '操作成功', 'duration': -1}
+2025-10-21 09:46:37,116 | INFO | ✅ platform_api.query_platform 用时 0.58s, result={'GXNHLT1100.IXRL': '374.41'}
+2025-10-21 09:46:37,116 | INFO | ✅ handle_chat 全流程完成，用时 2.81s
+INFO:     127.0.0.1:56244 - "GET /chat?user_id=shenlan&message=2022%E5%B9%B410%E6%9C%882%E6%97%A5 HTTP/1.1" 200 OK
+
+
 🟢 登录返回： {'error': None, 'data': {'token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiIxMDU0IiwidGVuYW50aWQiOiIxMDUiLCJ1bmFtZSI6IuW8gOaUvuaOiOadg--8muiDvea6kOeuoeeQhiIsInRuYW1lIjoi5a6d6ZKi5rmb5rGf6ZKi6ZOB5pyJ6ZmQ5YWs5Y-4IiwidHNpZGUiOiIxIiwiZ3JvdXBpZCI6IjAiLCJzbGlkaW5nIjoiMCIsInJzaW5jZSI6IjE3NjEwOTkxODQiLCJuYmYiOjE3NjA5NTQ4ODQsImV4cCI6MTc2MTA3MDY4NCwiaXNzIjoic2hiYW9uZW5nIiwiYXVkIjoic2hiYW9uZW5nIn0.HuQp7cPscuyHyVW-6uO71YDkG6-FeRvw-0u6bMtCN-I', 'expiresAt': '2025-10-22 02:17:04', 'tenantId': 105, 'tenancyName': 'zjis', 'userId': 1054, 'userName': 'ecshare'}, 'status': 200, 'msg': '操作成功', 'duration': -1}
 {'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiIxMDU0IiwidGVuYW50aWQiOiIxMDUiLCJ1bmFtZSI6IuW8gOaUvuaOiOadg--8muiDvea6kOeuoeeQhiIsInRuYW1lIjoi5a6d6ZKi5rmb5rGf6ZKi6ZOB5pyJ6ZmQ5YWs5Y-4IiwidHNpZGUiOiIxIiwiZ3JvdXBpZCI6IjAiLCJzbGlkaW5nIjoiMCIsInJzaW5jZSI6IjE3NjEwOTkxODQiLCJuYmYiOjE3NjA5NTQ4ODQsImV4cCI6MTc2MTA3MDY4NCwiaXNzIjoic2hiYW9uZW5nIiwiYXVkIjoic2hiYW9uZW5nIn0.HuQp7cPscuyHyVW-6uO71YDkG6-FeRvw-0u6bMtCN-I', 'Content-Type': 'application/json'}
 {'expressionList': {'GXNHLT1100.IXRL': 'GXNHLT1100.IXRL'}, 'clock': '2022-10-02', 'timegranId': 'DAY'}
 {'error': None, 'data': None, 'status': 500, 'msg': '调用失败', 'duration': 0}
 查询结果： None
 
+🟢 登录返回： {'error': None, 'data': {'token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiIxNDMiLCJ0ZW5hbnRpZCI6IjEwNSIsInVuYW1lIjoi566h55CG5ZGYIiwidG5hbWUiOiLlrp3pkqLmuZvmsZ_pkqLpk4HmnInpmZDlhazlj7giLCJ0c2lkZSI6IjEiLCJncm91cGlkIjoiMCIsInNsaWRpbmciOiIwIiwicnNpbmNlIjoiMTc2MTA5OTk1MCIsIm5iZiI6MTc2MDk1NTY1MCwiZXhwIjoxNzYxMDcxNDUwLCJpc3MiOiJzaGJhb25lbmciLCJhdWQiOiJzaGJhb25lbmcifQ.6BCSZMkwutpR-QYTzvkxz8gXGlLcS28Eyj2m21gq1-Q', 'expiresAt': '2025-10-22 02:29:50', 'tenantId': 105, 'tenancyName': 'zjis', 'userId': 143, 'userName': 'admin'}, 'status': 200, 'msg': '操作成功', 'duration': -1}
+{'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiIxNDMiLCJ0ZW5hbnRpZCI6IjEwNSIsInVuYW1lIjoi566h55CG5ZGYIiwidG5hbWUiOiLlrp3pkqLmuZvmsZ_pkqLpk4HmnInpmZDlhazlj7giLCJ0c2lkZSI6IjEiLCJncm91cGlkIjoiMCIsInNsaWRpbmciOiIwIiwicnNpbmNlIjoiMTc2MTA5OTk1MCIsIm5iZiI6MTc2MDk1NTY1MCwiZXhwIjoxNzYxMDcxNDUwLCJpc3MiOiJzaGJhb25lbmciLCJhdWQiOiJzaGJhb25lbmcifQ.6BCSZMkwutpR-QYTzvkxz8gXGlLcS28Eyj2m21gq1-Q', 'Content-Type': 'application/json'}
+{'expressionList': {'GXNHLT1100.IXRL': 'GXNHLT1100.IXRL'}, 'clock': '2022-10-02', 'timegranId': 'DAY'}
+{'error': None, 'data': {'GXNHLT1100.IXRL': '374.41'}, 'status': 200, 'msg': '操作成功', 'duration': -1}
+查询结果： {'GXNHLT1100.IXRL': '374.41'}
+
 http://www.shbaoenergy.com:8081/api/api/services/Runtime/Authentication/UserTrustLoginAsync
+
+高炉工序能耗实绩累计值
 
 192.168.122.7 www.shbaoenergy.com
 
@@ -16,217 +77,3 @@ http://www.shbaoenergy.com:8081/api/api/services/Runtime/Authentication/UserTrus
     "enc":"B1F6BCE403B31D8E75D834F90C9B990B"
 }
 
-
-
-package com.baosight.demo.controller;
-
-import com.baosight.iplat4j.core.web.threadlocal.UserSession;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.http.*;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
-
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.util.HashMap;
-import java.util.Map;
-
-@RestController
-@RequestMapping("/NGOAuth")
-public class NGOAuthController {
-
-    @Value("${NGOAuth.TenantName}")
-    private String tenantName;
-
-    @Value("${NGOAuth.AppKey}")
-    private String appKey;
-
-    @Value("${NGOAuth.AppSecret}")
-    private String appSecret;
-
-    @Value("${NGOAuth.PlatformApiDomain}")
-    private String platformApiDomain;
-
-    @Value("${NGOAuth.PlatformDomain}")
-    private String platformDomain;
-
-    private final RestTemplate restTemplate = new RestTemplate();
-    private final ObjectMapper mapper = new ObjectMapper();
-
-    /**
-     * 合并后的 OAuth 登录入口：
-     * 直接用 code 换用户信息，生成 ENC，并重定向到 TrustLogin
-     */
-    @GetMapping("/Login")
-    public void login(@RequestParam(required = false) String returnUrl,
-                      HttpServletRequest request,
-                      HttpServletResponse response) throws Exception {
-        // 保证 returnUrl 格式正确
-        if (returnUrl != null) {
-            returnUrl = returnUrl.replaceAll("^https?://[^/]+", "");
-        }
-        String redirectUrl = (returnUrl == null || returnUrl.trim().isEmpty())
-                ? platformDomain + "/"
-                : platformDomain + returnUrl;
-        // 获取当前java4j用户信息，TODO:需要调用能源查询当前用户存在，然后做新增用户操作，贵叔让我先用用户管理的测，但是肯定没有匿名接口掉
-        String loginName = UserSession.getLoginName();
-        String loginCName = UserSession.getLoginCName();
-        String userId = UserSession.getUserUuid();
-        // 构造参数
-        String userName = "liyin";
-        long ts = System.currentTimeMillis();
-        String enc = md5(tenantName + ":" + appKey + ":" + userName + ":" + ts + ":" + appSecret);
-
-        Map<String, Object> body = new HashMap<>();
-        body.put("appId", appKey);
-        body.put("userName", userName);
-        body.put("tenancyName", tenantName);
-        body.put("timestamp", ts);
-        body.put("enc", enc);
-
-        // 构造 HTTP 请求
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(body, headers);
-
-        String apiUrl = platformApiDomain + "/api/services/Runtime/Authentication/UserTrustLoginAsync";
-
-        ResponseEntity<String> apiResponse = restTemplate.postForEntity(apiUrl, requestEntity, String.class);
-
-        if (apiResponse.getStatusCode() == HttpStatus.OK) {
-            JsonNode json = mapper.readTree(apiResponse.getBody());
-            if (json.has("status") && "200".equals(json.get("status").asText()) &&
-                    json.has("data") && json.get("data").has("token")) {
-                String token = json.get("data").get("token").asText();
-                // 写入 Cookie
-                Cookie cookie = new Cookie("acct", token);
-                cookie.setPath("/");
-                //cookie.setDomain("localhost"); // 这里必须和 nginx 对外域名一致
-                cookie.setHttpOnly(true);
-                response.addCookie(cookie);
-
-                // 重定向回原始 returnUrl
-                response.sendRedirect(redirectUrl);
-                return;
-            }
-        }
-
-        response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "登录失败");
-    }
-
-    // 判断是否已经有 AuthToken cookie
-    private boolean hasAuthToken(HttpServletRequest request) {
-        if (request.getCookies() != null) {
-            for (Cookie cookie : request.getCookies()) {
-                if ("acct".equals(cookie.getName()) && cookie.getValue() != null && !cookie.getValue().isEmpty()) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    /**
-     * 自定义登录在nginx代理情况下会不停重定向
-     */
-    public void trustLogin(@RequestParam(required = false) String returnUrl,
-                      HttpServletRequest request,
-                      HttpServletResponse response) throws Exception {
-
-        HttpSession session = request.getSession(true);
-
-        // 已经登录过，直接跳转目标页面，不再拼 TrustLogin
-        if ("true".equals(session.getAttribute("loggedIn"))) {
-            String redirectUrl = platformDomain; // 默认首页
-            if (returnUrl != null && !returnUrl.trim().isEmpty()) {
-                // 去掉远端协议/IP/端口，只保留路径
-                String path = returnUrl.replaceAll("^https?://[^/]+", "");
-                // 拼接本地 platformDomain（含端口）
-                redirectUrl = platformDomain + path;
-            }
-            response.sendRedirect(redirectUrl);
-            return;
-        }
-
-        // 1. 去掉 returnUrl 中的协议/IP/端口，只保留路径
-        if (returnUrl != null) {
-            returnUrl = returnUrl.replaceAll("^https?://[^/]+", "");
-        }
-        // 2. 如果 returnUrl 为空，则跳到首页
-        //if (returnUrl == null || returnUrl.trim().isEmpty()) {
-        //    returnUrl = "/";
-        //}
-        // ⚠️ 这里不要对完整 URL 再做 URLEncoder.encode(platformDomain + returnUrl) From chatgpt
-        // 这里必须要URLEncoder.encode，不然会跳转到http://192.168.122.179:8081/EP.Web/EC.Web/v/EC/NYMC42
-        returnUrl = (returnUrl == null || returnUrl.trim().isEmpty()) ? "/" : URLEncoder.encode(platformDomain + returnUrl, "UTF-8");
-
-        // 3. 获取用户名（示例）
-        String userName = "liyin";
-
-        // 4. 生成 ENC
-        long ts = System.currentTimeMillis();
-        String enc = md5(tenantName + ":" + appKey + ":" + userName + ":" + ts + ":" + appSecret);
-
-        // 5. 拼接 TrustLogin URL
-        String trustLoginUrl = platformApiDomain + "/TrustLogin/Login"
-                + "?appId=" + appKey
-                + "&username=" + URLEncoder.encode(userName, "UTF-8") // query 参数编码
-                + "&TenancyName=" + tenantName
-                + "&Timestamp=" + ts
-                + "&Enc=" + enc
-                + "&returnUrl=" + returnUrl; // 保留原路径，不再编码
-
-        // 6. 设置登录标记
-        session.setAttribute("loggedIn", "true");
-
-        // 7. 重定向
-        response.sendRedirect(trustLoginUrl);
-    }
-
-
-    /** 登出 */
-    @GetMapping("/Logout")
-    public void logout(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        // 1. 获取当前会话
-        HttpSession session = request.getSession(false);
-        if (session != null) {
-            // 标记已注销（iPlat4J 可用此标识在前端拦截）
-            session.setAttribute("iplat.logout", "1");
-            // 销毁会话
-            session.invalidate();
-        }
-        // 2. 清除 Spring Security 登录信息
-        SecurityContextHolder.clearContext();
-        // 3. 统一认证登出地址（可从配置文件读取）
-        String logoutUrl = "https://sso.example.com/logout"; // 改成实际 SSO 登出地址
-        // 4. 登出后回跳地址（这里跳回系统首页或登录页）
-        String returnUrl = "http://localhost:8090/kqenergy"; // 改成实际应用入口
-        //String redirectUrl = logoutUrl + "?service=" + URLEncoder.encode(returnUrl, "UTF-8");
-        // 5. 重定向到 SSO 登出
-        response.sendRedirect(returnUrl);
-    }
-
-    /** 生成 MD5（大写） */
-    private String md5(String text) throws Exception {
-        MessageDigest md = MessageDigest.getInstance("MD5");
-        byte[] digest = md.digest(text.getBytes(StandardCharsets.UTF_8));
-        StringBuilder sb = new StringBuilder();
-        for (byte b : digest) {
-            sb.append(String.format("%02X", b));
-        }
-        return sb.toString();
-    }
-
-    /** Java 8 兼容 isBlank */
-    private static boolean isBlank(String str) {
-        return str == null || str.trim().isEmpty();
-    }
-}
