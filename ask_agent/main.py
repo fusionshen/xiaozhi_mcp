@@ -173,7 +173,7 @@ async def handle_chat(user_id: str, user_input: str):
 
         # Step4️⃣ 若 indicator 缺失
         if not slots.get("indicator"):
-            return {"message": "我没有识别到要查询的指标名称，请重新输入。", "state": state}
+            return {"message": "请告诉我您要查询的指标名称。", "state": state}
 
         # Step5️⃣ 调用 formula_api 匹配公式
         if not slots.get("formula") and slots.get("indicator"):
