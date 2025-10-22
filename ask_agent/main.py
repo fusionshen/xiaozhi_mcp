@@ -66,7 +66,6 @@ async def chat_get(
 ):
     return await handle_chat(user_id, message)
 
-
 @app.post("/chat")
 async def chat_post(request: Request):
     data = await request.json()
@@ -189,6 +188,49 @@ async def handle_chat(user_id: str, user_input: str):
             else:
                 candidates = formula_resp.get("candidates", [])
                 if candidates:
+                    # 🆕 新增逻辑：如果第一个候选评分大于100，直接选择
+                    if candidates[0].get('score', 0) > 100:
+                        chosen = candidates[0]
+                        slots["formula"] = chosen["FORMULAID"]
+                        slots["indicator"] = chosen["FORMULANAME"]
+                        slots["formula_candidates"] = None
+                        await update_state(user_id, state)
+                        logger.info(f"✅ 自动选择高分候选公式: {chosen['FORMULANAME']} (score: {chosen.get('score', 0)})")
+                        
+                        # 🆕 检查时间信息是否完整
+                        if not (slots.get("timeString") and slots.get("timeType")):
+                            return {"message": f"好的，要查【{slots['indicator']}】，请告诉我时间。", "state": state}
+                        
+                        # 🆕 直接调用平台查询
+                        t1 = time.time()
+                        result = await platform_api.query_platform(
+                            formula=slots["formula"],
+                            timeString=slots["timeString"],
+                            timeType=slots["timeType"]
+                        )
+                        logger.info(f"✅ platform_api.query_platform 用时 {time.time() - t1:.2f}s, result={result}")
+                        
+                        reply_lines = [
+                            f"✅ 指标: {slots['indicator']}",
+                            f"公式编码: {slots['formula']}",
+                            f"时间: {slots['timeString']} ({slots['timeType']})",
+                            f"结果: {result.get(slots['formula'])} {result.get('unit', '')}"
+                        ]
+                        
+                        # 🆕 清空状态
+                        state["slots"] = {
+                            "indicator": None,
+                            "formula": None,
+                            "formula_candidates": None,
+                            "awaiting_confirmation": False,
+                            "timeString": None,
+                            "timeType": None
+                        }
+                        await update_state(user_id, state)
+                        logger.info(f"✅ handle_chat 全流程完成，用时 {time.time() - total_start:.2f}s")
+                        return JSONResponse(content={"message": "\n".join(reply_lines), "state": state})
+                    
+                    # 原有逻辑：显示候选列表供用户选择
                     slots["formula_candidates"] = candidates[:TOP_N]
                     await update_state(user_id, state)
                     msg_lines = ["请从以下候选公式选择编号："]
