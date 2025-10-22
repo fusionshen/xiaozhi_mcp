@@ -18,8 +18,10 @@ from rapidfuzz import process, fuzz
 try:
     from sentence_transformers import SentenceTransformer
     HAVE_ST = True
-except Exception:
+    print(f"✅ sentence-transformers 版本: 5.1.1")
+except Exception as e:
     HAVE_ST = False
+    print(f"❌ sentence-transformers 导入失败: {e}")
 
 # ================= 日志配置 =================
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
@@ -155,12 +157,14 @@ def initialize():
     except Exception as e:
         logger.exception("❌ Failed to load CSV")
         raise RuntimeError(f"Failed to load CSV: {e}")
-
+    
+    print(f"HAVE_ST : {HAVE_ST}")
     # ---- 尝试加载嵌入模型 ----
     if HAVE_ST:
         device = select_embedding_device()
         try:
             # ✅ 优先加载本地模型
+            print(f"OFFLINE_MODEL_PATH:{OFFLINE_MODEL_PATH}") 
             if os.path.exists(OFFLINE_MODEL_PATH):
                 logger.info(f"🧩 尝试加载本地模型: {OFFLINE_MODEL_PATH}")
                 _embedding_model = SentenceTransformer(OFFLINE_MODEL_PATH, device=device)

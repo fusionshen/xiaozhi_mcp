@@ -1,0 +1,92 @@
+INFO:     Uvicorn running on http://0.0.0.0:9000 (Press CTRL+C to quit)
+2025-10-21 12:58:16,353 | INFO | 🟢 [handle_chat] 开始处理 user=shenlan, input='帮我查看2022年10月2日的高炉工序能耗'
+2025-10-21 12:58:16,354 | INFO | ✅ 当前 slots: {'indicator': None, 'formula': None, 'formula_candidates': None, 'awaiting_confirmation': False, 'timeString': None, 'timeType': None}
+⚠️ Remote Ollama not reachable:
+🔄 Falling back to local model: qwen2.5:1.5b
+❌ LLM 调用失败: All connection attempts failed
+2025-10-21 12:58:22,443 | INFO | 🔍 LLM 解析结果: {'indicator': None, 'timeString': None, 'timeType': None}
+INFO:     127.0.0.1:59381 - "GET /chat?user_id=shenlan&message=%E5%B8%AE%E6%88%91%E6%9F%A5%E7%9C%8B2022%E5%B9%B410%E6%9C%882%E6%97%A5%E7%9A%84%E9%AB%98%E7%82%89%E5%B7%A5%E5%BA%8F%E8%83%BD%E8%80%97 HTTP/1.1" 200 OK
+[agent_state] 清理过期会话: ['shenlan']
+INFO:     192.168.120.252:7006 - "OPTIONS /openapi.json HTTP/1.1" 200 OK
+INFO:     192.168.120.252:13377 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     192.168.120.252:1395 - "OPTIONS /chat?user_id=test1&message=%E5%B8%AE%E6%88%91%E6%9F%A5%E7%9C%8B2022%E5%B9%B410%E6%9C%882%E6%97%A5%E7%9A%84%E9%AB%98%E7%82%89%E5%B7%A5%E5%BA%8F%E8%83%BD%E8%80%97 HTTP/1.1" 200 OK
+2025-10-21 13:39:44,893 | INFO | 🟢 [handle_chat] 开始处理 user=test1, input='帮我查看2022年10月2日的高炉工序能耗'
+2025-10-21 13:39:44,893 | INFO | ✅ 当前 slots: {'indicator': None, 'formula': None, 'formula_candidates': None, 'awaiting_confirmation': False, 'timeString': None, 'timeType': None}
+2025-10-21 13:39:45,222 | INFO | HTTP Request: GET http://192.168.92.13:11434/api/tags "HTTP/1.1 200 OK"
+2025-10-21 13:39:46,581 | INFO | HTTP Request: POST http://192.168.92.13:11434/api/chat "HTTP/1.1 200 OK"
+2025-10-21 13:39:47,847 | INFO | 🔍 LLM 解析结果: {'indicator': '高炉工序能耗', 'timeString': '2022-10-02', 'timeType': 'DAY'}
+2025-10-21 13:39:49,253 | INFO | ✅ formula_api.formula_query_dict 用时 1.41s
+INFO:     192.168.120.252:14165 - "GET /chat?user_id=test1&message=%E5%B8%AE%E6%88%91%E6%9F%A5%E7%9C%8B2022%E5%B9%B410%E6%9C%882%E6%97%A5%E7%9A%84%E9%AB%98%E7%82%89%E5%B7%A5%E5%BA%8F%E8%83%BD%E8%80%97 HTTP/1.1" 200 OK
+INFO:     192.168.120.252:14358 - "OPTIONS /chat?user_id=test1&message=1 HTTP/1.1" 200 OK
+2025-10-21 13:40:38,050 | INFO | 🟢 [handle_chat] 开始处理 user=test1, input='1'
+2025-10-21 13:40:38,050 | INFO | ✅ 当前 slots: {'indicator': '高炉工序能耗', 'formula': None, 'formula_candidates': [{'number': 2, 'FORMULAID': 'PHNHLT1101.IXRL', 'FORMULANAME': '"1高炉工序平衡能耗实绩报出值"', 'score': 109.08, 'match_kind': 'fuzzy_token_set'}, {'number': 11, 'FORMULAID': 'GXNHLT1101.IXRL', 'FORMULANAME': '"1高炉工序能耗实绩报出值"', 'score': 109.08, 'match_kind': 'fuzzy_token_set'}, {'number': 13, 'FORMULAID': 'GXNHLT1102.IXRL', 'FORMULANAME': '"2高炉工序能耗实绩报出值"', 'score': 109.08, 'match_kind': 'fuzzy_token_set'}, {'number': 16, 'FORMULAID': 'GXNHLT1100.IXRL', 'FORMULANAME': '高炉工序能耗实绩报出值', 'score': 109.08, 'match_kind': 'fuzzy_token_set'}, {'number': 20, 'FORMULAID': 'NDJHZBGLLTGXNH.IXRL', 'FORMULANAME': '年度计划指标高炉炼铁工序能耗能源指标实绩报出值', 'score': 107.9892, 'match_kind': 'fuzzy_token_set'}], 'awaiting_confirmation': False, 'timeString': '2022-10-02', 'timeType': 'DAY'}
+2025-10-21 13:40:38,050 | INFO | ✅ 用户选择公式编号 1: "1高炉工序平衡能耗实绩报出值"
+🟢 登录返回： {'error': None, 'data': {'token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiIxNDMiLCJ 0ZW5hbnRpZCI6IjEwNSIsInVuYW1lIjoi566h55CG5ZGYIiwidG5hbWUiOiLlrp3pkqLmuZvmsZ_pkqLpk4HmnInpmZDlhazlj7giLCJ0c2lkZSI6IjEiLCJncm91cGlkIjoiMCIsInNsaWRpbmciOiIwIiwicnNpbmNlIjoiMTc2MTE2ODkzOCIsIm5iZiI6MTc2MTAyNDYzOCwiZXhwIjoxNzYxMTQwNDM4LCJpc3MiOiJzaGJhb25lbmciLCJhdWQiOiJzaGJhb25lbmcifQ._zudn361io-AtqBXRfv3QbAZPEW6P63CxZEPzYE4Mhs', 'expiresAt': '2025-10-22 21:39:38', 'tenantId': 105, 'tenancyName': 'zjis', 'userId': 143, 'userName': 'admin'}, 'status': 200, 'msg': '操作成功', 'duration': -1}
+{'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiIxNDMiLCJ0ZW5hbnRpZCI6IjEwNSIsInVuYW1lIjoi566h55CG5ZGYIiwidG5hbWUiOiLlrp3pkqLmuZvmsZ_pkqLpk4HmnInpmZDlhazlj7giLCJ0c2lkZSI6IjEiLCJncm91cGlkIjoiMCIsInNsaWRpbmciOiIwIiwicnNpbmNlIjoiMTc2MTE2ODkzOCIsIm5iZiI6MTc2MTAyNDYzOCwiZXhwIjoxNzYxMTQwNDM4LCJpc3MiOiJzaGJhb25lbmciLCJhdWQiOiJzaGJhb25lbmcifQ._zudn361io-AtqBXRfv3QbAZPEW6P63CxZEPzYE4Mhs', 'Content-Type': 'application/json'}
+{'expressionList': {'PHNHLT1101.IXRL': 'PHNHLT1101.IXRL'}, 'clock': '2022-10-02', 'timegranId': 'DAY'}
+{'error': None, 'data': {'PHNHLT1101.IXRL': None}, 'status': 200, 'msg': '操作成功', 'duration': -1}
+2025-10-21 13:40:40,300 | INFO | ✅ platform_api.query_platform 用时 2.25s, result={'PHNHLT1101.IXRL': None}
+2025-10-21 13:40:40,300 | INFO | ✅ handle_chat 全流程完成，用时 2.25s
+INFO:     192.168.120.252:12071 - "GET /chat?user_id=test1&message=1 HTTP/1.1" 200 OK
+2025-10-21 13:50:52,747 | INFO | 🟢 [handle_chat] 开始处理 user=shenlan, input='帮我查看2022年10月2日的高炉工序能耗'
+2025-10-21 13:51:08,559 | INFO | ✅ 当前 slots: {'indicator': None, 'formula': None, 'formula_candidates': None, 'awaiting_confirmation': False, 'timeString': None, 'timeType': None}
+2025-10-21 13:51:08,976 | INFO | HTTP Request: GET http://192.168.92.13:11434/api/tags "HTTP/1.1 200 OK"
+2025-10-21 13:51:10,464 | INFO | HTTP Request: POST http://192.168.92.13:11434/api/chat "HTTP/1.1 200 OK"
+2025-10-21 13:51:11,733 | INFO | 🔍 LLM 解析结果: {'indicator': '高炉工序能耗', 'timeString': '2022-10-02', 'timeType': 'DAY'}
+2025-10-21 13:51:13,237 | INFO | ✅ formula_api.formula_query_dict 用时 1.50s
+INFO:     127.0.0.1:60390 - "GET /chat?user_id=shenlan&message=%E5%B8%AE%E6%88%91%E6%9F%A5%E7%9C%8B2022%E5%B9%B410%E6%9C%882%E6%97%A5%E7%9A%84%E9%AB%98%E7%82%89%E5%B7%A5%E5%BA%8F%E8%83%BD%E8%80%97 HTTP/1.1" 200 OK
+INFO:     192.168.120.252:7493 - "OPTIONS /chat?user_id=%E5%BD%93%E5%89%8D%E7%94%A8%E6%88%B7ID&message=5 HTTP/1.1" 200 OK
+2025-10-21 13:53:06,314 | INFO | 🟢 [handle_chat] 开始处理 user=当前用户ID, input='5'
+2025-10-21 13:53:06,314 | INFO | ✅ 当前 slots: {'indicator': None, 'formula': None, 'formula_candidates': None, 'awaiting_confirmation': False, 'timeString': None, 'timeType': None}
+2025-10-21 13:53:06,642 | INFO | HTTP Request: GET http://192.168.92.13:11434/api/tags "HTTP/1.1 200 OK"
+2025-10-21 13:53:07,876 | INFO | HTTP Request: POST http://192.168.92.13:11434/api/chat "HTTP/1.1 200 OK"
+2025-10-21 13:53:08,751 | INFO | 🔍 LLM 解析结果: {'indicator': '5', 'timeString': None, 'timeType': None}
+2025-10-21 13:53:09,798 | INFO | ✅ formula_api.formula_query_dict 用时 1.05s
+INFO:     192.168.120.252:9744 - "GET /chat?user_id=%E5%BD%93%E5%89%8D%E7%94%A8%E6%88%B7ID&message=5 HTTP/1.1" 200 OK
+INFO:     Shutting down
+
+(ask_agent_venv) D:\gits\ask_agent>uvicorn main:app --host 0.0.0.0 --port 9000
+✅ Using ChatOllama from langchain-ollama
+D:\gits\ask_agent\ask_agent_venv\Lib\site-packages\jieba\_compat.py:18: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+✅ sentence-transformers 版本: 5.1.1
+INFO:     Started server process [13948]
+INFO:     Waiting for application startup.
+2025-10-22 13:25:56,123 | INFO | 🔄 正在初始化公式数据（full load）...
+Building prefix dict from the default dictionary ...
+2025-10-22 13:26:02,518 | DEBUG | Building prefix dict from the default dictionary ...
+Loading model from cache C:\Users\user\AppData\Local\Temp\jieba.cache
+2025-10-22 13:26:02,518 | DEBUG | Loading model from cache C:\Users\user\AppData\Local\Temp\jieba.cache
+Loading model cost 1.141 seconds.
+2025-10-22 13:26:03,659 | DEBUG | Loading model cost 1.141 seconds.
+Prefix dict has been built successfully.
+2025-10-22 13:26:03,659 | DEBUG | Prefix dict has been built successfully.
+2025-10-22 13:26:29,675 | INFO | ✅ Loaded 270817 formulas. Tokenization ready.
+HAVE_ST : True
+2025-10-22 13:28:30,096 | INFO | Auto-selected embedding device: cpu
+OFFLINE_MODEL_PATH:D:\gits\ask_agent\models\sbert_offline_models\86741b4e3f5cb7765a600d3a3d55a0f6a6cb443d
+2025-10-22 13:28:30,096 | INFO | 🧩 尝试加载本地模型: D:\gits\ask_agent\models\sbert_offline_models\86741b4e 3f5cb7765a600d3a3d55a0f6a6cb443d
+2025-10-22 13:28:30,096 | INFO | Load pretrained SentenceTransformer: D:\gits\ask_agent\models\sbert_offline_models\86741b4e3f5cb7765a600d3a3d55a0f6a6cb443d
+2025-10-22 13:28:31,862 | INFO | ✅ 已成功加载离线模型。
+2025-10-22 13:28:32,190 | INFO | ✅ Loaded embeddings from cache ((270817, 384))
+2025-10-22 13:28:32,190 | INFO | ✅ 初始化完成，用时 156.07s
+2025-10-22 13:28:32,190 | INFO | ✅ formula_api 初始化完成，用时 156.07s
+2025-10-22 13:28:32,190 | INFO | 🧹 已启动 session 定期清理任务。
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:9000 (Press CTRL+C to quit)
+2025-10-22 13:29:01,859 | INFO | 🟢 [handle_chat] 开始处理 user=shenlan, input='今天'
+2025-10-22 13:29:14,706 | INFO | ✅ 当前 slots: {'indicator': None, 'formula': None, 'formula_candidates': None, 'awaiting_confirmation': False, 'timeString': None, 'timeType': None}
+2025-10-22 13:29:15,300 | INFO | HTTP Request: GET http://192.168.92.13:11434/api/tags "HTTP/1.1 200 OK"
+2025-10-22 13:29:30,190 | INFO | HTTP Request: POST http://192.168.92.13:11434/api/chat "HTTP/1.1 200 OK"
+2025-10-22 13:29:31,346 | INFO | 🔍 LLM 解析结果: {'indicator': None, 'timeString': '2025-10-22', 'timeType': 'DAY'}
+INFO:     127.0.0.1:54025 - "GET /chat?user_id=shenlan&message=%E4%BB%8A%E5%A4%A9 HTTP/1.1" 200 OK
+INFO:     192.168.122.156:54080 - "OPTIONS /openapi.json HTTP/1.1" 200 OK
+INFO:     192.168.122.156:54103 - "OPTIONS /openapi.json HTTP/1.1" 200 OK
+INFO:     192.168.122.156:54103 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     192.168.122.156:54139 - "OPTIONS /chat?user_id=test1&message=%E4%BB%8A%E5%A4%A9 HTTP/1.1" 200 OK
+2025-10-22 13:31:01,012 | INFO | 🟢 [handle_chat] 开始处理 user=test1, input='今天'
+2025-10-22 13:31:01,013 | INFO | ✅ 当前 slots: {'indicator': None, 'formula': None, 'formula_candidates': None, 'awaiting_confirmation': False, 'timeString': None, 'timeType': None}
+2025-10-22 13:31:01,404 | INFO | HTTP Request: GET http://192.168.92.13:11434/api/tags "HTTP/1.1 200 OK"
+2025-10-22 13:31:02,785 | INFO | HTTP Request: POST http://192.168.92.13:11434/api/chat "HTTP/1.1 200 OK"
+2025-10-22 13:31:03,926 | INFO | 🔍 LLM 解析结果: {'indicator': None, 'timeString': '2025-10-22', 'timeType': 'DAY'}
+INFO:     192.168.122.156:54139 - "GET /chat?user_id=test1&message=%E4%BB%8A%E5%A4%A9 HTTP/1.1" 200 OK
