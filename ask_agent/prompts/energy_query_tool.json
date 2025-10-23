@@ -1,0 +1,56 @@
+{
+  "name": "能源指标查询",
+  "description": "用于查询能源指标、能耗数据、公式计算结果等信息。所有逻辑由后端 http://localhost:9000/chat 处理，模型不参与任何数据推理或解析。",
+  "type": "api",
+  "url": "http://localhost:9000/chat",
+  "method": "GET",
+  "parameters": [
+    {
+      "name": "user_id",
+      "type": "string",
+      "default": "{{user.id}}",
+      "description": "当前登录用户的唯一标识"
+    },
+    {
+      "name": "message",
+      "type": "string",
+      "default": "{{input}}",
+      "description": "用户输入的原始查询内容"
+    }
+  ],
+  "response_handling": {
+    "type": "text",
+    "description": "直接显示后端返回的 message 字段内容，不做任何解释或格式化。",
+    "response_selector": "message"
+  },
+  "rules": [
+    "禁止解释后端返回结构。",
+    "禁止显示调用URL或JSON结构。",
+    "只显示 message 字段文本内容。",
+    "允许后端返回任意中文信息，包括候选列表、提示或错误信息。",
+    "禁止模型编造数据或替换返回文本。"
+  ],
+  "examples": [
+    {
+      "user": "帮我查看2022年10月2日的高炉工序能耗",
+      "model_call": "http://localhost:9000/chat?user_id={{user.id}}&message=帮我查看2022年10月2日的高炉工序能耗",
+      "backend_response": {
+        "message": "✅ 指标: 高炉工序能耗\n公式编码: GXNHLT1100.IXRL\n时间: 2022-10-02 (DAY)\n结果: 374.41"
+      }
+    },
+    {
+      "user": "1号高炉昨天的工序能耗是多少",
+      "model_call": "http://localhost:9000/chat?user_id={{user.id}}&message=1号高炉昨天的工序能耗是多少",
+      "backend_response": {
+        "message": "请从以下候选公式选择编号：\n1) 1高炉工序能耗实绩报出值 (score 87.77)\n2) 高炉工序能耗实绩报出值 (score 87.20)\n3) 1高炉工序平衡能耗实绩报出值 (score 86.29)\n4) 高炉工序能耗实绩累计值 (score 85.74)\n5) 1高炉工序平衡能耗实绩累计值 (score 85.73)"
+      }
+    },
+    {
+      "user": "1",
+      "model_call": "http://localhost:9000/chat?user_id={{user.id}}&message=1",
+      "backend_response": {
+        "message": "✅ 已选择候选编号 1，对应公式 GXNHLT1101.IXRL，结果为 374.41。"
+      }
+    }
+  ]
+}
