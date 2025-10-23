@@ -4,7 +4,7 @@ import time
 import hashlib
 from config import (
     TENANT_NAME, APP_KEY, APP_SECRET, USER_NAME,
-    LOGIN_URL, QUERY_URL, TOKEN_EXPIRE_DURATION
+    LOGIN_URL, QUERY_URL, RANGE_QUERY_URL, TOKEN_EXPIRE_DURATION
 )
 
 _cached_token = None
@@ -18,7 +18,7 @@ def md5_upper(source: str) -> str:
 
 async def _get_token():
     """
-    获取或刷新 token（缓存 TOKEN_EXPIRE_DURATION）
+    获取或刷新 token（缓存 TOKEN_EXPIRE_DURATION 时间）
     """
     global _cached_token, _token_timestamp
     now = time.time()
@@ -61,36 +61,75 @@ async def _get_token():
             return token
 
 
+def is_range_query(time_string: str) -> bool:
+    """判断是否为区间时间格式（包含 ～ 或 ~）"""
+    if not time_string:
+        return False
+    return any(sym in time_string for sym in ["～", "~"])
+
+
 async def query_platform(formula: str, timeString: str, timeType: str):
     """
-    查询指定公式在特定时间的结果
+    智能判断查询类型：
+    - 若 timeString 含 “～” 或 “~” => 调区间接口 RANGE_QUERY_URL
+    - 否则 => 调单点接口 QUERY_URL
+    - timeType 始终原样透传
     """
+
     token = await _get_token()
     headers = {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json"
     }
-    print(headers)
-    payload = {
-        "expressionList": {formula: formula},
-        "clock": timeString,
-        "timegranId": timeType
-    }
-    print(payload)
+
+    if is_range_query(timeString):
+        # 区间查询: 例如 "2024-09-01~2024-09-07"
+        start_date, end_date = [x.strip() for x in timeString.replace("～", "~").split("~", 1)]
+
+        payload = {
+            "startClock": start_date,
+            "endClock": end_date,
+            "formulas": {formula: formula},
+            "timeGranId": timeType  # ✅ 传入原始 timeType，不强制改成 DAY
+        }
+        url = RANGE_QUERY_URL
+    else:
+        # 单点查询
+        payload = {
+            "expressionList": {formula: formula},
+            "clock": timeString,
+            "timegranId": timeType
+        }
+        url = QUERY_URL
+
+    print(f"🟡 调用接口: {url}")
+    print(f"🧩 请求参数: {payload}")
+
     async with aiohttp.ClientSession() as session:
-        async with session.post(QUERY_URL, json=payload, headers=headers) as resp:
+        async with session.post(url, json=payload, headers=headers) as resp:
             resp.raise_for_status()
             data = await resp.json()
-            print(data)
+            print("🟢 返回数据:", data)
+
             if "data" not in data:
                 raise ValueError(f"接口返回格式错误: {data}")
 
             return data["data"]
 
+
 # === 测试入口 ===
 if __name__ == "__main__":
     async def main():
-        result = await query_platform("GXNHLT1100.IXRL", "2022-10-02", "DAY")
-        print("查询结果：", result)
+        # 单点查询示例
+        result1 = await query_platform("GXNHLT1100.IXRL", "2022-10-02", "DAY")
+        print("📍 单点查询结果：", result1)
+
+        # 区间查询示例
+        result2 = await query_platform("GXNHLT1100.IXRL", "2022-09-01~2022-09-07", "DAY")
+        print("📅 区间查询结果：", result2)
+
+        # 区间查询示例2
+        result3 = await query_platform("GXNHLT1100.IXRL", "2022-09~2022-10", "MONTH")
+        print("📅 区间查询结果：", result3)
 
     asyncio.run(main())
