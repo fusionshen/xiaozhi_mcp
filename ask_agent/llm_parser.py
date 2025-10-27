@@ -127,6 +127,7 @@ async def parse_user_input(user_input: str, now: datetime = None):
        “今天白班” → now.strftime("%Y-%m-%d") + " 白班"
        “明天夜班” → (now + timedelta(days=1)).strftime("%Y-%m-%d") + " 夜班"
    - DAY → "YYYY-MM-DD"
+     - “去年今天”、“前年昨天” 都属于 DAY 类型，并基于当前时间 {now_str} 推算。
    - WEEK → "YYYY W##"
      - 使用 ISO 标准周号（周一为一周开始）。
      - “本周” 表示当前日期所在周号： now.isocalendar().week
@@ -185,6 +186,7 @@ async def parse_user_input(user_input: str, now: datetime = None):
   - “2022年2月3日” → indicator=null
 - 班次词（早班、白班、夜班、中班、晚班）属于时间，不属于指标。
 - SHIFT 类型优先于 HOUR：不要将“早班”错误地转化为具体小时。
+- 若原文不包含时间或者无法推算出时间，不要私自赋予时间，保持null即可。
 - 只有明确确认描述的是时间区间才使用区间方式，否则一律使用时间点方式
   例如：
   - “今年累计的” → indicator=null、timeString="2025"、timeType="YEAR"
@@ -193,6 +195,7 @@ async def parse_user_input(user_input: str, now: datetime = None):
   例如：
   - “一月到三月的吨钢蒸汽消耗” → indicator="吨钢蒸汽消耗"、timeString="2025-01~2025-03"、timeType="MONTH"
   - “上半年高炉计划” → indicator="高炉计划"、timeString="2025-01~2025-06"、timeType="MONTH"
+  - "2023年上半年" → indicator=null、timeString="2023-01~2023-06"、timeType="MONTH"
 
 
 用户输入："{user_input}"
@@ -237,6 +240,8 @@ if __name__ == "__main__":
     now = datetime(2025, 10, 16, 14, 0)
 
     test_inputs = [
+        "2023上半年",
+        "2023年上半年",
         "一月到三月的吨钢蒸汽消耗",
         "去年一月到8月吨钢用水量",
         "去年一、二月吨钢用水量",

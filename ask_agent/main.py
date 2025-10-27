@@ -1,4 +1,3 @@
-# main.py
 import os
 for key in ["HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy"]:
     os.environ.pop(key, None)
@@ -57,7 +56,7 @@ async def startup_event():
 
 
 # ----------------------
-# GET/POST 接口
+# 接口定义
 # ----------------------
 @app.get("/chat")
 async def chat_get(
@@ -66,6 +65,7 @@ async def chat_get(
 ):
     return await handle_chat(user_id, message)
 
+
 @app.post("/chat")
 async def chat_post(request: Request):
     data = await request.json()
@@ -73,7 +73,7 @@ async def chat_post(request: Request):
 
 
 # ----------------------
-# 核心处理逻辑
+# 核心逻辑
 # ----------------------
 async def handle_chat(user_id: str, user_input: str):
     """
@@ -90,7 +90,7 @@ async def handle_chat(user_id: str, user_input: str):
         if not user_input:
             return {"message": "请输入指标名称或时间。", "state": await get_state(user_id)}
 
-        # Step0: 获取状态
+        # Step0: 获取或初始化状态
         state = await get_state(user_id)
         state.setdefault("slots", {
             "indicator": None,
@@ -121,7 +121,7 @@ async def handle_chat(user_id: str, user_input: str):
                 if not (slots.get("timeString") and slots.get("timeType")):
                     return {"message": f"好的，要查【{slots['indicator']}】，请告诉我时间。", "state": state}
 
-                # ✅ 直接调用平台查询，不再经过 llm_parser
+                # ✅ 调用平台接口
                 t1 = time.time()
                 result = await platform_api.query_platform(
                     formula=slots["formula"],
@@ -130,26 +130,21 @@ async def handle_chat(user_id: str, user_input: str):
                 )
                 logger.info(f"✅ platform_api.query_platform 用时 {time.time() - t1:.2f}s, result={result}")
 
+                # ✅ 通用结果提取
+                value_text = format_result(result, slots["formula"])
+
                 reply_lines = [
                     f"✅ 指标: {slots['indicator']}",
                     f"公式编码: {slots['formula']}",
                     f"时间: {slots['timeString']} ({slots['timeType']})",
-                    f"结果: {result.get(slots['formula'])} {result.get('unit', '')}"
+                    f"结果:\n{value_text}"
                 ]
 
-                # 清空状态
-                state["slots"] = {
-                    "indicator": None,
-                    "formula": None,
-                    "formula_candidates": None,
-                    "awaiting_confirmation": False,
-                    "timeString": None,
-                    "timeType": None
-                }
+                # ✅ 清空状态
+                state["slots"] = default_slots()
                 await update_state(user_id, state)
                 logger.info(f"✅ handle_chat 全流程完成，用时 {time.time() - total_start:.2f}s")
                 return JSONResponse(content={"message": "\n".join(reply_lines), "state": state})
-
             else:
                 return {"message": f"请输入编号 1-{len(candidates)} 选择公式。", "state": state}
 
@@ -160,7 +155,7 @@ async def handle_chat(user_id: str, user_input: str):
             slots["formula"] = None
             await update_state(user_id, state)
 
-        # Step3️⃣ 正常调用 llm_parser 解析
+        # Step3️⃣ 调用 LLM 解析
         parsed = await parse_user_input(user_input)
         logger.info(f"🔍 LLM 解析结果: {parsed}")
 
@@ -188,7 +183,7 @@ async def handle_chat(user_id: str, user_input: str):
             else:
                 candidates = formula_resp.get("candidates", [])
                 if candidates:
-                    # 🆕 新增逻辑：如果第一个候选评分大于100，直接选择
+                    # 🧠 高分候选自动选择
                     if candidates[0].get('score', 0) > 100:
                         chosen = candidates[0]
                         slots["formula"] = chosen["FORMULAID"]
@@ -209,28 +204,21 @@ async def handle_chat(user_id: str, user_input: str):
                             timeType=slots["timeType"]
                         )
                         logger.info(f"✅ platform_api.query_platform 用时 {time.time() - t1:.2f}s, result={result}")
-                        
+
+                        value_text = format_result(result, slots["formula"])
                         reply_lines = [
                             f"✅ 指标: {slots['indicator']}",
                             f"公式编码: {slots['formula']}",
                             f"时间: {slots['timeString']} ({slots['timeType']})",
-                            f"结果: {result.get(slots['formula'])} {result.get('unit', '')}"
+                            f"结果:\n{value_text}"
                         ]
-                        
-                        # 🆕 清空状态
-                        state["slots"] = {
-                            "indicator": None,
-                            "formula": None,
-                            "formula_candidates": None,
-                            "awaiting_confirmation": False,
-                            "timeString": None,
-                            "timeType": None
-                        }
+
+                        state["slots"] = default_slots()
                         await update_state(user_id, state)
                         logger.info(f"✅ handle_chat 全流程完成，用时 {time.time() - total_start:.2f}s")
                         return JSONResponse(content={"message": "\n".join(reply_lines), "state": state})
-                    
-                    # 原有逻辑：显示候选列表供用户选择
+
+                    # 否则展示候选
                     slots["formula_candidates"] = candidates[:TOP_N]
                     await update_state(user_id, state)
                     msg_lines = ["请从以下候选公式选择编号："]
@@ -253,22 +241,16 @@ async def handle_chat(user_id: str, user_input: str):
         )
         logger.info(f"✅ platform_api.query_platform 用时 {time.time() - t1:.2f}s, result={result}")
 
+        value_text = format_result(result, slots["formula"])
         reply_lines = [
             f"✅ 指标: {slots['indicator']}",
             f"公式编码: {slots['formula']}",
             f"时间: {slots['timeString']} ({slots['timeType']})",
-            f"结果: {result.get(slots['formula'])} {result.get('unit', '')}"
+            f"结果:\n{value_text}"
         ]
 
         # Step8️⃣ 清空 slots
-        state["slots"] = {
-            "indicator": None,
-            "formula": None,
-            "formula_candidates": None,
-            "awaiting_confirmation": False,
-            "timeString": None,
-            "timeType": None
-        }
+        state["slots"] = default_slots()
         await update_state(user_id, state)
         logger.info(f"✅ handle_chat 全流程完成，用时 {time.time() - total_start:.2f}s")
 
@@ -277,3 +259,33 @@ async def handle_chat(user_id: str, user_input: str):
     except Exception as e:
         logger.exception("❌ handle_chat 异常: %s", e)
         return JSONResponse(content={"error": str(e), "state": await get_state(user_id)}, status_code=500)
+
+
+# ----------------------
+# 工具函数
+# ----------------------
+def default_slots():
+    """重置默认 slots"""
+    return {
+        "indicator": None,
+        "formula": None,
+        "formula_candidates": None,
+        "awaiting_confirmation": False,
+        "timeString": None,
+        "timeType": None
+    }
+
+
+def format_result(result, formula_id: str) -> str:
+    """统一格式化结果文本，兼容 dict / list"""
+    if isinstance(result, dict):
+        return f"{result.get(formula_id)} {result.get('unit', '')}"
+    elif isinstance(result, list):
+        lines = []
+        for item in result:
+            val = item.get("itemValue")
+            clock = item.get("clock")
+            lines.append(f"{clock}: {val}")
+        return "\n".join(lines)
+    else:
+        return str(result)
