@@ -15,6 +15,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from rapidfuzz import process, fuzz
 
+from config import (
+    EMBEDDING_CACHE_NAME, FORMULA_CSV_NAME, TEXT_SCORE_WEIGHT_MAP, ENABLE_TEXT_SCORE_WEIGHT
+)
+
 try:
     from sentence_transformers import SentenceTransformer
     HAVE_ST = True
@@ -41,8 +45,8 @@ PROJECT_ROOT = os.path.abspath(os.path.join(BASE_DIR, ".."))
 DATA_DIR = os.path.join(PROJECT_ROOT, "data")
 MODELS_DIR = os.path.join(PROJECT_ROOT, "models", "sbert_offline_models")
 
-EMBEDDING_CACHE_PATH = os.path.join(DATA_DIR, "formula_embeddings.pkl")
-FORMULA_CSV_PATH = os.path.join(DATA_DIR, "FORMULAINFO_202503121558.csv")
+EMBEDDING_CACHE_PATH = os.path.join(DATA_DIR, EMBEDDING_CACHE_NAME)
+FORMULA_CSV_PATH = os.path.join(DATA_DIR, FORMULA_CSV_NAME)
 
 # ---- 离线模型优先路径 ----
 OFFLINE_MODEL_PATH = os.path.join(MODELS_DIR, "86741b4e3f5cb7765a600d3a3d55a0f6a6cb443d")
@@ -53,14 +57,6 @@ EMBEDDING_MODEL_NAME = "paraphrase-multilingual-MiniLM-L12-v2"
 # 环境变量设备控制
 ENV_EMBEDDING_DEVICE = os.environ.get("EMBEDDING_DEVICE", "").lower()
 
-# 文本权重规则
-TEXT_SCORE_WEIGHT_MAP = {
-    "实绩": 0.08,
-    "报出": 0.01,
-    "计划": -0.01,
-    "累计": -0.02,
-}
-ENABLE_TEXT_SCORE_WEIGHT = True
 
 # ================= 全局变量 =================
 df: Optional[pd.DataFrame] = None

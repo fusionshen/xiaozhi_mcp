@@ -4,7 +4,9 @@ for key in ["HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy
 import json
 import httpx
 from langchain.schema import HumanMessage
-
+from config import (
+    REMOTE_OLLAMA_URL, REMOTE_MODEL, LOCAL_MODEL
+)
 
 # ===================== ChatOllama 兼容导入 =====================
 try:
@@ -17,12 +19,6 @@ except ImportError:
     except ImportError:
         from langchain.chat_models import ChatOllama
         print("⚠️ Using ChatOllama from old langchain (may be deprecated)")
-
-
-# ===================== 模型优先级定义 =====================
-REMOTE_OLLAMA_URL = "http://192.168.92.13:11434"  # ← 修改为你的远程 Ollama 地址
-REMOTE_MODEL = "gemma3:27b"
-LOCAL_MODEL = "qwen2.5:1.5b"
 
 
 async def is_remote_ollama_available(base_url: str, timeout: float = 3.0) -> bool:
@@ -83,3 +79,17 @@ async def safe_llm_parse(prompt: str) -> dict:
     except Exception as e:
         print("❌ LLM 调用失败:", e)
         return {}
+
+
+# ===================== 通用聊天函数 =====================
+async def safe_llm_chat(prompt: str) -> str:
+    """
+    让模型自由回答，返回纯文本。
+    """
+    llm = await get_llm()
+    try:
+        resp = await llm.agenerate([[HumanMessage(content=prompt)]])
+        return resp.generations[0][0].message.content.strip()
+    except Exception as e:
+        print("❌ LLM 聊天失败:", e)
+        return "抱歉，我暂时无法回答这个问题。"

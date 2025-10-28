@@ -1,4 +1,5 @@
 import os
+import json
 from datetime import timedelta
 from dotenv import load_dotenv
 
@@ -17,6 +18,18 @@ RANGE_QUERY_URL = os.getenv("RANGE_QUERY_URL")
 
 TOKEN_EXPIRE_DURATION = timedelta(hours=float(os.getenv("TOKEN_EXPIRE_HOURS", 1)))
 
+# ===================== 模型优先级定义 =====================
+REMOTE_OLLAMA_URL = os.getenv("REMOTE_OLLAMA_URL")  # ← 修改为你的远程 Ollama 地址
+REMOTE_MODEL = os.getenv("REMOTE_MODEL")
+LOCAL_MODEL = os.getenv("LOCAL_MODEL")
+
+EMBEDDING_CACHE_NAME = os.getenv("EMBEDDING_CACHE_NAME")
+FORMULA_CSV_NAME = os.getenv("FORMULA_CSV_NAME")
+with open(os.getenv("TEXT_SCORE_WEIGHT_FILE"), "r", encoding="utf-8") as f:
+    TEXT_SCORE_WEIGHT_MAP = json.load(f)
+ENABLE_TEXT_SCORE_WEIGHT = os.getenv("ENABLE_TEXT_SCORE_WEIGHT")
 # 校验
-if not all([TENANT_NAME, APP_KEY, APP_SECRET, USER_NAME, LOGIN_URL, QUERY_URL, RANGE_QUERY_URL]):
+if not all([TENANT_NAME, APP_KEY, APP_SECRET, USER_NAME, LOGIN_URL, QUERY_URL, RANGE_QUERY_URL,
+    REMOTE_OLLAMA_URL, REMOTE_MODEL, LOCAL_MODEL, EMBEDDING_CACHE_NAME, FORMULA_CSV_NAME
+]):
     raise ValueError("❌ 环境变量缺失，请检查 .env 文件配置是否完整。")

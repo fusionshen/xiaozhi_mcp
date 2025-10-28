@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from agent_state import get_state, update_state, cleanup_expired_sessions
-from llm_parser import parse_user_input
+from core.llm_energy_indicator_parser import parse_user_input
 from tools import formula_api, platform_api
 
 TOP_N = 5  # 显示候选数量
