@@ -1,58 +1,9 @@
-import os
-for key in ["HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy"]:
-    os.environ.pop(key, None)
-
 import asyncio
 import re
-import json
 import httpx
 from datetime import datetime, timedelta
+from core.llm_client import safe_llm_parse
 
-# ===================== ChatOllama 兼容导入 =====================
-try:
-    from langchain_ollama import ChatOllama
-    print("✅ Using ChatOllama from langchain-ollama")
-except ImportError:
-    try:
-        from langchain_community.chat_models import ChatOllama
-        print("✅ Using ChatOllama from langchain_community")
-    except ImportError:
-        from langchain.chat_models import ChatOllama
-        print("⚠️ Using ChatOllama from old langchain (may be deprecated)")
-
-from langchain.schema import HumanMessage
-
-# ===================== 模型优先级定义 =====================
-REMOTE_OLLAMA_URL = "http://192.168.92.13:11434"  # ← 修改为你的远程 Ollama 地址
-REMOTE_MODEL = "gemma3:27b"
-LOCAL_MODEL = "qwen2.5:1.5b"
-
-
-async def is_remote_ollama_available(base_url: str, timeout: float = 3.0) -> bool:
-    """
-    检查远程 Ollama 服务是否可访问。
-    """
-    try:
-        async with httpx.AsyncClient(timeout=timeout) as client:
-            resp = await client.get(f"{base_url}/api/tags")
-            if resp.status_code == 200:
-                #print(f"🌐 Remote Ollama available at {base_url}")
-                return True
-    except Exception as e:
-        print(f"⚠️ Remote Ollama not reachable: {e}")
-    return False
-
-
-async def get_llm() -> ChatOllama:
-    """
-    优先使用远程 gemma3:27b，如果远程不可用则回退到本地 qwen2.5:1.5b。
-    """
-    if await is_remote_ollama_available(REMOTE_OLLAMA_URL):
-        #print(f"✅ Using remote model: {REMOTE_MODEL}")
-        return ChatOllama(model=REMOTE_MODEL, base_url=REMOTE_OLLAMA_URL)
-    else:
-        print(f"🔄 Falling back to local model: {LOCAL_MODEL}")
-        return ChatOllama(model=LOCAL_MODEL)
 
 """
 在无示例情况下，如果大模型精度差强人意，可以将示例插入prompt的[注意]和[用户输入："{user_input}"]之间，但是无法避免LLM直接拿来编
@@ -201,23 +152,8 @@ async def parse_user_input(user_input: str, now: datetime = None):
 用户输入："{user_input}"
 """
 
-    llm = await get_llm()
-
-    try:
-        resp = await llm.agenerate([[HumanMessage(content=prompt)]])
-        content = resp.generations[0][0].message.content.strip()
-    except Exception as e:
-        print("❌ LLM 调用失败:", e)
-        return {"indicator": None, "timeString": None, "timeType": None}
-
-    try:
-        result = json.loads(content)
-    except json.JSONDecodeError:
-        result = {
-            "indicator": re.search(r'"indicator"\s*:\s*"([^"]*)"', content).group(1) if re.search(r'"indicator"\s*:\s*"([^"]*)"', content) else None,
-            "timeString": re.search(r'"timeString"\s*:\s*"([^"]*)"', content).group(1) if re.search(r'"timeString"\s*:\s*"([^"]*)"', content) else None,
-            "timeType": re.search(r'"timeType"\s*:\s*"([^"]*)"', content).group(1) if re.search(r'"timeType"\s*:\s*"([^"]*)"', content) else None
-        }
+    # 调用安全 LLM 函数
+    result = await safe_llm_parse(prompt)
 
     indicator = result.get("indicator")
     timeString = result.get("timeString")
@@ -240,6 +176,7 @@ if __name__ == "__main__":
     now = datetime(2025, 10, 16, 14, 0)
 
     test_inputs = [
+        "今天是什么日期",
         "2023上半年",
         "2023年上半年",
         "一月到三月的吨钢蒸汽消耗",
