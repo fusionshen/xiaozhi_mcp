@@ -55,5 +55,5 @@ async def chat_get(
     user_id: str = Query(..., description="用户唯一标识，例如 test1"),
     message: str = Query(..., description="用户输入内容")
 ):
-    result = await route_intent(message)
-    return {"user_id": user_id, "response": result}
+    result = await route_intent(user_id, message)
+    return result

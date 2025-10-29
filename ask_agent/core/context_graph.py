@@ -27,6 +27,12 @@ class ContextGraph:
         if time_str and node not in self.times:
             self.times.append(node)
 
+    def add_node(self, indicator: Optional[str], time: Optional[str], time_type: Optional[str] = None):
+        if indicator:
+            self.add_indicator(indicator)
+        if time:
+            self.add_time(time, time_type)
+
     def link_last(self):
         """预留接口：建立节点依赖关系"""
         pass
@@ -56,17 +62,6 @@ class ContextManager:
         return time.time()
 
     async def append_query(self, user_id: str, query: Dict):
-        """
-        query 字段包含:
-        {
-            "user_input": str,
-            "indicator": Optional[str],
-            "timeString": Optional[str],
-            "timeType": Optional[str],
-            "intent": Optional[str],
-            "formula_candidates": Optional[list]
-        }
-        """
         async with self._lock:
             ctx = self._user_contexts.get(user_id)
             if not ctx:
@@ -77,10 +72,7 @@ class ContextManager:
             ctx["last_active"] = self._now()
 
             # 更新 graph
-            if query.get("indicator"):
-                ctx["graph"].add_indicator(query["indicator"])
-            if query.get("timeString"):
-                ctx["graph"].add_time(query["timeString"], query.get("timeType"))
+            ctx["graph"].add_node(query.get("indicator"), query.get("timeString"), query.get("timeType"))
 
             return ctx
 
@@ -89,16 +81,12 @@ class ContextManager:
             ctx = self._user_contexts.get(user_id)
             if not ctx:
                 return []
-            if n:
-                return ctx["history"][-n:]
-            return ctx["history"]
+            return ctx["history"][-n:] if n else ctx["history"]
 
     async def get_graph(self, user_id: str) -> ContextGraph:
         async with self._lock:
             ctx = self._user_contexts.get(user_id)
-            if not ctx:
-                return ContextGraph()
-            return ctx["graph"]
+            return ctx["graph"] if ctx else ContextGraph()
 
     async def clear(self, user_id: str):
         async with self._lock:
@@ -113,36 +101,3 @@ class ContextManager:
             for uid in expired:
                 del self._user_contexts[uid]
             return expired
-
-# =========================
-# 测试框架
-# =========================
-if __name__ == "__main__":
-    import asyncio
-
-    async def test():
-        cm = ContextManager()
-        user_id = "test_user"
-
-        queries = [
-            {"user_input": "今天是什么日期？", "indicator": None, "timeString": "2025-10-28", "timeType": "DAY", "intent": "ask_time"},
-            {"user_input": "高炉工序能耗是多少", "indicator": "高炉工序能耗", "timeString": "2025-10-28", "timeType": "DAY", "intent": "new_query"},
-            {"user_input": "那昨天的呢？", "indicator": "高炉工序能耗", "timeString": "2025-10-27", "timeType": "DAY", "intent": "same_indicator_new_time"},
-            {"user_input": "1#和3#分别是多少", "indicator": "高炉工序能耗", "timeString": None, "timeType": None, "intent": "expand"},
-            {"user_input": "平均是多少", "indicator": None, "timeString": None, "timeType": None, "intent": "aggregate"}
-        ]
-
-        for q in queries:
-            ctx = await cm.append_query(user_id, q)
-            recent = await cm.get_recent(user_id)
-            graph = await cm.get_graph(user_id)
-            print(f"\n用户输入: {q['user_input']}")
-            print(f"最近历史: {recent}")
-            print(f"Graph indicators: {graph.indicators}")
-            print(f"Graph times: {graph.times}")
-
-        # 清理测试
-        expired = await cm.cleanup_expired()
-        print(f"清理过期会话: {expired}")
-
-    asyncio.run(test())

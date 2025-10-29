@@ -1,9 +1,9 @@
+# core/llm_energy_intent_parser.py
+
 import asyncio
-import json
-import re
 from core.llm_client import safe_llm_parse
 from core.context_graph import ContextGraph
-from llm_parser import parse_user_input  # ✅ 复用你的旧解析逻辑
+from core.llm_energy_indicator_parser import parse_user_input  # ✅ 复用你的旧解析逻辑
 
 
 class IntentParser:
@@ -17,15 +17,29 @@ class IntentParser:
         self.history = []  # [{'user_input', 'indicator', 'timeString', 'timeType', 'intent'}]
         self.graph = ContextGraph()
 
+    def _format_history_for_prompt(self):
+        return "\n".join(
+            f"{i+1}. 输入: {h['user_input']} | 指标: {h.get('indicator')} | 时间: {h.get('timeString')} | 意图: {h.get('intent')}"
+            for i, h in enumerate(self.history)
+        )
+
+    def _enhance_intent_by_keywords(self, intent, user_input, last_indicator):
+        # 基于关键词进行多轮意图增强
+        if intent == "new_query" and last_indicator:
+            if any(kw in user_input for kw in ["昨天", "今天", "明天", "上周", "本周", "下周"]):
+                intent = "same_indicator_new_time"
+            elif any(kw in user_input for kw in ["和", "及", "&", ",", "对比", "比较"]):
+                intent = "compare"
+            elif any(kw in user_input for kw in ["平均", "总计", "统计", "汇总"]):
+                intent = "list_query"
+        return intent
+
     async def parse_intent(self, user_input: str):
         """
         主接口：解析用户意图、指标、时间，同时更新上下文图
         """
         # ===== 第一步：构造上下文描述 =====
-        history_str = "\n".join(
-            f"{i+1}. 输入: {h['user_input']} | 指标: {h.get('indicator')} | 时间: {h.get('timeString')} | 意图: {h.get('intent')}"
-            for i, h in enumerate(self.history)
-        )
+        history_str = self._format_history_for_prompt()
 
         # ===== 第二步：LLM 判断意图 =====
         intent_prompt = f"""
@@ -61,22 +75,11 @@ class IntentParser:
         timeType = parsed_info.get("timeType")
 
         # ===== 第四步：多轮增强逻辑 =====
-        last_indicator = None
-        for h in reversed(self.history):
-            if h.get("indicator"):
-                last_indicator = h["indicator"]
-                break
-
-        if intent == "new_query" and last_indicator:
-            if any(kw in user_input for kw in ["昨天", "今天", "明天", "上周", "本周", "下周"]):
-                intent = "same_indicator_new_time"
-            elif any(kw in user_input for kw in ["和", "及", "&", ",", "对比", "比较"]):
-                intent = "compare"
-            elif any(kw in user_input for kw in ["平均", "总计", "统计", "汇总"]):
-                intent = "list_query"
+        last_indicator = next((h["indicator"] for h in reversed(self.history) if h.get("indicator")), None)
+        intent = self._enhance_intent_by_keywords(intent, user_input, last_indicator)
 
         # ===== 第五步：更新上下文图与历史 =====
-        self.graph.add_node(indicator=indicator, time=timeString)
+        self.graph.add_node(indicator, timeString, timeType)
 
         record = {
             "user_input": user_input,
