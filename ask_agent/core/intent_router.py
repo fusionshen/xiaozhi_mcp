@@ -57,14 +57,14 @@ async def route_intent(user_id: str, user_input: str) -> Dict[str, Any]:
         # 2A) 让 EnergyIntentParser 完整解析（intent + indicator + time）
         try:
             intent_info = await parser.parse_intent(user_input)
-            logger.info(f"🧾 EnergyIntentParser.parse_intent 返回: intent={intent_info.get('intent')}, "
-                        f"indicator={intent_info.get('indicator')}, time={intent_info.get('timeString')}")
+            logger.info(f"🧾 EnergyIntentParser.parse_intent 返回: intent={intent_info.get('intent')}")
         except Exception as e:
             logger.exception("❌ EnergyIntentParser.parse_intent 失败: %s", e)
             return {"reply": "解析能源意图失败，请稍后重试。", "error": "parse_intent_failed"}
 
         state = await get_state(user_id)
         state["slots"]["last_input"] = user_input
+        state["slots"]["intent"] = intent_info.get('intent') or "new_query"
         await update_state(user_id, state)
 
         try:
@@ -78,7 +78,7 @@ async def route_intent(user_id: str, user_input: str) -> Dict[str, Any]:
 
             # intent_info 只同步最终成功公式/指标/时间
             intent_info = {
-                "intent": "new_query",
+                "intent": last_success.get('intent'),
                 "indicator": last_success.get("indicator"),
                 "formula": last_success.get("formula"),
                 "timeString": last_success.get("timeString"),

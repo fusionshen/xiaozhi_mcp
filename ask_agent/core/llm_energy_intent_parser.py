@@ -1,5 +1,4 @@
 # core/llm_energy_intent_parser.py
-
 import asyncio
 import logging
 from core.llm_client import safe_llm_parse
@@ -38,15 +37,23 @@ class EnergyIntentParser:
         return formatted
 
     def _enhance_intent_by_keywords(self, intent, user_input, last_indicator):
-        logger.debug(f"🔍 关键词增强: 原始意图={intent}, last_indicator={last_indicator}, input={user_input}")
-        if intent == "new_query" and last_indicator:
+        """
+        轻量 fallback，仅在 LLM 无法判断时参考关键词提示。
+        不再强行覆盖 LLM 判断。
+        """
+        logger.debug(f"🔍 关键词 fallback: 原始意图={intent}, last_indicator={last_indicator}, input={user_input}")
+        # 仅在 intent 为 None 或 new_query 且有历史指标时才微调
+        if intent in [None, "new_query"] and last_indicator:
             if any(kw in user_input for kw in ["昨天", "今天", "明天", "上周", "本周", "下周"]):
-                intent = "same_indicator_new_time"
+                intent = intent or "same_indicator_new_time"
+                logger.debug("🟡 关键词 fallback: 检测到时间相关词，意图设为 same_indicator_new_time")
             elif any(kw in user_input for kw in ["和", "及", "&", ",", "对比", "比较"]):
-                intent = "compare"
+                intent = intent or "compare"
+                logger.debug("🟡 关键词 fallback: 检测到对比词，意图设为 compare")
             elif any(kw in user_input for kw in ["平均", "总计", "统计", "汇总"]):
-                intent = "list_query"
-        logger.debug(f"✅ 增强后意图={intent}")
+                intent = intent or "list_query"
+                logger.debug("🟡 关键词 fallback: 检测到汇总词，意图设为 list_query")
+        logger.debug(f"✅ 最终 fallback 意图={intent}")
         return intent
 
     async def parse_intent(self, user_input: str):
@@ -99,7 +106,7 @@ class EnergyIntentParser:
         timeString = parsed_info.get("timeString")
         timeType = parsed_info.get("timeType")
 
-        # Step 4: 多轮增强（仅用于调整意图判断）
+        # 轻量 fallback
         last_indicator = next((h["indicator"] for h in reversed(self.history) if h.get("indicator")), None)
         enhanced_intent = self._enhance_intent_by_keywords(intent, user_input, last_indicator)
         logger.info(f"🎯 最终意图确定: {enhanced_intent}")
@@ -119,7 +126,7 @@ class EnergyIntentParser:
         self.history.append(record)
         logger.info(f"🧾 已追加解析历史记录（共 {len(self.history)} 条），注意：这不是“查询成功历史”")
 
-        # ✅ Step 6: 若为 compare 意图，自动添加关系
+        # 若为 compare 意图，尝试添加关系
         if enhanced_intent == "compare":
             try:
                 self.graph.add_relation("compare")

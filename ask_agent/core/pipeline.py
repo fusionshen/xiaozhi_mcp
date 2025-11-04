@@ -94,7 +94,7 @@ async def process_message(user_id: str, message: str, graph_state_dict: dict):
 
     from core.llm_energy_intent_parser import EnergyIntentParser
     parser = EnergyIntentParser(user_id)
-    enhanced_intent = parser._enhance_intent_by_keywords("new_query", user_input, last_indicator)
+    enhanced_intent = parser._enhance_intent_by_keywords(slots.get("intent", "new_query"), user_input, last_indicator)
     slots["intent"] = enhanced_intent
     logger.info(f"🎯 slots['intent'] 已设置为: {enhanced_intent}")
 
