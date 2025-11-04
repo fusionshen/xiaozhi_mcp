@@ -54,7 +54,7 @@ class EnergyIntentParser:
         1) 调用 LLM 判断意图（compare/expand/.../new_query）
         2) 调用 parse_user_input 抽取 indicator/time（仅用于补全 slots 与多轮逻辑）
         3) 若判定为 KNOWLEDGE 类型（解释性问题），将返回 intent=KNOWLEDGE_QA（或上层约定的枚举）
-        4) 将解析记录追加到 parser.history（对话解析历史），但将解析结果临时写入 ContextGraph，在最终确认后会更新
+        4) 将解析记录追加到 parser.history（对话解析历史），但**不能**将解析结果写入 ContextGraph，在最终确认后会更新
            ——保证 ContextGraph 只保存“最终确认/成功查询”的记录，以便后续分析/比较稳定。
         返回包含：intent, indicator, timeString, timeType, history, graph（当前 graph state 只作参考）
         """
