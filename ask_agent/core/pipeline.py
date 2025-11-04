@@ -4,6 +4,7 @@ import logging
 import inspect
 from core.context_graph import ContextGraph
 from core.llm_energy_indicator_parser import parse_user_input
+from core.llm_energy_intent_parser import EnergyIntentParser
 from tools import formula_api, platform_api
 from agent_state import get_state, update_state
 
@@ -45,18 +46,20 @@ async def process_message(user_id: str, message: str, state: dict):
         "formula_candidates": None,
         "awaiting_confirmation": False,
         "timeString": None,
-        "timeType": None
+        "timeType": None,
+        "intent": "new_query",
+        "last_user_input": ""
     })
     slots = session_state["slots"]
+    slots["last_user_input"] = user_input
 
     logger.info(f"当前 slots (before parsing): {slots}")
 
-    # 2️⃣ 若当前存在候选公式且输入为数字 => 用户在选择候选
+    # 2️⃣ 用户选择候选公式
     if slots.get("formula_candidates") and user_input.isdigit():
         idx = int(user_input.strip()) - 1
         candidates = slots["formula_candidates"]
-        logger.info("检测到用户在选择候选公式（digit input）。index=%s, candidates_count=%d", idx, len(candidates))
-
+        logger.info("检测到用户在选择候选公式（digit input） index=%s, candidates_count=%d", idx, len(candidates))
         if 0 <= idx < len(candidates):
             chosen = candidates[idx]
             slots["formula"] = chosen["FORMULAID"]
@@ -73,7 +76,6 @@ async def process_message(user_id: str, message: str, state: dict):
 
             # 否则执行查询
             return await _execute_query(user_id, slots, graph)
-
         else:
             logger.warning("⚠️ 用户输入的候选编号超范围: %s", user_input)
             return f"请输入编号 1~{len(candidates)} 选择公式。", graph.to_state()
@@ -96,8 +98,14 @@ async def process_message(user_id: str, message: str, state: dict):
     # 合并 slots（仅补全缺失信息，不覆盖已有）
     for k in ("indicator", "timeString", "timeType"):
         if parsed.get(k):
-            logger.debug("补全 slots: %s -> %s", k, parsed.get(k))
             slots[k] = parsed.get(k)
+            logger.debug("补全 slots: %s -> %s", k, parsed.get(k))
+
+    # 4️⃣ 获取 intent 并存入 slots
+    energy_parser = EnergyIntentParser(user_id)
+    intent_result = await energy_parser.parse_intent(user_input)
+    slots["intent"] = intent_result.get("intent", "new_query")
+
     await update_state(user_id, session_state)
     logger.info("当前 slots (after parsing): %s", slots)
 
@@ -117,7 +125,7 @@ async def process_message(user_id: str, message: str, state: dict):
     logger.info("formula_api 返回摘要: done=%s, exact_matches=%s, candidates_len=%s",
                 formula_resp.get("done"), bool(formula_resp.get("exact_matches")), len(formula_resp.get("candidates", [])))
 
-    # 7️⃣ 处理 formula_api 结果
+    # 6️⃣ 处理公式匹配结果
     if formula_resp.get("done") and formula_resp.get("exact_matches"):
         match = formula_resp["exact_matches"][0]
         slots["formula"] = match["FORMULAID"]
@@ -139,7 +147,7 @@ async def process_message(user_id: str, message: str, state: dict):
             logger.info("🔢 找到 %d 个候选公式（按 score 排序）", len(candidates))
             # 高分候选自动选择（与 V1 逻辑一致）
             top = candidates[0]
-            logger.info("最高候选: %s (score=%s)", top.get("FORMULANAME"), top.get("score"))
+            logger.info("🔢 找到 %d 个候选公式, 最高候选: %s (score=%s)", len(candidates), top.get("FORMULANAME"), top.get("score"))
             if top.get("score", 0) > 100:
                 chosen = top
                 slots["formula"] = chosen["FORMULAID"]
@@ -148,7 +156,6 @@ async def process_message(user_id: str, message: str, state: dict):
                 await update_state(user_id, session_state)
                 logger.info("🧠 自动选择高分候选公式: %s (score=%s)", chosen.get("FORMULANAME"), chosen.get("score"))
 
-                # 若时间缺失，询问时间
                 if not (slots.get("timeString") and slots.get("timeType")):
                     return f"好的，要查【{slots['indicator']}】，请告诉我时间。", graph.to_state()
 
@@ -159,10 +166,8 @@ async def process_message(user_id: str, message: str, state: dict):
             slots["formula_candidates"] = candidates[:TOP_N]
             await update_state(user_id, session_state)
             msg_lines = ["请从以下候选公式选择编号："]
-            for c in candidates[:TOP_N]:
-                # 保证 number 字段存在，若无则用索引 +1
-                number = c.get("number") or (c.get("FORMULAID") or "N/A")
-                msg_lines.append(f"{number}) {c['FORMULANAME']} (score {c.get('score', 0):.2f})")
+            for idx, c in enumerate(candidates[:TOP_N]):
+                msg_lines.append(f"{idx+1}) {c['FORMULANAME']} (score {c.get('score', 0):.2f})")
             logger.info("➡️ 返回候选列表供用户选择（count=%d）", len(slots["formula_candidates"]))
             return "\n".join(msg_lines), graph.to_state()
         else:
@@ -171,15 +176,12 @@ async def process_message(user_id: str, message: str, state: dict):
 
 
 async def _execute_query(user_id: str, slots: dict, graph: ContextGraph):
-    """
-    执行单指标单时间查询，成功后更新 ContextGraph 并清理 slots。
-    自动判断 platform_api.query_platform 是同步函数还是协程。
-    """
     try:
         formula = slots.get("formula")
         indicator = slots.get("indicator")
         time_str = slots.get("timeString")
         time_type = slots.get("timeType")
+        intent = slots.get("intent", "new_query")
 
         logger.info("🚀 执行平台查询: indicator=%s, formula=%s, time=%s, timeType=%s",
                     indicator, formula, time_str, time_type)
@@ -192,7 +194,7 @@ async def _execute_query(user_id: str, slots: dict, graph: ContextGraph):
 
         logger.info("✅ platform_api 返回: %s", result)
 
-        # ---- 格式化结果 ----
+        # 格式化结果
         if isinstance(result, dict):
             val = result.get(formula) or result.get("value") or next(iter(result.values()), None)
             unit = result.get("unit", "")
@@ -207,13 +209,27 @@ async def _execute_query(user_id: str, slots: dict, graph: ContextGraph):
         else:
             reply = f"✅ {indicator} 在 {time_str} ({time_type}) 的查询结果: {result}"
 
-        # ✅ 记录 ContextGraph
+        # 写入 ContextGraph
         graph.add_node(indicator, time_str, time_type)
         graph_store[user_id] = graph
         logger.info("🔗 已把完整查询写入 ContextGraph：indicators=%s times=%s", graph.indicators, graph.times)
 
-        # ✅ 清空 slots
+        # 写入 history（避免重复 formula）
         state = await get_state(user_id)
+        history = state.get("history", [])
+        if not any(h.get("formula") == formula for h in history):
+            history.append({
+                "user_input": slots.get("last_user_input", ""),
+                "indicator": indicator,
+                "formula": formula,
+                "timeString": time_str,
+                "timeType": time_type,
+                "intent": intent
+            })
+        state["history"] = history
+        logger.info("🧾 history 更新完成，共 %d 条", len(history))
+
+        # 清空 slots
         state["slots"] = _default_slots()
         await update_state(user_id, state)
         logger.info("🧹 已清空用户 slots，等待下次查询")
@@ -225,14 +241,14 @@ async def _execute_query(user_id: str, slots: dict, graph: ContextGraph):
         return f"查询时出错: {e}", graph.to_state()
 
 
-
 def _default_slots():
-    """重置默认 slots（与 main_v1 保持一致）"""
     return {
         "indicator": None,
         "formula": None,
         "formula_candidates": None,
         "awaiting_confirmation": False,
         "timeString": None,
-        "timeType": None
+        "timeType": None,
+        "intent": "new_query",
+        "last_user_input": ""
     }

@@ -7,13 +7,14 @@ from core import llm_intent_parser as lightweight_intent    # 轻量意图分类
 from core.llm_energy_intent_parser import EnergyIntentParser
 from core.pipeline import process_message
 from core.llm_client import safe_llm_chat
+from agent_state import get_state
 
 # 日志配置（被导入时确保仅配置一次）
 logger = logging.getLogger("intent_router")
 if not logger.handlers:
     logging.basicConfig(
         level=logging.INFO,
-        format="%(asctime)s | %(levelname)s | %(message)s"
+        format="%(asctime)s | %(levelname)s | %(name)s | %(message)s"
     )
 
 # 每个 user_id 对应一个 EnergyIntentParser 实例（包含上下文图谱等）
@@ -25,7 +26,7 @@ async def route_intent(user_id: str, user_input: str) -> Dict[str, Any]:
     1) 先使用轻量意图分类器判断 intent（避免重复解析）
     2) 若为 ENERGY_QUERY：使用 EnergyIntentParser.parse_intent 完成指标+时间解析并更新上下文
        然后交由 pipeline.process_message 做查询/聚合/格式化（pipeline 依赖 graph）
-    3) TOOL / CHAT 分流到相应处理逻辑
+    3) TOOL / CHAT / ENERGY_KNOWLEDGE_QA 分流到相应处理逻辑
     返回字典包含 reply 与调试信息（intent_info / graph_state / error）
     """
     logger.info(f"🟢 [route_intent] user={user_id!r} input={user_input!r}")
@@ -65,9 +66,18 @@ async def route_intent(user_id: str, user_input: str) -> Dict[str, Any]:
         # 2B) 调用 pipeline 处理（pipeline 假定 graph 中已经有节点）
         try:
             reply, graph_state = await process_message(user_id, user_input, parser.graph.to_state())
-            # 可选：将 pipeline 返回的 graph_state 同步回 parser.graph（如果需要）
-            # 如果你的 ContextGraph 提供 update_from_state / add_node 等方法，可以在此同步。
             logger.info("✅ pipeline.process_message 执行成功")
+
+            # ---------- Step C: 同步 pipeline slots/history 回 intent_info ----------
+            state = await get_state(user_id)
+            slots = state.get("slots", {})
+            history = state.get("history", [])  # pipeline 里已追加最终查询记录
+            intent_info["indicator"] = slots.get("indicator") or intent_info.get("indicator")
+            intent_info["formula"] = slots.get("formula")
+            intent_info["timeString"] = slots.get("timeString")
+            intent_info["timeType"] = slots.get("timeType")
+            intent_info["history"] = history
+
             return {
                 "reply": reply,
                 "intent_info": intent_info,
@@ -77,6 +87,7 @@ async def route_intent(user_id: str, user_input: str) -> Dict[str, Any]:
             logger.exception("❌ pipeline 执行失败: %s", e)
             return {"reply": "能源查询流程执行失败。", "error": str(e), "intent_info": intent_info}
 
+    # 2) ENERGY_KNOWLEDGE_QA: 知识问答
     elif intent == "ENERGY_KNOWLEDGE_QA":
         logger.info("📘 检测到 ENERGY_KNOWLEDGE_QA，生成解释型回答")
         t_chat_start = time.perf_counter()
@@ -87,7 +98,7 @@ async def route_intent(user_id: str, user_input: str) -> Dict[str, Any]:
         logger.info(f"🗨️ 生成成功 | ⏱️ LLM cost={1000*(t_chat_end-t_chat_start):.1f}ms")
         return {"reply": reply, "intent_info": {"intent": "ENERGY_KNOWLEDGE_QA"}}
     
-    # 2) TOOL: 简单工具（例如当前时间）
+    # 3) TOOL: 简单工具（例如当前时间）
     elif intent == "TOOL":
         logger.info("🛠️ 检测到 TOOL 意图，进入工具处理")
 
@@ -99,7 +110,7 @@ async def route_intent(user_id: str, user_input: str) -> Dict[str, Any]:
             logger.exception("❌ 时间问答失败: %s", e)
             return {"reply": "无法解析该时间问题。", "error": str(e)}
 
-    # 3) CHAT: 通用聊天由 LLM 直接回复
+    # 4) CHAT: 通用聊天由 LLM 直接回复
     else:
         logger.info("💬 检测到 CHAT 意图，转给通用聊天模型")
         try:
