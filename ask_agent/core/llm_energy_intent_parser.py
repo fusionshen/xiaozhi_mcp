@@ -23,7 +23,9 @@ class EnergyIntentParser:
 
     def __init__(self, user_id: str):
         self.user_id = user_id
+        # 解析器级别的对话历史（仅用于 prompt / 语义增强）
         self.history = []  # [{'user_input', 'indicator', 'timeString', 'timeType', 'intent'}]
+        # 初始化上下文图（仅在需要时读取，不自动写入节点）
         self.graph = ContextGraph()
         logger.info(f"🧩 初始化 EnergyIntentParser for user={user_id}")
 
@@ -48,9 +50,17 @@ class EnergyIntentParser:
         return intent
 
     async def parse_intent(self, user_input: str):
+        """
+        1) 调用 LLM 判断意图（compare/expand/.../new_query）
+        2) 调用 parse_user_input 抽取 indicator/time（仅用于补全 slots 与多轮逻辑）
+        3) 若判定为 KNOWLEDGE 类型（解释性问题），将返回 intent=KNOWLEDGE_QA（或上层约定的枚举）
+        4) 将解析记录追加到 parser.history（对话解析历史），但将解析结果临时写入 ContextGraph，在最终确认后会更新
+           ——保证 ContextGraph 只保存“最终确认/成功查询”的记录，以便后续分析/比较稳定。
+        返回包含：intent, indicator, timeString, timeType, history, graph（当前 graph state 只作参考）
+        """
         logger.info(f"🧠 [parse_intent] user={self.user_id} | input={user_input}")
 
-        # Step 1: 历史上下文
+        # Step 1: 历史上下文（用于 prompt）
         history_str = self._format_history_for_prompt()
 
         # Step 2: 调用 LLM 判断意图
@@ -77,7 +87,7 @@ class EnergyIntentParser:
         intent = intent_result.get("intent", "new_query")
         logger.info(f"📥 LLM 返回意图识别结果: {intent_result}")
 
-        # Step 3: 指标 + 时间解析
+        # Step 3: 指标 + 时间解析（重用 parse_user_input 的逻辑）
         try:
             parsed_info = await parse_user_input(user_input)
             logger.info(f"📊 指标解析结果: {parsed_info}")
@@ -89,14 +99,14 @@ class EnergyIntentParser:
         timeString = parsed_info.get("timeString")
         timeType = parsed_info.get("timeType")
 
-        # Step 4: 多轮增强
+        # Step 4: 多轮增强（仅用于调整意图判断）
         last_indicator = next((h["indicator"] for h in reversed(self.history) if h.get("indicator")), None)
         enhanced_intent = self._enhance_intent_by_keywords(intent, user_input, last_indicator)
         logger.info(f"🎯 最终意图确定: {enhanced_intent}")
 
         # Step 5: 更新上下文图与历史
         # ✅ 使用 nodes 去重，同时同步更新 indicators 和 times
-        self.graph.add_node(indicator, timeString, timeType)
+        #self.graph.add_node(indicator, timeString, timeType)
 
         # 追加历史记录
         record = {
@@ -107,9 +117,18 @@ class EnergyIntentParser:
             "intent": enhanced_intent
         }
         self.history.append(record)
-        logger.info(f"🧾 已追加历史记录（共 {len(self.history)} 条）")
+        logger.info(f"🧾 已追加解析历史记录（共 {len(self.history)} 条），注意：这不是“查询成功历史”")
 
-        return {
+        # ✅ Step 6: 若为 compare 意图，自动添加关系
+        if enhanced_intent == "compare":
+            try:
+                self.graph.add_relation("compare")
+                logger.info("🔗 检测到 compare 意图，已自动添加 graph 关系：compare")
+            except Exception as e:
+                logger.warning(f"⚠️ 添加 compare 关系失败: {e}")
+
+        # Step 7: 返回结果；graph 返回当前 graph state（仅供参考）
+        result = {
             "intent": enhanced_intent,
             "indicator": indicator,
             "timeString": timeString,
@@ -117,6 +136,9 @@ class EnergyIntentParser:
             "history": self.history,
             "graph": self.graph.to_state()
         }
+        logger.info(f"✅ parse_intent 完成，返回结果: intent={enhanced_intent}, indicator={indicator}, time={timeString}")
+        return result
+
 
 # ===================== 测试 =====================
 if __name__ == "__main__":
@@ -137,6 +159,6 @@ if __name__ == "__main__":
         ]
         for q in test_inputs:
             res = await parser.parse_intent(q)
-            print(f"{q} => {res}")
+            print(f"{q} => {res['intent']}")
 
     loop.run_until_complete(test())

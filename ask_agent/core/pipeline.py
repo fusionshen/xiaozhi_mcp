@@ -19,17 +19,12 @@ graph_store = {}
 
 async def process_message(user_id: str, message: str, graph_state_dict: dict):
     """
-    用户消息处理管线（融合 V1 单指标单时间逻辑 + V2 上下文框架）：
-      步骤：
-        1) 加载 slots 状态与上下文图谱（graph）
-        2) 若存在 formula_candidates 且用户输入为数字 => 选择公式并继续
-        3) 否则调用 llm_energy_indicator_parser.parse_user_input 补全 slots
-        4) 若缺失 indicator/time => 引导用户补全
-        5) 通过 formula_api 查找公式：支持精确匹配、自动选择高分候选、或返回候选列表
-        6) 若信息齐全则调用 platform_api 查询并格式化结果
-        7) 查询成功后把“完整查询记录”写入 ContextGraph 并清空 slots
-    返回:
-      (reply_str, graph_state_dict)
+    用户消息处理管线：
+      1) 加载 slots 状态与上下文图谱（graph）
+      2) 用户选择候选公式或调用 LLM 解析 indicator/time
+      3) 缺失信息引导用户补全
+      4) formula_api 查询公式（精确/候选/自动选择）
+      5) 执行查询 platform_api 并更新 graph/history
     """
     user_input = (message or "").strip()
     logger.info(f"🟢 [process_message] user={user_id!r} input={user_input!r}")
@@ -74,7 +69,7 @@ async def process_message(user_id: str, message: str, graph_state_dict: dict):
         slots["formula"] = None
         await update_state(user_id, session_state)
 
-    # 4️⃣ 调用 LLM 解析补全 indicator/time
+    # 4️⃣ 调用 LLM 解析补全 indicator/time 并增强 intent
     try:
         parsed = await parse_user_input(user_input)
         logger.info("🔍 LLM 解析结果: %s", parsed)
@@ -88,6 +83,21 @@ async def process_message(user_id: str, message: str, graph_state_dict: dict):
             slots[k] = parsed.get(k)
             logger.debug("补全 slots: %s -> %s", k, parsed.get(k))
 
+    # ✅ 多轮增强 intent（同时写入 slots["intent"]）
+    last_indicator = None
+    history = session_state.get("history", [])
+    if history:
+        for h in reversed(history):
+            if h.get("indicator"):
+                last_indicator = h["indicator"]
+                break
+
+    from core.llm_energy_intent_parser import EnergyIntentParser
+    parser = EnergyIntentParser(user_id)
+    enhanced_intent = parser._enhance_intent_by_keywords("new_query", user_input, last_indicator)
+    slots["intent"] = enhanced_intent
+    logger.info(f"🎯 slots['intent'] 已设置为: {enhanced_intent}")
+
     await update_state(user_id, session_state)
     logger.info("当前 slots (after parsing): %s", slots)
 
@@ -96,7 +106,7 @@ async def process_message(user_id: str, message: str, graph_state_dict: dict):
         logger.info("⚠️ indicator 缺失，要求用户补全指标名称。")
         return "请告诉我您要查询的指标名称。", graph.to_state()
 
-    # 6️⃣ 使用 formula_api 查找公式（可能会返回精确匹配或候选列表）
+    # 6️⃣ 使用 formula_api 查找公式
     logger.info("🔎 调用 formula_api.formula_query_dict 查询公式, indicator=%s", slots["indicator"])
     try:
         formula_resp = await asyncio.to_thread(formula_api.formula_query_dict, slots["indicator"])
@@ -159,7 +169,7 @@ async def _execute_query(user_id: str, slots: dict, graph: ContextGraph):
         time_str = slots.get("timeString")
         time_type = slots.get("timeType")
 
-        # ✅ 自动判断同步/异步
+        # 调用 platform_api 获取结果
         if inspect.iscoroutinefunction(platform_api.query_platform):
             result = await platform_api.query_platform(formula, time_str, time_type)
         else:
@@ -182,13 +192,25 @@ async def _execute_query(user_id: str, slots: dict, graph: ContextGraph):
         else:
             reply = f"✅ {indicator} 在 {time_str} ({time_type}) 的查询结果: {result}"
 
-        # 更新 graph
-        graph.add_node(indicator, time_str, time_type)
-        graph_store[user_id] = graph
-        logger.info("🔗 已把完整查询写入 ContextGraph：indicators=%s times=%s", graph.indicators, graph.times)
-
-        # ✅ 系统接口成功记录到 state["history"]
+        # 更新 graph 节点
         state = await get_state(user_id)
+        history = state.get("history", [])
+        last_indicator = next((h["indicator"] for h in reversed(history) if h.get("indicator")), None)
+
+        if last_indicator and last_indicator != indicator:
+            graph.update_node(old_indicator=last_indicator, new_indicator=indicator)
+        else:
+            graph.add_node(indicator, time_str, time_type)
+
+        # 自动处理 compare 意图关系
+        if slots.get("intent") == "compare" and len(graph.nodes) >= 2:
+            prev_node = graph.nodes[-2]
+            curr_node = graph.nodes[-1]
+            graph.add_relation("compare", prev_node, curr_node)
+
+        graph_store[user_id] = graph
+
+        # 写入 history
         state.setdefault("history", [])
         state["history"].append({
             "user_input": slots.get("last_input", ""),
@@ -196,10 +218,11 @@ async def _execute_query(user_id: str, slots: dict, graph: ContextGraph):
             "formula": formula,
             "timeString": time_str,
             "timeType": time_type,
-            "intent": "new_query"
+            "result": reply,
+            "intent": slots.get("intent", "new_query")
         })
 
-        # 清理 slots（仅清临时字段）
+        # 清理临时 slots
         slots["formula_candidates"] = None
         slots["awaiting_confirmation"] = False
         await update_state(user_id, state)
@@ -218,5 +241,6 @@ def _default_slots():
         "awaiting_confirmation": False,
         "timeString": None,
         "timeType": None,
-        "last_input": None
+        "last_input": None,
+        "intent": None
     }
