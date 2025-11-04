@@ -1,4 +1,5 @@
 # core/llm_energy_intent_parser.py
+
 import asyncio
 import logging
 from core.llm_client import safe_llm_parse
@@ -16,6 +17,7 @@ class EnergyIntentParser:
     """
     能源类对话解析器：
     处理 ENERGY_QUERY 类型的用户输入，提取指标、时间并更新多轮上下文图。
+    使用 ContextGraph 的 nodes 确保去重。
     """
     VALID_INTENTS = ["compare", "expand", "same_indicator_new_time", "list_query", "new_query"]
 
@@ -93,7 +95,10 @@ class EnergyIntentParser:
         logger.info(f"🎯 最终意图确定: {enhanced_intent}")
 
         # Step 5: 更新上下文图与历史
+        # ✅ 使用 nodes 去重，同时同步更新 indicators 和 times
         self.graph.add_node(indicator, timeString, timeType)
+
+        # 追加历史记录
         record = {
             "user_input": user_input,
             "indicator": indicator,

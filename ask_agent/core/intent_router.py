@@ -7,7 +7,7 @@ from core import llm_intent_parser as lightweight_intent    # 轻量意图分类
 from core.llm_energy_intent_parser import EnergyIntentParser
 from core.pipeline import process_message
 from core.llm_client import safe_llm_chat
-from agent_state import get_state
+from agent_state import get_state, update_state
 
 # 日志配置（被导入时确保仅配置一次）
 logger = logging.getLogger("intent_router")
@@ -61,22 +61,31 @@ async def route_intent(user_id: str, user_input: str) -> Dict[str, Any]:
                         f"indicator={intent_info.get('indicator')}, time={intent_info.get('timeString')}")
         except Exception as e:
             logger.exception("❌ EnergyIntentParser.parse_intent 失败: %s", e)
-            return {"reply": "解析能源意图失败，请稍后重试。", "error": str(e)}
+            return {"reply": "解析能源意图失败，请稍后重试。", "error": "parse_intent_failed"}
 
-        # 2B) 调用 pipeline 处理（pipeline 假定 graph 中已经有节点）
+        state = await get_state(user_id)
+        state["slots"]["last_input"] = user_input
+        await update_state(user_id, state)
+
         try:
             reply, graph_state = await process_message(user_id, user_input, parser.graph.to_state())
-            logger.info("✅ pipeline.process_message 执行成功")
 
-            # ---------- Step C: 同步 pipeline slots/history 回 intent_info ----------
+            logger.info("✅ pipeline.process_message 执行成功")
+            # 获取 state 中的系统接口历史（成功查询记录）
             state = await get_state(user_id)
-            slots = state.get("slots", {})
-            history = state.get("history", [])  # pipeline 里已追加最终查询记录
-            intent_info["indicator"] = slots.get("indicator") or intent_info.get("indicator")
-            intent_info["formula"] = slots.get("formula")
-            intent_info["timeString"] = slots.get("timeString")
-            intent_info["timeType"] = slots.get("timeType")
-            intent_info["history"] = history
+            system_history = state.get("history", [])
+            last_success = system_history[-1] if system_history else {}
+
+            # intent_info 只同步最终成功公式/指标/时间
+            intent_info = {
+                "intent": "new_query",
+                "indicator": last_success.get("indicator"),
+                "formula": last_success.get("formula"),
+                "timeString": last_success.get("timeString"),
+                "timeType": last_success.get("timeType"),
+                "history": system_history,
+                "graph": parser.graph.to_state()
+            }
 
             return {
                 "reply": reply,
