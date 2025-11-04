@@ -1,5 +1,6 @@
 # core/intent_router.py
 import logging
+import time
 from typing import Dict, Any
 
 from core import llm_intent_parser as lightweight_intent    # 轻量意图分类（只判断 intent）
@@ -17,7 +18,6 @@ if not logger.handlers:
 
 # 每个 user_id 对应一个 EnergyIntentParser 实例（包含上下文图谱等）
 parser_store: Dict[str, EnergyIntentParser] = {}
-
 
 async def route_intent(user_id: str, user_input: str) -> Dict[str, Any]:
     """
@@ -77,6 +77,16 @@ async def route_intent(user_id: str, user_input: str) -> Dict[str, Any]:
             logger.exception("❌ pipeline 执行失败: %s", e)
             return {"reply": "能源查询流程执行失败。", "error": str(e), "intent_info": intent_info}
 
+    elif intent == "ENERGY_KNOWLEDGE_QA":
+        logger.info("📘 检测到 ENERGY_KNOWLEDGE_QA，生成解释型回答")
+        t_chat_start = time.perf_counter()
+        reply = await safe_llm_chat(
+            f"请能源专家身份解释以下能源知识问题：{user_input}"
+        )
+        t_chat_end = time.perf_counter()
+        logger.info(f"🗨️ 生成成功 | ⏱️ LLM cost={1000*(t_chat_end-t_chat_start):.1f}ms")
+        return {"reply": reply, "intent_info": {"intent": "ENERGY_KNOWLEDGE_QA"}}
+    
     # 2) TOOL: 简单工具（例如当前时间）
     elif intent == "TOOL":
         logger.info("🛠️ 检测到 TOOL 意图，进入工具处理")
