@@ -6,7 +6,7 @@ from core.context_graph import ContextGraph
 from core.llm_energy_indicator_parser import parse_user_input  # ✅ 复用你的旧解析逻辑
 
 
-class IntentParser:
+class EnergyIntentParser:
     """
     使用 LLM 解析用户意图 + 指标 + 时间，支持多轮上下文。
     """
@@ -107,7 +107,7 @@ if __name__ == "__main__":
     loop = asyncio.get_event_loop()
 
     async def test():
-        parser = IntentParser("user1")
+        parser = EnergyIntentParser("user1")
         test_inputs = [
             "今天是什么日期？",
             "高炉工序能耗是多少",

@@ -1,44 +1,100 @@
-from core.llm_energy_intent_parser import IntentParser
+# core/intent_router.py
+import logging
+from typing import Dict, Any
+
+from core import llm_intent_parser as lightweight_intent    # 轻量意图分类（只判断 intent）
+from core.llm_energy_intent_parser import EnergyIntentParser
 from core.pipeline import process_message
 from core.llm_client import safe_llm_chat
-from core.context_graph import ContextGraph
 
-# 内存缓存每个用户的 IntentParser
-parser_store = {}
+# 日志配置（被导入时确保仅配置一次）
+logger = logging.getLogger("intent_router")
+if not logger.handlers:
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s | %(levelname)s | %(message)s"
+    )
 
-async def route_intent(user_id: str, user_input: str):
+# 每个 user_id 对应一个 EnergyIntentParser 实例（包含上下文图谱等）
+parser_store: Dict[str, EnergyIntentParser] = {}
+
+
+async def route_intent(user_id: str, user_input: str) -> Dict[str, Any]:
     """
-    按意图分流处理。
+    意图路由器（V2）：
+    1) 先使用轻量意图分类器判断 intent（避免重复解析）
+    2) 若为 ENERGY_QUERY：使用 EnergyIntentParser.parse_intent 完成指标+时间解析并更新上下文
+       然后交由 pipeline.process_message 做查询/聚合/格式化（pipeline 依赖 graph）
+    3) TOOL / CHAT 分流到相应处理逻辑
+    返回字典包含 reply 与调试信息（intent_info / graph_state / error）
     """
-    # 获取或创建 IntentParser
-    parser = parser_store.get(user_id)
-    if not parser:
-        parser = IntentParser(user_id)
-        parser_store[user_id] = parser
+    logger.info(f"🟢 [route_intent] user={user_id!r} input={user_input!r}")
 
-    # 解析意图 + 指标 + 时间
-    intent_info = await parser.parse_intent(user_input)
-    intent = intent_info.get("intent", "CHAT")
+    # ---------- Step A: 轻量意图判断（只返回 intent） ----------
+    try:
+        lightweight = await lightweight_intent.parse_intent(user_input)
+        intent = (lightweight or {}).get("intent", "CHAT")
+        logger.info(f"🔎 轻量意图分类结果: {intent} (raw: {lightweight})")
+    except Exception as e:
+        logger.exception("❌ 轻量意图分类失败，退回 CHAT：%s", e)
+        intent = "CHAT"
 
+    # ---------- Step B: 分流 ----------
+    # 1) ENERGY_QUERY: 使用 EnergyIntentParser（含 context graph）
     if intent == "ENERGY_QUERY":
-        # 使用 pipeline 处理完整流程
-        reply, graph_state = await process_message(user_id, user_input, parser.graph.to_state())
-        return {
-            "reply": reply,
-            "intent_info": intent_info,
-            "graph_state": graph_state
-        }
+        logger.info("⚙️ 检测到 ENERGY_QUERY，进入能源问数流程")
 
-    elif intent == "TOOL":
-        # 简单工具逻辑
-        if "时间" in user_input or "几点" in user_input:
-            import datetime
-            now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            return {"reply": f"当前时间是 {now}"}
+        # 获取或创建 EnergyIntentParser（保存于 parser_store）
+        parser = parser_store.get(user_id)
+        if not parser:
+            parser = EnergyIntentParser(user_id)
+            parser_store[user_id] = parser
+            logger.info("✨ 为用户创建新的 EnergyIntentParser（包含 ContextGraph）")
         else:
-            return {"reply": "我暂时只支持时间类工具查询。"}
+            logger.info("♻️ 复用已有 EnergyIntentParser（保留历史与 graph）")
 
+        # 2A) 让 EnergyIntentParser 完整解析（intent + indicator + time）
+        try:
+            intent_info = await parser.parse_intent(user_input)
+            logger.info(f"🧾 EnergyIntentParser.parse_intent 返回: intent={intent_info.get('intent')}, "
+                        f"indicator={intent_info.get('indicator')}, time={intent_info.get('timeString')}")
+        except Exception as e:
+            logger.exception("❌ EnergyIntentParser.parse_intent 失败: %s", e)
+            return {"reply": "解析能源意图失败，请稍后重试。", "error": str(e)}
+
+        # 2B) 调用 pipeline 处理（pipeline 假定 graph 中已经有节点）
+        try:
+            reply, graph_state = await process_message(user_id, user_input, parser.graph.to_state())
+            # 可选：将 pipeline 返回的 graph_state 同步回 parser.graph（如果需要）
+            # 如果你的 ContextGraph 提供 update_from_state / add_node 等方法，可以在此同步。
+            logger.info("✅ pipeline.process_message 执行成功")
+            return {
+                "reply": reply,
+                "intent_info": intent_info,
+                "graph_state": graph_state
+            }
+        except Exception as e:
+            logger.exception("❌ pipeline 执行失败: %s", e)
+            return {"reply": "能源查询流程执行失败。", "error": str(e), "intent_info": intent_info}
+
+    # 2) TOOL: 简单工具（例如当前时间）
+    elif intent == "TOOL":
+        logger.info("🛠️ 检测到 TOOL 意图，进入工具处理")
+
+        from core.llm_time_parser import parse_time_question
+        try:
+            res = await parse_time_question(user_input)
+            return {"reply": res["answer"], "intent_info": res}
+        except Exception as e:
+            logger.exception("❌ 时间问答失败: %s", e)
+            return {"reply": "无法解析该时间问题。", "error": str(e)}
+
+    # 3) CHAT: 通用聊天由 LLM 直接回复
     else:
-        # 默认聊天
-        chat_reply = await safe_llm_chat(user_input)
-        return {"reply": chat_reply, "intent_info": intent_info}
+        logger.info("💬 检测到 CHAT 意图，转给通用聊天模型")
+        try:
+            chat_reply = await safe_llm_chat(user_input)
+            return {"reply": chat_reply, "intent_info": {"intent": "CHAT"}}
+        except Exception as e:
+            logger.exception("❌ safe_llm_chat 调用失败: %s", e)
+            return {"reply": "聊天服务出错。", "error": str(e)}
