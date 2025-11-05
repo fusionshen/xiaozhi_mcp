@@ -1,4 +1,5 @@
 # core/llm_energy_intent_parser.py
+
 import asyncio
 import logging
 from core.llm_client import safe_llm_parse
@@ -15,16 +16,17 @@ if not logger.handlers:
 class EnergyIntentParser:
     """
     能源类对话解析器：
-    处理 ENERGY_QUERY 类型的用户输入，提取指标、时间并更新多轮上下文图。
-    使用 ContextGraph 的 nodes 确保去重。
+    - 负责把单轮用户输入解析为 intent/indicator/time（用于后续 pipeline 补全）
+    - 解析器的 history 保存解析轨迹（不是系统成功查询的 history）
+    - 不在解析阶段把未确认的解析结果写入 ContextGraph，避免污染
     """
     VALID_INTENTS = ["compare", "expand", "same_indicator_new_time", "list_query", "new_query"]
 
     def __init__(self, user_id: str):
         self.user_id = user_id
-        # 解析器级别的对话历史（仅用于 prompt / 语义增强）
+        # parser 的解析历史（用于构造 prompt）
         self.history = []  # [{'user_input', 'indicator', 'timeString', 'timeType', 'intent'}]
-        # 初始化上下文图（仅在需要时读取，不自动写入节点）
+        # parser 内部保留一个 graph 对象供参考（但不主动写入）
         self.graph = ContextGraph()
         logger.info(f"🧩 初始化 EnergyIntentParser for user={user_id}")
 
@@ -38,39 +40,36 @@ class EnergyIntentParser:
 
     def _enhance_intent_by_keywords(self, intent, user_input, last_indicator):
         """
-        轻量 fallback，仅在 LLM 无法判断时参考关键词提示。
-        不再强行覆盖 LLM 判断。
+        关键词 fallback：只在 LLM 无法给出明确意图时使用，
+        并且不强行覆盖 LLM 返回的意图。
         """
         logger.debug(f"🔍 关键词 fallback: 原始意图={intent}, last_indicator={last_indicator}, input={user_input}")
-        # 仅在 intent 为 None 或 new_query 且有历史指标时才微调
         if intent in [None, "new_query"] and last_indicator:
-            if any(kw in user_input for kw in ["昨天", "今天", "明天", "上周", "本周", "下周"]):
+            if any(kw in user_input for kw in ["昨天", "今天", "明天", "上周", "本周", "下周", "上月", "上季度"]):
                 intent = intent or "same_indicator_new_time"
-                logger.debug("🟡 关键词 fallback: 检测到时间相关词，意图设为 same_indicator_new_time")
-            elif any(kw in user_input for kw in ["和", "及", "&", ",", "对比", "比较"]):
+                logger.debug("🟡 关键词 fallback: 检测到时间相关词，设为 same_indicator_new_time")
+            elif any(kw in user_input for kw in ["和", "及", "&", ",", "对比", "比较", "相比"]):
                 intent = intent or "compare"
-                logger.debug("🟡 关键词 fallback: 检测到对比词，意图设为 compare")
+                logger.debug("🟡 关键词 fallback: 检测到对比词，设为 compare")
             elif any(kw in user_input for kw in ["平均", "总计", "统计", "汇总"]):
                 intent = intent or "list_query"
-                logger.debug("🟡 关键词 fallback: 检测到汇总词，意图设为 list_query")
+                logger.debug("🟡 关键词 fallback: 检测到汇总词，设为 list_query")
         logger.debug(f"✅ 最终 fallback 意图={intent}")
         return intent
 
     async def parse_intent(self, user_input: str):
         """
         1) 调用 LLM 判断意图（compare/expand/.../new_query）
-        2) 调用 parse_user_input 抽取 indicator/time（仅用于补全 slots 与多轮逻辑）
-        3) 若判定为 KNOWLEDGE 类型（解释性问题），将返回 intent=KNOWLEDGE_QA（或上层约定的枚举）
-        4) 将解析记录追加到 parser.history（对话解析历史），但**不能**将解析结果写入 ContextGraph，在最终确认后会更新
-           ——保证 ContextGraph 只保存“最终确认/成功查询”的记录，以便后续分析/比较稳定。
-        返回包含：intent, indicator, timeString, timeType, history, graph（当前 graph state 只作参考）
+        2) 调用 parse_user_input 抽取 indicator/time（仅用于补全 slots）
+        3) 将解析记录追加到 parser.history（注意：这不是系统级成功 history）
+        返回：{intent, indicator, timeString, timeType, history, graph}
         """
         logger.info(f"🧠 [parse_intent] user={self.user_id} | input={user_input}")
 
-        # Step 1: 历史上下文（用于 prompt）
+        # Step 1: 格式化历史供 prompt 使用
         history_str = self._format_history_for_prompt()
 
-        # Step 2: 调用 LLM 判断意图
+        # Step 2: LLM 判断意图
         intent_prompt = f"""
 你是一个用户意图识别助手。
 根据用户输入及历史对话记录判断本次输入的意图。
@@ -94,7 +93,7 @@ class EnergyIntentParser:
         intent = intent_result.get("intent", "new_query")
         logger.info(f"📥 LLM 返回意图识别结果: {intent_result}")
 
-        # Step 3: 指标 + 时间解析（重用 parse_user_input 的逻辑）
+        # Step 3: 指标 + 时间解析（重用 parse_user_input）
         try:
             parsed_info = await parse_user_input(user_input)
             logger.info(f"📊 指标解析结果: {parsed_info}")
@@ -106,16 +105,12 @@ class EnergyIntentParser:
         timeString = parsed_info.get("timeString")
         timeType = parsed_info.get("timeType")
 
-        # 轻量 fallback
+        # Step 4: 轻量 fallback（仅在 LLM 结果不明确或为 new_query 且存在 last_indicator 时使用）
         last_indicator = next((h["indicator"] for h in reversed(self.history) if h.get("indicator")), None)
         enhanced_intent = self._enhance_intent_by_keywords(intent, user_input, last_indicator)
         logger.info(f"🎯 最终意图确定: {enhanced_intent}")
 
-        # Step 5: 更新上下文图与历史
-        # ✅ 使用 nodes 去重，同时同步更新 indicators 和 times
-        #self.graph.add_node(indicator, timeString, timeType)
-
-        # 追加历史记录
+        # Step 5: 追加解析历史（仅解析层面）
         record = {
             "user_input": user_input,
             "indicator": indicator,
@@ -126,15 +121,21 @@ class EnergyIntentParser:
         self.history.append(record)
         logger.info(f"🧾 已追加解析历史记录（共 {len(self.history)} 条），注意：这不是“查询成功历史”")
 
-        # 若为 compare 意图，尝试添加关系
+        # Step 6: 如果是 compare，尝试识别 source/target
         if enhanced_intent == "compare":
-            try:
-                self.graph.add_relation("compare")
-                logger.info("🔗 检测到 compare 意图，已自动添加 graph 关系：compare")
-            except Exception as e:
-                logger.warning(f"⚠️ 添加 compare 关系失败: {e}")
+            logger.info("🔍 检测到 compare 意图，准备建立对比关系")
 
-        # Step 7: 返回结果；graph 返回当前 graph state（仅供参考）
+            # 至少需要两条历史记录
+            if len(self.history) >= 2:
+                source = self.history[-2]
+                target = self.history[-1]
+                self.graph.add_relation("compare", source, target)
+                logger.info(f"🔗 已记录对比关系: {source['user_input']} vs {target['user_input']}")
+            else:
+                logger.warning("⚠️ compare 意图但历史不足两条，无法建立关系")
+
+
+        # 返回解析结果（graph 为参考当前 parser.graph state）
         result = {
             "intent": enhanced_intent,
             "indicator": indicator,

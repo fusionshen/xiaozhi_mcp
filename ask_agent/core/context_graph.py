@@ -1,99 +1,223 @@
 # core/context_graph.py
+
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional, Tuple, Any
 import asyncio
 import time
+import uuid
+import re
+import logging
+
+logger = logging.getLogger("context_graph")
+if not logger.handlers:
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(name)s | %(message)s")
 
 # =========================
 # 基础上下文图谱
 # =========================
 @dataclass
+class Node:
+    id: str
+    indicator: Optional[str]
+    timeString: Optional[str]
+    timeType: Optional[str]
+    meta: Dict[str, Any] = field(default_factory=dict)
+
+@dataclass
+class Relation:
+    id: str
+    type: str
+    source: str
+    target: str
+    meta: Dict[str, Any] = field(default_factory=dict)
+
+@dataclass
 class ContextGraph:
     """
     上下文语义图谱：
-    存储会话中涉及的所有标准指标、时间信息、节点及语义关系。
+    - nodes: 列表，每个 node 有唯一 id 与 indicator/time
+    - relations: 语义关系（compare / time_shift / sequence / custom）
+    - indicators / times: 便捷索引（保持与 nodes 同步）
     """
     indicators: List[str] = field(default_factory=list)
     times: List[Dict] = field(default_factory=list)
     relations: List[Dict] = field(default_factory=list)
-    nodes: List[Tuple[str, str, str]] = field(default_factory=list)
+    nodes: List[Tuple[str, Optional[str], Optional[str], Optional[str]]] = field(default_factory=list)
+    # nodes entries are tuples: (id, indicator, timeString, timeType)
 
     # ---------------------
-    # 指标 / 时间添加
+    # 内部辅助
     # ---------------------
-    def add_indicator(self, name: str):
-        """添加唯一指标"""
-        if name and name not in self.indicators:
+    def _now(self):
+        return time.time()
+
+    def _new_id(self, prefix: str = "n") -> str:
+        return f"{prefix}{uuid.uuid4().hex[:8]}"
+
+    # ---------------------
+    # 指标 / 时间添加（同步索引）
+    # ---------------------
+    def _add_indicator_index(self, name: Optional[str]):
+        if not name:
+            return
+        if name not in self.indicators:
             self.indicators.append(name)
 
-    def add_time(self, time_str: str, time_type: Optional[str]):
-        """添加唯一时间"""
+    def _add_time_index(self, time_str: Optional[str], time_type: Optional[str]):
+        if not time_str:
+            return
         node = {"timeString": time_str, "timeType": time_type}
-        if time_str and node not in self.times:
+        if node not in self.times:
             self.times.append(node)
 
     # ---------------------
-    # 节点添加
+    # 节点操作
     # ---------------------
-    def add_node(self, indicator: Optional[str], time_str: Optional[str], time_type: Optional[str] = None):
+    def add_node(self, indicator: Optional[str], time_str: Optional[str], time_type: Optional[str] = None) -> str:
         """
-        新增标准指标节点：
-        - 自动去重
-        - 保证节点为 pipeline 最终确认指标
+        添加节点（仅接受 pipeline 最终确认的 indicator/time）：
+        - 返回节点 id（若已存在则返回已存在节点 id）
+        - 去重逻辑：通过 (indicator, time_str, time_type) 完全匹配去重
         """
-        if indicator:
-            self.add_indicator(indicator)
-        if time_str:
-            self.add_time(time_str, time_type)
+        key = (indicator, time_str, time_type)
+        for n in self.nodes:
+            _, ind, t, tt = n
+            if (ind, t, tt) == (indicator, time_str, time_type):
+                logger.debug("add_node: 节点已存在，返回已有 id")
+                return n[0]
 
-        if indicator or time_str:
-            node_tuple = (indicator, time_str, time_type)
-            if node_tuple not in self.nodes:
-                self.nodes.append(node_tuple)
+        nid = self._new_id("n")
+        self.nodes.append((nid, indicator, time_str, time_type))
+        self._add_indicator_index(indicator)
+        self._add_time_index(time_str, time_type)
+        logger.info("🆕 ContextGraph.add_node: id=%s indicator=%s time=%s type=%s", nid, indicator, time_str, time_type)
+        return nid
 
-    # ---------------------
-    # 更新节点（如 pipeline 确认后替换指标）
-    # ---------------------
     def update_node(self, old_indicator: str, new_indicator: str):
         """
-        当 pipeline 最终确定指标后，用新指标替换旧指标节点。
+        当 pipeline 最终将某个临时指标替换为最终指标时调用：
+        - 用 new_indicator 替换 nodes 中所有 old_indicator
+        - 同步更新 indicators 索引
         """
+        logger.info("ContextGraph.update_node: old=%s -> new=%s", old_indicator, new_indicator)
         updated_nodes = []
         for node in self.nodes:
-            indicator, t_str, t_type = node
+            nid, indicator, t_str, t_type = node
             if indicator == old_indicator:
-                updated_nodes.append((new_indicator, t_str, t_type))
+                updated_nodes.append((nid, new_indicator, t_str, t_type))
             else:
                 updated_nodes.append(node)
         self.nodes = updated_nodes
 
-        # 更新 indicators 列表
         if old_indicator in self.indicators:
-            self.indicators.remove(old_indicator)
-        if new_indicator not in self.indicators:
+            try:
+                self.indicators.remove(old_indicator)
+            except ValueError:
+                pass
+        if new_indicator and new_indicator not in self.indicators:
             self.indicators.append(new_indicator)
 
-    # ---------------------
-    # 语义关系添加
-    # ---------------------
-    def add_relation(self, rel_type: str, node1: Tuple[str, str, str], node2: Tuple[str, str, str]):
+    def find_node(self, indicator: Optional[str] = None, timeString: Optional[str] = None, timeType: Optional[str] = None) -> Optional[str]:
         """
-        建立语义关系（如 compare、time_shift、expand）
-        :param rel_type: 关系类型（compare / time_shift / expand / sequence）
-        :param node1: 起点节点 (indicator, timeString, timeType)
-        :param node2: 终点节点 (indicator, timeString, timeType)
+        查找匹配节点：
+        - 完全匹配 (indicator,timeString,timeType) 优先
+        - 可支持单字段模糊匹配（只按提供的字段进行匹配）
+        - 返回第一个匹配的节点 id 或 None
         """
-        if not node1 or not node2:
-            return
+        for nid, ind, t, tt in self.nodes:
+            if indicator and ind != indicator:
+                continue
+            if timeString and t != timeString:
+                continue
+            if timeType and tt != timeType:
+                continue
+            return nid
+        return None
 
-        relation = {"type": rel_type, "from": node1, "to": node2}
-        if relation not in self.relations:
-            self.relations.append(relation)
+    def get_node(self, node_id: str) -> Optional[Dict]:
+        for nid, ind, t, tt in self.nodes:
+            if nid == node_id:
+                return {"id": nid, "indicator": ind, "timeString": t, "timeType": tt}
+        return None
 
-    def link_last(self, rel_type: str = "sequence"):
-        """建立最近两个节点的关系（如时间序列关系）"""
-        if len(self.nodes) >= 2:
-            self.add_relation(rel_type, self.nodes[-2], self.nodes[-1])
+    # ---------------------
+    # relations 操作
+    # ---------------------
+    def add_relation(self, rel_type: str, source: Tuple[str, Optional[str], Optional[str]] = None, target: Tuple[str, Optional[str], Optional[str]] = None, source_id: Optional[str] = None, target_id: Optional[str] = None, meta: Optional[Dict] = None) -> Optional[str]:
+        """
+        添加关系：
+        - 可以传入 (source_id, target_id) 或者 source/target tuple (indicator,timeString,timeType)
+        - 返回 relation id
+        """
+        if meta is None:
+            meta = {}
+
+        # resolve ids
+        s_id = source_id
+        t_id = target_id
+
+        if not s_id and source:
+            # source tuple -> find node
+            s_id = self.find_node(indicator=source[0], timeString=source[1], timeType=source[2])
+        if not t_id and target:
+            t_id = self.find_node(indicator=target[0], timeString=target[1], timeType=target[2])
+
+        if not s_id or not t_id:
+            logger.warning("add_relation: 无法解析 source/target -> source_id=%s target_id=%s", s_id, t_id)
+            return None
+
+        # de-duplicate
+        for r in self.relations:
+            if r["type"] == rel_type and r["source"] == s_id and r["target"] == t_id:
+                logger.debug("add_relation: 关系已存在")
+                return r["id"]
+
+        rid = f"r{uuid.uuid4().hex[:8]}"
+        rel = {"id": rid, "type": rel_type, "source": s_id, "target": t_id, "meta": meta}
+        self.relations.append(rel)
+        logger.info("🔗 ContextGraph.add_relation: id=%s type=%s %s -> %s", rid, rel_type, s_id, t_id)
+        return rid
+
+    def get_relations(self, rel_type: Optional[str] = None) -> List[Dict]:
+        if rel_type:
+            return [r for r in self.relations if r["type"] == rel_type]
+        return list(self.relations)
+
+    # ---------------------
+    # 智能解析 compare nodes（供 intent_router 调用）
+    # ---------------------
+    def resolve_compare_nodes(self, user_input: str = "", fallback_last_n: int = 2) -> Optional[Tuple[str, str]]:
+        """
+        解析想要对比的两个节点：
+        - 优先解析用户输入中显式的时间或指标（简单正则）
+        - 若无法解析，fallback 使用最近 N 个节点（默认最近 2 条）
+        返回 (source_id, target_id) 或 None
+        """
+        logger.debug("resolve_compare_nodes: 尝试从输入解析对比目标: %s", user_input)
+
+        # 1) try match explicit years/dates like "2020" / "2025-11" / "2025-11-04"
+        years = re.findall(r"20\d{2}(?:[-/]\d{1,2}(?:[-/]\d{1,2})?)?", user_input)
+        if len(years) >= 2:
+            # try to find exact nodes by timeString
+            src = self.find_node(timeString=years[0])
+            tgt = self.find_node(timeString=years[1])
+            if src and tgt:
+                logger.debug("resolve_compare_nodes: 通过年份匹配到节点: %s , %s", src, tgt)
+                return src, tgt
+
+        # 2) try patterns like "上月", "上周", "昨天", "前天" - we won't expand them here,
+        #    higher层（intent_router）应把这种自然语言解析为 concrete timeString via parse_user_input / time parser.
+        #    So here we only do fallback based on available nodes.
+
+        # 3) If nothing explicit, use last N nodes
+        if len(self.nodes) >= fallback_last_n:
+            src = self.nodes[-fallback_last_n][0]
+            tgt = self.nodes[-1][0]
+            logger.debug("resolve_compare_nodes: fallback 最近 %d 条节点: %s -> %s", fallback_last_n, src, tgt)
+            return src, tgt
+
+        logger.debug("resolve_compare_nodes: 无法解析对比节点")
+        return None
 
     # ---------------------
     # 序列化接口
@@ -120,11 +244,11 @@ class ContextGraph:
 
 
 # =========================
-# 用户上下文管理器
+# 用户上下文管理器（可选）
 # =========================
 class ContextManager:
     """
-    管理每个 user_id 的 query 历史和 context_graph
+    管理每个 user_id 的 query 历史和 context_graph（灰度用，pipeline 里已有类似实现）
     """
     SESSION_EXPIRE_SECONDS = 30 * 60  # 30分钟过期
 
@@ -136,31 +260,15 @@ class ContextManager:
         return time.time()
 
     async def append_query(self, user_id: str, query: Dict):
-        """
-        添加一次查询：
-          - 仅在公式与时间均确定后记录
-          - 自动建立时间或比较关系
-        """
         async with self._lock:
             ctx = self._user_contexts.get(user_id)
             if not ctx:
                 ctx = {"history": [], "graph": ContextGraph(), "last_active": self._now()}
                 self._user_contexts[user_id] = ctx
 
-            graph: ContextGraph = ctx["graph"]
-
-            # ✅ 添加节点
-            graph.add_node(query.get("indicator"), query.get("timeString"), query.get("timeType"))
-
-            # ✅ 自动关系建立
-            intent = query.get("intent")
-            if intent == "compare" and len(graph.nodes) >= 2:
-                graph.add_relation("compare", graph.nodes[-2], graph.nodes[-1])
-            elif intent == "same_indicator_new_time":
-                graph.link_last("time_shift")
-
             ctx["history"].append(query)
             ctx["last_active"] = self._now()
+            ctx["graph"].add_node(query.get("indicator"), query.get("timeString"), query.get("timeType"))
             return ctx
 
     async def get_recent(self, user_id: str, n: Optional[int] = None):
@@ -200,7 +308,6 @@ class ContextManager:
             for uid in expired:
                 del self._user_contexts[uid]
             return expired
-
 
 # ============ 示例 ============
 if __name__ == "__main__":
