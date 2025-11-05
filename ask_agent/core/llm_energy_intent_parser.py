@@ -15,19 +15,16 @@ if not logger.handlers:
 
 class EnergyIntentParser:
     """
-    能源类对话解析器：
-    - 负责把单轮用户输入解析为 intent/indicator/time（用于后续 pipeline 补全）
-    - 解析器的 history 保存解析轨迹（不是系统成功查询的 history）
-    - 不在解析阶段把未确认的解析结果写入 ContextGraph，避免污染
+    能源类对话解析器（负责把单轮输入解析为 intent/indicator/time）。
+    - 不在解析阶段持久写入 pipeline 的 ContextGraph（避免中间值污染）
+    - 在 detect compare 时，会在 parser.graph 中做参考性标注（不会持久化）
     """
     VALID_INTENTS = ["compare", "expand", "same_indicator_new_time", "list_query", "new_query"]
 
     def __init__(self, user_id: str):
         self.user_id = user_id
-        # parser 的解析历史（用于构造 prompt）
-        self.history = []  # [{'user_input', 'indicator', 'timeString', 'timeType', 'intent'}]
-        # parser 内部保留一个 graph 对象供参考（但不主动写入）
-        self.graph = ContextGraph()
+        self.history = []  # 解析层历史： [{'user_input','indicator','timeString','timeType','intent'}]
+        self.graph = ContextGraph()  # 解析阶段参考 graph（不写回 pipeline store）
         logger.info(f"🧩 初始化 EnergyIntentParser for user={user_id}")
 
     def _format_history_for_prompt(self):
@@ -40,8 +37,7 @@ class EnergyIntentParser:
 
     def _enhance_intent_by_keywords(self, intent, user_input, last_indicator):
         """
-        关键词 fallback：只在 LLM 无法给出明确意图时使用，
-        并且不强行覆盖 LLM 返回的意图。
+        关键词 fallback：只在 LLM 无法给出明确意图时使用，且不强行覆盖 LLM 返回的意图。
         """
         logger.debug(f"🔍 关键词 fallback: 原始意图={intent}, last_indicator={last_indicator}, input={user_input}")
         if intent in [None, "new_query"] and last_indicator:
@@ -73,8 +69,7 @@ class EnergyIntentParser:
         intent_prompt = f"""
 你是一个用户意图识别助手。
 根据用户输入及历史对话记录判断本次输入的意图。
-请严格返回 JSON：
-{{"intent": "..."}}
+请严格返回 JSON：{{"intent": "..."}}
 
 意图说明：
 - compare: 对比时间或对象
@@ -90,10 +85,10 @@ class EnergyIntentParser:
 """
         logger.info("📤 发送意图识别 prompt 至 LLM")
         intent_result = await safe_llm_parse(intent_prompt)
-        intent = intent_result.get("intent", "new_query")
+        intent = (intent_result or {}).get("intent", "new_query")
         logger.info(f"📥 LLM 返回意图识别结果: {intent_result}")
 
-        # Step 3: 指标 + 时间解析（重用 parse_user_input）
+        # 指标 + 时间解析（重用 parse_user_input）
         try:
             parsed_info = await parse_user_input(user_input)
             logger.info(f"📊 指标解析结果: {parsed_info}")
@@ -121,21 +116,25 @@ class EnergyIntentParser:
         self.history.append(record)
         logger.info(f"🧾 已追加解析历史记录（共 {len(self.history)} 条），注意：这不是“查询成功历史”")
 
-        # Step 6: 如果是 compare，尝试识别 source/target
+        # parser 内部参考性 graph 标注（仅在有明确 compare/时间迁移时做参考）
         if enhanced_intent == "compare":
-            logger.info("🔍 检测到 compare 意图，准备建立对比关系")
+            try:
+                # 若解析出 indicator/time，可以添加具体 node id（parser.graph 是参考用途）
+                if indicator and timeString:
+                    node_id = self.graph.add_node(indicator, timeString, timeType)
+                    # 如果 parser.history 至少有上一条，则形成 relation
+                    if len(self.history) >= 2:
+                        prev = self.history[-2]
+                        prev_id = self.graph.find_node(prev.get("indicator"), prev.get("timeString"))
+                        if prev_id:
+                            self.graph.add_relation("compare", source_id=prev_id, target_id=node_id)
+                else:
+                    # 添加无 source/target 的 compare relation 以标注意图（解析阶段）
+                    self.graph.add_relation("compare")
+                logger.info("🔗 parse_intent: 在 parser.graph 中记录 compare（参考）")
+            except Exception as e:
+                logger.warning(f"⚠️ parse_intent 添加 compare 参考失败: {e}")
 
-            # 至少需要两条历史记录
-            if len(self.history) >= 2:
-                source = self.history[-2]
-                target = self.history[-1]
-                self.graph.add_relation("compare", source, target)
-                logger.info(f"🔗 已记录对比关系: {source['user_input']} vs {target['user_input']}")
-            else:
-                logger.warning("⚠️ compare 意图但历史不足两条，无法建立关系")
-
-
-        # 返回解析结果（graph 为参考当前 parser.graph state）
         result = {
             "intent": enhanced_intent,
             "indicator": indicator,

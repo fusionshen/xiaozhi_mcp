@@ -33,7 +33,11 @@ async def route_intent(user_id: str, user_input: str) -> Dict[str, Any]:
 
     # ---------- Step A: 轻量意图判断（只返回 intent） ----------
     try:
-        lightweight = await lightweight_intent.parse_intent(user_input)
+        # 获取 state 中的系统接口历史（成功查询记录）
+        state = await get_state(user_id)
+        system_history = state.get("history", [])
+        last_success = system_history[-1] if system_history else {}
+        lightweight = await lightweight_intent.parse_intent(user_input, last_success.get("indicator"), system_history)
         intent = (lightweight or {}).get("intent", "CHAT")
         logger.info(f"🔎 轻量意图分类结果: {intent} (raw: {lightweight})")
     except Exception as e:
@@ -83,8 +87,7 @@ async def route_intent(user_id: str, user_input: str) -> Dict[str, Any]:
                 "formula": last_success.get("formula"),
                 "timeString": last_success.get("timeString"),
                 "timeType": last_success.get("timeType"),
-                "history": system_history,
-                "graph": parser.graph.to_state()
+                "history": system_history
             }
 
             return {
