@@ -20,13 +20,13 @@ if not logger.handlers:
 
 async def process_message(user_id: str, message: str, graph_state_dict: dict):
     """能源语义查询主入口：根据 intent 分流处理"""
-    user_input = (message or "").strip()
+    user_input = str(message or "").strip()
     logger.info(f"🟢 [process_message] user={user_id!r} input={user_input!r}")
 
     # 1️⃣ 加载 graph 和 slots
     graph = get_graph(user_id) or ContextGraph.from_state(graph_state_dict)
     set_graph(user_id, graph)  # ✅ 确保缓存同步
-    
+
     session_state = await get_state(user_id)
     session_state.setdefault("slots", default_slots())
     slots = session_state["slots"]

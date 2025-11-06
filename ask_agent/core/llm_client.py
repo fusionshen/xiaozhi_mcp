@@ -1,4 +1,7 @@
+# core/llm_client.py
 import os
+import logging
+import re
 for key in ["HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy"]:
     os.environ.pop(key, None)
 import json
@@ -8,17 +11,25 @@ from config import (
     REMOTE_OLLAMA_URL, REMOTE_MODEL, LOCAL_MODEL
 )
 
+# 日志配置（被导入时确保仅配置一次）
+logger = logging.getLogger("llm_client")
+if not logger.handlers:
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s | %(levelname)s | %(name)s | %(message)s"
+    )
+
 # ===================== ChatOllama 兼容导入 =====================
 try:
     from langchain_ollama import ChatOllama
-    print("✅ Using ChatOllama from langchain-ollama")
+    logger.info("✅ Using ChatOllama from langchain-ollama")
 except ImportError:
     try:
         from langchain_community.chat_models import ChatOllama
-        print("✅ Using ChatOllama from langchain_community")
+        logger.info("✅ Using ChatOllama from langchain_community")
     except ImportError:
         from langchain.chat_models import ChatOllama
-        print("⚠️ Using ChatOllama from old langchain (may be deprecated)")
+        logger.info("⚠️ Using ChatOllama from old langchain (may be deprecated)")
 
 
 async def is_remote_ollama_available(base_url: str, timeout: float = 3.0) -> bool:
@@ -32,7 +43,7 @@ async def is_remote_ollama_available(base_url: str, timeout: float = 3.0) -> boo
                 #print(f"🌐 Remote Ollama available at {base_url}")
                 return True
     except Exception as e:
-        print(f"⚠️ Remote Ollama not reachable: {e}")
+        logger.info(f"⚠️ Remote Ollama not reachable: {e}")
     return False
 
 
@@ -44,40 +55,48 @@ async def get_llm() -> ChatOllama:
         #print(f"✅ Using remote model: {REMOTE_MODEL}")
         return ChatOllama(model=REMOTE_MODEL, base_url=REMOTE_OLLAMA_URL)
     else:
-        print(f"🔄 Falling back to local model: {LOCAL_MODEL}")
+        logger.info(f"🔄 Falling back to local model: {LOCAL_MODEL}")
         return ChatOllama(model=LOCAL_MODEL)
 
 
 # ===================== 通用 LLM 调用函数 =====================
 async def safe_llm_parse(prompt: str) -> dict:
     """
-    调用 LLM 并安全解析 JSON 输出。
-    - 自动去掉 ``` 或 ```json 包裹
-    - JSON 解析失败时用正则兜底
-    返回字典：{"indicator": ..., "timeString": ..., "timeType": ...} 或自定义字段
+    安全解析 LLM 返回内容为 JSON。
+    支持以下场景：
+    - 模型返回纯 JSON
+    - 模型返回前后带解释文字
+    - 模型输出 markdown 代码块（如 ```json ... ```）
     """
     llm = await get_llm()
     try:
         resp = await llm.agenerate([[HumanMessage(content=prompt)]])
-        content = resp.generations[0][0].message.content.strip()
+        response_text = resp.generations[0][0].message.content.strip()
 
-        # 去掉 ``` 包裹
-        if content.startswith("```"):
-            content = "\n".join(content.splitlines()[1:-1]).strip()
+        # 🧹 清理常见包裹字符
+        text = response_text.strip()
+        text = text.replace("```json", "").replace("```", "").strip()
+        text = text.replace("JSON:", "").replace("json:", "").strip()
 
-        try:
-            result = json.loads(content)
-        except json.JSONDecodeError:
-            # 正则兜底
-            result = {}
-            pairs = re.findall(r'"(\w+)"\s*:\s*"([^"]*)"', content)
-            for k, v in pairs:
-                result[k] = v
+        # 🧩 提取第一个 {...} JSON 块
+        match = re.search(r"\{[\s\S]*?\}", text)
+        if match:
+            json_str = match.group(0)
+            data = json.loads(json_str)
+            logger.info("✅ 从 LLM 输出中成功解析 JSON。")
+            return data
 
-        return result
+        # ⚙️ 如果没找到标准 JSON，尝试 key:value 兜底解析
+        pairs = re.findall(r'"(\w+)"\s*:\s*"([^"]*)"', text)
+        if pairs:
+            data = {k: v for k, v in pairs}
+            logger.warning("⚠️ 使用正则兜底解析 JSON。")
+            return data
 
+        logger.warning("⚠️ 未识别到 JSON 格式，返回空 dict。原文: %s", text[:200])
+        return {}
     except Exception as e:
-        print("❌ LLM 调用失败:", e)
+        logger.exception("❌ safe_llm_parse 解析失败: %s", e)
         return {}
 
 
@@ -91,5 +110,5 @@ async def safe_llm_chat(prompt: str) -> str:
         resp = await llm.agenerate([[HumanMessage(content=prompt)]])
         return resp.generations[0][0].message.content.strip()
     except Exception as e:
-        print("❌ LLM 聊天失败:", e)
+        logger.exception("❌ LLM 聊天失败:", e)
         return "抱歉，我暂时无法回答这个问题。"

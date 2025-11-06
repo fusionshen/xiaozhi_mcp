@@ -28,10 +28,9 @@ async def handle_new_query(user_id: str, message: str, graph: ContextGraph):
     session_state = await get_state(user_id)
     session_state.setdefault("slots", default_slots())
     slots = session_state["slots"]
-
     logger.info(f"当前 slots (before parsing): {slots}")
     
-    user_input = (message or "").strip()
+    user_input = str(message or "").strip()
     # ---------- 数字输入选择公式 ----------
     if slots.get("formula_candidates") and user_input.isdigit():
         idx = int(user_input) - 1
@@ -50,10 +49,12 @@ async def handle_new_query(user_id: str, message: str, graph: ContextGraph):
             
             # 如果缺时间，提示补全
             if not (slots.get("timeString") and slots.get("timeType")):
+                slots["awaiting_confirmation"] = True
+                await _update_slots(user_id, slots)
                 return f"好的，要查【{slots['indicator']}】，请告诉我时间。", graph.to_state()
 
             # 否则执行查询    
-            return await _execute_query(user_id, message, slots, graph)
+            return await _execute_query(user_id, message, graph)
         logger.warning("⚠️ 用户输入的候选编号超范围: %s", user_input)
         return f"请输入编号 1~{len(candidates)} 选择公式。", graph.to_state()
 
@@ -100,11 +101,14 @@ async def handle_new_query(user_id: str, message: str, graph: ContextGraph):
         chosen = exact_matches[0]
         slots["formula"] = chosen["FORMULAID"]
         slots["indicator"] = chosen["FORMULANAME"]
+        slots["formula_candidates"] = None
         await _update_slots(user_id, slots)
         logger.info(f"✅ 精确匹配公式: {slots['indicator']} (FORMULAID={slots['formula']})")
         
         # 如果没有时间，询问时间
         if not (slots.get("timeString") and slots.get("timeType")):
+            slots["awaiting_confirmation"] = True
+            await _update_slots(user_id, slots)
             return f"好的，要查【{slots['indicator']}】，请告诉我时间。", graph.to_state()
 
         return await _execute_query(user_id, slots, graph)
@@ -121,12 +125,15 @@ async def handle_new_query(user_id: str, message: str, graph: ContextGraph):
             logger.info(f"🧠 自动选择高分候选公式: {slots['indicator']} (score={top['score']})")
 
             if not (slots.get("timeString") and slots.get("timeType")):
+                slots["awaiting_confirmation"] = True
+                await _update_slots(user_id, slots)
                 return f"好的，要查【{slots['indicator']}】，请告诉我时间。", graph.to_state()
             
             # 否则执行查询
             return await _execute_query(user_id, slots, graph)
         else:
             slots["formula_candidates"] = candidates[:TOP_N]
+            slots["awaiting_confirmation"] = True
             await _update_slots(user_id, slots)
             msg_lines = ["请从以下候选公式选择编号："]
             for i, c in enumerate(candidates[:TOP_N], 1):

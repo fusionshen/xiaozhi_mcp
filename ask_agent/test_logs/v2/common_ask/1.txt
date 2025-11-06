@@ -1,0 +1,107 @@
+{
+  "reply": "请从以下候选公式选择编号：\n1) 1550酸洗高炉煤气使用量实绩单耗值 (score 92.08)\n2) 1550热镀锌高炉煤气使用量实绩单耗值 (score 92.02)\n3) 1550酸洗高炉煤气使用量实绩折标单耗值 (score 91.76)\n4) 1550热镀锌高炉煤气使用量实绩报出值 (score 91.48)\n5) 1550酸洗高炉煤气使用量实绩报出值 (score 91.38)",
+  "intent_info": {
+    "awaiting_confirmation": true,
+    "formula_candidates": [
+      {
+        "number": 1,
+        "FORMULAID": "LZ1201Z3021.EIRL.UCVALUE",
+        "FORMULANAME": "1550酸洗高炉煤气使用量实绩单耗值",
+        "score": 92.0815,
+        "fuzzy_score": 90,
+        "semantic_score": 82.101,
+        "match_kind": "hybrid"
+      },
+      {
+        "number": 2,
+        "FORMULAID": "LZ1207Z3021.EIRL.UCVALUE",
+        "FORMULANAME": "1550热镀锌高炉煤气使用量实绩单耗值",
+        "score": 92.0225,
+        "fuzzy_score": 90,
+        "semantic_score": 82.01,
+        "match_kind": "hybrid"
+      },
+      {
+        "number": 3,
+        "FORMULAID": "LZ1201Z3021.EIRL.UCSTDVALUE",
+        "FORMULANAME": "1550酸洗高炉煤气使用量实绩折标单耗值",
+        "score": 91.7633,
+        "fuzzy_score": 90,
+        "semantic_score": 81.61,
+        "match_kind": "hybrid"
+      },
+      {
+        "number": 4,
+        "FORMULAID": "LZ1207Z3021.EIRL",
+        "FORMULANAME": "1550热镀锌高炉煤气使用量实绩报出值",
+        "score": 91.4787,
+        "fuzzy_score": 90.9,
+        "semantic_score": 79.1731,
+        "match_kind": "hybrid"
+      },
+      {
+        "number": 5,
+        "FORMULAID": "LZ1201Z3021.EIRL",
+        "FORMULANAME": "1550酸洗高炉煤气使用量实绩报出值",
+        "score": 91.3793,
+        "fuzzy_score": 90.9,
+        "semantic_score": 79.0212,
+        "match_kind": "hybrid"
+      }
+    ],
+    "intent": "new_query",
+    "indicator": "高炉煤气耗",
+    "formula": null,
+    "timeString": null,
+    "timeType": null,
+    "history": []
+  },
+  "graph_state": {
+    "graph": {
+      "nodes": [],
+      "relations": [],
+      "_next_id": 1
+    }
+  }
+}
+
+2025-11-06 18:25:01,558 | INFO | intent_router | 🟢 [route_intent] user='shenlan' input='高炉的煤气耗是多少'
+2025-11-06 18:25:01,559 | INFO | llm_intent_parser | 🔍 [parse_intent] 用户输入: 高炉的煤气耗是多少, 上次指标: None, awaiting=False
+2025-11-06 18:25:01,633 | INFO | httpx | HTTP Request: GET http://192.168.92.13:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-06 18:25:02,118 | INFO | httpx | HTTP Request: POST http://192.168.92.13:11434/api/chat "HTTP/1.1 200 OK"
+2025-11-06 18:25:03,824 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-06 18:25:03,831 | INFO | llm_intent_parser | 📥 轻量意图分类结果: ENERGY_QUERY, parsed_number=None
+2025-11-06 18:25:03,832 | INFO | intent_router | 🔎 轻量意图分类结果: ENERGY_QUERY (raw: {'intent': 'ENERGY_QUERY', 'parsed_number': None})
+2025-11-06 18:25:03,832 | INFO | intent_router | ⚙️ 检测到 ENERGY_QUERY，进入能源问数流程
+2025-11-06 18:25:03,832 | INFO | energy_query_runner | ⚙️ [run_energy_query] 开始执行 ENERGY_QUERY 流程
+2025-11-06 18:25:03,832 | INFO | llm_energy_intent_parser | 🧩 初始化 EnergyIntentParser for user=shenlan
+2025-11-06 18:25:03,832 | INFO | energy_query_runner | ✨ 创建新的 EnergyIntentParser（含 ContextGraph）
+2025-11-06 18:25:03,832 | INFO | energy_query_runner | 🧩 传入 EnergyIntentParser.parse_intent 参数: 高炉的煤气耗是多少
+2025-11-06 18:25:03,832 | INFO | llm_energy_intent_parser | 🧠 [parse_intent] user=shenlan | input=高炉的煤气耗是多少
+2025-11-06 18:25:03,832 | INFO | llm_energy_intent_parser | 📤 发送意图识别 prompt 至 LLM
+2025-11-06 18:25:03,892 | INFO | httpx | HTTP Request: GET http://192.168.92.13:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-06 18:25:04,220 | INFO | httpx | HTTP Request: POST http://192.168.92.13:11434/api/chat "HTTP/1.1 200 OK"
+2025-11-06 18:25:04,444 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-06 18:25:04,445 | INFO | llm_energy_intent_parser | 📥 LLM 返回意图识别结果: {'intent': 'new_query'}
+2025-11-06 18:25:04,507 | INFO | httpx | HTTP Request: GET http://192.168.92.13:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-06 18:25:05,543 | INFO | httpx | HTTP Request: POST http://192.168.92.13:11434/api/chat "HTTP/1.1 200 OK"
+2025-11-06 18:25:06,446 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-06 18:25:06,449 | INFO | llm_energy_intent_parser | 📊 指标解析结果: {'indicator': '高炉煤气耗', 'timeString': None, 'timeType': None}
+2025-11-06 18:25:06,449 | INFO | llm_energy_intent_parser | 🎯 最终意图确定: new_query
+2025-11-06 18:25:06,449 | INFO | llm_energy_intent_parser | 🧾 已追加解析历史记录（共 1 条），注意：这不是“查询成功历史”
+2025-11-06 18:25:06,450 | INFO | llm_energy_intent_parser | ✅ parse_intent 完成，返回结果: intent=new_query, indicator=高炉煤气耗, time=None
+2025-11-06 18:25:06,450 | INFO | energy_query_runner | 🧾 parse_intent 返回 intent=new_query
+2025-11-06 18:25:06,450 | INFO | pipeline | 🟢 [process_message] user='shenlan' input='高炉的煤气耗是多少'
+2025-11-06 18:25:06,450 | INFO | pipeline | 🚦 检测到意图: new_query
+2025-11-06 18:25:06,450 | INFO | pipeline.handlers | 当前 slots (before parsing): {'indicator': None, 'formula': None, 'formula_candidates': None, 'awaiting_confirmation': False, 'timeString': None, 'timeType': None, 'last_input': '高炉的煤气耗是多少', 'intent': 'new_query'}
+2025-11-06 18:25:06,512 | INFO | httpx | HTTP Request: GET http://192.168.92.13:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-06 18:25:07,482 | INFO | httpx | HTTP Request: POST http://192.168.92.13:11434/api/chat "HTTP/1.1 200 OK"
+2025-11-06 18:25:08,399 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-06 18:25:08,400 | INFO | pipeline.handlers | 📦 当前 slots (after parsing): {'indicator': '高炉煤气耗', 'formula': None, 'formula_candidates': None, 'awaiting_confirmation': False, 'timeString': None, 'timeType': None, 'last_input': '高炉的煤气耗是多少', 'intent': 'new_query'}
+2025-11-06 18:25:08,400 | INFO | pipeline.handlers | 🔎 调用 formula_api 查询公式: 高炉煤气耗
+Batches: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00,  6.24it/s]
+2025-11-06 18:25:09,421 | INFO | pipeline.handlers | 📊 formula_api 返回: exact=0, candidates=5
+2025-11-06 18:25:09,421 | INFO | pipeline.handlers | 🔢 找到 5 个候选公式, 最高候选: 1550酸洗高炉煤气使用量实绩单耗值 (score=92.0815)
+2025-11-06 18:25:09,421 | INFO | pipeline.handlers | ➡️ 返回候选公式供用户选择
+2025-11-06 18:25:09,421 | INFO | energy_query_runner | ✅ pipeline.process_message 执行成功
+INFO:     127.0.0.1:36074 - "GET /chat?user_id=shenlan&message=%E9%AB%98%E7%82%89%E7%9A%84%E7%85%A4%E6%B0%94%E8%80%97%E6%98%AF%E5%A4%9A%E5%B0%91 HTTP/1.1" 200 OK

@@ -4,10 +4,8 @@ import time
 from typing import Dict, Any
 
 from core import llm_intent_parser as lightweight_intent    # 轻量意图分类（只判断 intent）
-from core.llm_energy_intent_parser import EnergyIntentParser
-from core.pipeline import process_message
 from core.llm_client import safe_llm_chat
-from agent_state import get_state, update_state
+from core.energy_query_runner import run_energy_query
 
 # 日志配置（被导入时确保仅配置一次）
 logger = logging.getLogger("intent_router")
@@ -16,9 +14,6 @@ if not logger.handlers:
         level=logging.INFO,
         format="%(asctime)s | %(levelname)s | %(name)s | %(message)s"
     )
-
-# 每个 user_id 对应一个 EnergyIntentParser 实例（包含上下文图谱等）
-parser_store: Dict[str, EnergyIntentParser] = {}
 
 async def route_intent(user_id: str, user_input: str) -> Dict[str, Any]:
     """
@@ -33,71 +28,20 @@ async def route_intent(user_id: str, user_input: str) -> Dict[str, Any]:
 
     # ---------- Step A: 轻量意图判断（只返回 intent） ----------
     try:
-        # 获取 state 中的系统接口历史（成功查询记录）
-        state = await get_state(user_id)
-        system_history = state.get("history", [])
-        last_success = system_history[-1] if system_history else {}
-        lightweight = await lightweight_intent.parse_intent(user_input, last_success.get("indicator"), system_history)
+        lightweight = await lightweight_intent.parse_intent(user_id, user_input)
         intent = (lightweight or {}).get("intent", "CHAT")
+        parsed_number = (lightweight or {}).get("parsed_number", None)
         logger.info(f"🔎 轻量意图分类结果: {intent} (raw: {lightweight})")
     except Exception as e:
         logger.exception("❌ 轻量意图分类失败，退回 CHAT：%s", e)
         intent = "CHAT"
+        parsed_number = None
 
     # ---------- Step B: 分流 ----------
     # 1) ENERGY_QUERY: 使用 EnergyIntentParser（含 context graph）
     if intent == "ENERGY_QUERY":
         logger.info("⚙️ 检测到 ENERGY_QUERY，进入能源问数流程")
-
-        # 获取或创建 EnergyIntentParser（保存于 parser_store）
-        parser = parser_store.get(user_id)
-        if not parser:
-            parser = EnergyIntentParser(user_id)
-            parser_store[user_id] = parser
-            logger.info("✨ 为用户创建新的 EnergyIntentParser（包含 ContextGraph）")
-        else:
-            logger.info("♻️ 复用已有 EnergyIntentParser（保留历史与 graph）")
-
-        # 2A) 让 EnergyIntentParser 完整解析（intent + indicator + time）
-        try:
-            intent_info = await parser.parse_intent(user_input)
-            logger.info(f"🧾 EnergyIntentParser.parse_intent 返回: intent={intent_info.get('intent')}")
-        except Exception as e:
-            logger.exception("❌ EnergyIntentParser.parse_intent 失败: %s", e)
-            return {"reply": "解析能源意图失败，请稍后重试。", "error": "parse_intent_failed"}
-
-        state = await get_state(user_id)
-        state["slots"]["last_input"] = user_input
-        state["slots"]["intent"] = intent_info.get('intent') or "new_query"
-        await update_state(user_id, state)
-
-        try:
-            reply, graph_state = await process_message(user_id, user_input, parser.graph.to_state())
-
-            logger.info("✅ pipeline.process_message 执行成功")
-            # 获取 state 中的系统接口历史（成功查询记录）
-            state = await get_state(user_id)
-            system_history = state.get("history", [])
-            last_success = system_history[-1] if system_history else {}
-
-            # intent_info 只同步最终成功公式/指标/时间
-            intent_info = {
-                "intent": last_success.get('intent'),
-                "indicator": last_success.get("indicator"),
-                "formula": last_success.get("formula"),
-                "timeString": last_success.get("timeString"),
-                "timeType": last_success.get("timeType"),
-                "history": system_history
-            }
-
-            return {
-                "reply": reply,
-                "intent_info": intent_info,
-                "graph_state": graph_state
-            }
-        except Exception as e:
-            logger.exception("❌ pipeline 执行失败: %s", e)
-            return {"reply": "能源查询流程执行失败。", "error": str(e), "intent_info": intent_info}
+        return await run_energy_query(user_id, user_input, parsed_number)
 
     # 2) ENERGY_KNOWLEDGE_QA: 知识问答
     elif intent == "ENERGY_KNOWLEDGE_QA":

@@ -1,0 +1,20 @@
+{
+  "reply": "好的，要查【1550酸洗高炉煤气使用量实绩单耗值】，请告诉我时间。",
+  "intent_info": {
+    "awaiting_confirmation": true,
+    "formula_candidates": null,
+    "intent": "new_query",
+    "indicator": "1550酸洗高炉煤气使用量实绩单耗值",
+    "formula": "LZ1201Z3021.EIRL.UCVALUE",
+    "timeString": null,
+    "timeType": null,
+    "history": []
+  },
+  "graph_state": {
+    "graph": {
+      "nodes": [],
+      "relations": [],
+      "_next_id": 1
+    }
+  }
+}
