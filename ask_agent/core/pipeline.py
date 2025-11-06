@@ -277,46 +277,24 @@ async def _execute_query(user_id: str, slots: dict, graph: ContextGraph):
             history = state.get("history", [])
             tgt_rec = _find_history_for(tgt_node)
 
-        def _extract_value(res_text):
-            import re
-            if not res_text:
-                return None
-            m = re.search(r"值是\s*([\-0-9\.eE]+)", res_text) or re.search(r":\s*([\-0-9\.eE]+)", res_text) or re.search(r"([\-0-9\.eE]+)", res_text)
-            return m.group(1) if m else None
-
-        val_a = float(_extract_value(src_rec.get("result"))) if src_rec else None
-        val_b = float(_extract_value(tgt_rec.get("result"))) if tgt_rec else None
+        val_a = src_rec.get("result")
+        val_b = tgt_rec.get("result")
 
         analysis = ""
         if val_a is not None and val_b is not None:
-            diff = val_b - val_a
-            percent = (diff / val_a * 100) if val_a != 0 else None
             llm_prompt = f"""
 你是能源分析助手。请基于下面两次查询结果给出简洁对比（一句话总结 + 差值与百分比）：
 - 指标: {src_node.get('indicator')}
-- 时间A: {src_node.get('timeString')}, 数值A: {val_a}
-- 时间B: {tgt_node.get('timeString')}, 数值B: {val_b}
+- 时间A: {src_node.get('timeString')}, 结果A: {val_a}
+- 时间B: {tgt_node.get('timeString')}, 结果B: {val_b}
 """
-            analysis_text = await safe_llm_chat(llm_prompt)
-            analysis = f"\n\n对比分析结论：\n{analysis_text}\n（{src_node.get('timeString')}={val_a}, {tgt_node.get('timeString')}={val_b}, 差值={diff}{'' if percent is None else f', 百分比={percent:.2f}%'}）"
+            analysis = await safe_llm_chat(llm_prompt)
         else:
             analysis = "\n⚠️ 无法找到可用于对比的数值结果。"
 
         final_reply = reply + analysis
         graph.add_relation("compare", source_id=src_id, target_id=tgt_id, meta={"via": "pipeline.compare"})
         graph_store[user_id] = graph
-
-        state.setdefault("history", [])
-        state["history"].append({
-            "user_input": slots.get("last_input", ""),
-            "indicator": indicator,
-            "formula": formula,
-            "timeString": time_str,
-            "timeType": time_type,
-            "result": final_reply,
-            "intent": slots.get("intent", "new_query")
-        })
-        await update_state(user_id, state)
 
         return final_reply, graph.to_state()
 
