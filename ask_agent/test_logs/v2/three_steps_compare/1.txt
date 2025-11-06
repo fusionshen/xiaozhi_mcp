@@ -1,0 +1,79 @@
+{
+  "reply": "✅ 高炉工序能耗实绩报出值 在 2025-11-06 (DAY) 的值是 None ",
+  "intent_info": {
+    "intent": "new_query",
+    "indicator": "高炉工序能耗实绩报出值",
+    "formula": "GXNHLT1100.IXRL",
+    "timeString": "2025-11-06",
+    "timeType": "DAY",
+    "history": [
+      {
+        "user_input": "今天的高炉工序能耗是多少",
+        "indicator": "高炉工序能耗实绩报出值",
+        "formula": "GXNHLT1100.IXRL",
+        "timeString": "2025-11-06",
+        "timeType": "DAY",
+        "result": "✅ 高炉工序能耗实绩报出值 在 2025-11-06 (DAY) 的值是 None ",
+        "intent": "new_query"
+      }
+    ]
+  },
+  "graph_state": {
+    "graph": {
+      "nodes": [
+        {
+          "id": 1,
+          "indicator": "高炉工序能耗实绩报出值",
+          "timeString": "2025-11-06",
+          "timeType": "DAY"
+        }
+      ],
+      "relations": [],
+      "_next_id": 2
+    }
+  }
+}
+
+
+2025-11-06 14:52:49,719 | INFO | intent_router | 🟢 [route_intent] user='shenlan' input='今天的高炉工序能耗是多少'
+2025-11-06 14:52:49,719 | INFO | llm_intent_parser | 🔍 [parse_intent] 用户输入: 今天的高炉工序能耗是多少, 上次指标: None
+2025-11-06 14:52:49,778 | INFO | httpx | HTTP Request: GET http://192.168.92.13:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-06 14:52:50,177 | INFO | httpx | HTTP Request: POST http://192.168.92.13:11434/api/chat "HTTP/1.1 200 OK"
+2025-11-06 14:52:50,415 | INFO | llm_intent_parser | 📥 轻量意图分类结果: ENERGY_QUERY
+2025-11-06 14:52:50,415 | INFO | intent_router | 🔎 轻量意图分类结果: ENERGY_QUERY (raw: {'intent': 'ENERGY_QUERY'})
+2025-11-06 14:52:50,415 | INFO | intent_router | ⚙️ 检测到 ENERGY_QUERY，进入能源问数流程
+2025-11-06 14:52:50,415 | INFO | llm_energy_intent_parser | 🧩 初始化 EnergyIntentParser for user=shenlan
+2025-11-06 14:52:50,415 | INFO | intent_router | ✨ 为用户创建新的 EnergyIntentParser（包含 ContextGraph）
+2025-11-06 14:52:50,415 | INFO | llm_energy_intent_parser | 🧠 [parse_intent] user=shenlan | input=今天的高炉工序能耗是多少
+2025-11-06 14:52:50,415 | INFO | llm_energy_intent_parser | 📤 发送意图识别 prompt 至 LLM
+2025-11-06 14:52:50,477 | INFO | httpx | HTTP Request: GET http://192.168.92.13:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-06 14:52:50,728 | INFO | httpx | HTTP Request: POST http://192.168.92.13:11434/api/chat "HTTP/1.1 200 OK"
+2025-11-06 14:52:50,969 | INFO | llm_energy_intent_parser | 📥 LLM 返回意图识别结果: {'intent': 'new_query'}
+2025-11-06 14:52:51,028 | INFO | httpx | HTTP Request: GET http://192.168.92.13:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-06 14:52:51,989 | INFO | httpx | HTTP Request: POST http://192.168.92.13:11434/api/chat "HTTP/1.1 200 OK"
+2025-11-06 14:52:53,276 | INFO | llm_energy_intent_parser | 📊 指标解析结果: {'indicator': '高炉工序能耗', 'timeString': '2025-11-06', 'timeType': 'DAY'}
+2025-11-06 14:52:53,276 | INFO | llm_energy_intent_parser | 🎯 最终意图确定: new_query
+2025-11-06 14:52:53,276 | INFO | llm_energy_intent_parser | 🧾 已追加解析历史记录（共 1 条），注意：这不是“查询成功历史”
+2025-11-06 14:52:53,276 | INFO | llm_energy_intent_parser | ✅ parse_intent 完成，返回结果: intent=new_query, indicator=高炉工序能耗, time=2025-11-06
+2025-11-06 14:52:53,276 | INFO | intent_router | 🧾 EnergyIntentParser.parse_intent 返回: intent=new_query
+2025-11-06 14:52:53,276 | INFO | pipeline | 🟢 [process_message] user='shenlan' input='今天的高炉工序能耗是多少'
+2025-11-06 14:52:53,276 | INFO | pipeline | 🚦 检测到意图: new_query
+2025-11-06 14:52:53,276 | INFO | pipeline.handlers | 当前 slots (before parsing): {'indicator': None, 'formula': None, 'formula_candidates': None, 'awaiting_confirmation': False, 'timeString': None, 'timeType': None, 'last_input': '今天的高炉工序能耗是多少', 'intent': 'new_query'}
+2025-11-06 14:52:53,345 | INFO | httpx | HTTP Request: GET http://192.168.92.13:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-06 14:52:54,240 | INFO | httpx | HTTP Request: POST http://192.168.92.13:11434/api/chat "HTTP/1.1 200 OK"
+2025-11-06 14:52:55,528 | INFO | pipeline.handlers | 📦 当前 slots (after parsing): {'indicator': '高炉工序能耗', 'formula': None, 'formula_candidates': None, 'awaiting_confirmation': False, 'timeString': '2025-11-06', 'timeType': 'DAY', 'last_input': '今天的高炉工序能耗是多少', 'intent': 'new_query'}
+2025-11-06 14:52:55,528 | INFO | pipeline.handlers | 🔎 调用 formula_api 查询公式: 高炉工序能耗
+Batches: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00,  5.23it/s]
+2025-11-06 14:52:56,570 | INFO | pipeline.handlers | 📊 formula_api 返回: exact=0, candidates=5
+2025-11-06 14:52:56,570 | INFO | pipeline.handlers | 🔢 找到 5 个候选公式, 最高候选: 高炉工序能耗实绩报出值 (score=102.3371)
+2025-11-06 14:52:56,570 | INFO | pipeline.handlers | 🧠 自动选择高分候选公式: 高炉工序能耗实绩报出值 (score=102.3371)
+2025-11-06 14:52:56,570 | INFO | pipeline.handlers | ⚙️ 调用 platform_api.query_platform(formula=GXNHLT1100.IXRL, time=2025-11-06, type=DAY)
+🟢 登录返回： {'error': None, 'data': {'token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiIxNDMiLCJ0ZW5hbnRpZCI6IjEwNSIsInVuYW1lIjoi566h55CG5ZGYIiwidG5hbWUiOiLlrp3pkqLmuZvmsZ_pkqLpk4HmnInpmZDlhazlj7giLCJ0c2lkZSI6IjEiLCJncm91cGlkIjoiMCIsInNsaWRpbmciOiIwIiwicnNpbmNlIjoiMTc2MjU1NTY3NiIsIm5iZiI6MTc2MjQxMTM3NiwiZXhwIjoxNzYyNTI3MTc2LCJpc3MiOiJzaGJhb25lbmciLCJhdWQiOiJzaGJhb25lbmcifQ.6IGtzzgQJx56GX5EzDn_YqwEd5Y8Dm3JLf3zLl40XkM', 'expiresAt': '2025-11-07 22:51:56', 'tenantId': 105, 'tenancyName': 'zjis', 'userId': 143, 'userName': 'admin'}, 'status': 200, 'msg': '操作成功', 'duration': -1}
+🟡 调用接口: http://www.shbaoenergy.com:8081/emscore/api/services/nYMC/calcData/QueryItemValuesAsync
+🧩 请求参数: {'expressionList': {'GXNHLT1100.IXRL': 'GXNHLT1100.IXRL'}, 'clock': '2025-11-06', 'timegranId': 'DAY'}
+🟢 返回数据: {'error': None, 'data': {'GXNHLT1100.IXRL': None}, 'status': 200, 'msg': '操作成功', 'duration': -1}
+2025-11-06 14:52:56,837 | INFO | pipeline.handlers | ✅ 平台查询成功: {'GXNHLT1100.IXRL': None}
+2025-11-06 14:52:56,838 | INFO | context_graph | 🆕 ContextGraph.add_node -> id=1, indicator=高炉工序能耗实绩报出值, time=2025-11-06
+2025-11-06 14:52:56,838 | INFO | pipeline.handlers | 📘 已更新历史记录与图谱。
+2025-11-06 14:52:56,838 | INFO | intent_router | ✅ pipeline.process_message 执行成功
+INFO:     127.0.0.1:45246 - "GET /chat?user_id=shenlan&message=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%AB%98%E7%82%89%E5%B7%A5%E5%BA%8F%E8%83%BD%E8%80%97%E6%98%AF%E5%A4%9A%E5%B0%91 HTTP/1.1" 200 OK

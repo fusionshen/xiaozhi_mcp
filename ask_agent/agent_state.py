@@ -83,3 +83,15 @@ async def cleanup_expired_sessions():
         if expired:
             print(f"[agent_state] 清理过期会话: {expired}")
         await asyncio.sleep(60)
+
+def default_slots():
+    return {
+        "indicator": None,
+        "formula": None,
+        "formula_candidates": None,
+        "awaiting_confirmation": False,
+        "timeString": None,
+        "timeType": None,
+        "last_input": None,
+        "intent": "new_query"
+    }

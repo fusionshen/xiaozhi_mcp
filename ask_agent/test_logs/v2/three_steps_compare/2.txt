@@ -1,0 +1,91 @@
+{
+  "reply": "✅ 高炉工序能耗实绩报出值 在 2024-11-06 (DAY) 的值是 None ",
+  "intent_info": {
+    "intent": "same_indicator_new_time",
+    "indicator": "高炉工序能耗实绩报出值",
+    "formula": "GXNHLT1100.IXRL",
+    "timeString": "2024-11-06",
+    "timeType": "DAY",
+    "history": [
+      {
+        "user_input": "今天的高炉工序能耗是多少",
+        "indicator": "高炉工序能耗实绩报出值",
+        "formula": "GXNHLT1100.IXRL",
+        "timeString": "2025-11-06",
+        "timeType": "DAY",
+        "result": "✅ 高炉工序能耗实绩报出值 在 2025-11-06 (DAY) 的值是 None ",
+        "intent": "new_query"
+      },
+      {
+        "user_input": "去年今天的呢",
+        "indicator": "高炉工序能耗实绩报出值",
+        "formula": "GXNHLT1100.IXRL",
+        "timeString": "2024-11-06",
+        "timeType": "DAY",
+        "result": "✅ 高炉工序能耗实绩报出值 在 2024-11-06 (DAY) 的值是 None ",
+        "intent": "same_indicator_new_time"
+      }
+    ]
+  },
+  "graph_state": {
+    "graph": {
+      "nodes": [
+        {
+          "id": 1,
+          "indicator": "高炉工序能耗实绩报出值",
+          "timeString": "2025-11-06",
+          "timeType": "DAY"
+        },
+        {
+          "id": 2,
+          "indicator": "高炉工序能耗实绩报出值",
+          "timeString": "2024-11-06",
+          "timeType": "DAY"
+        }
+      ],
+      "relations": [],
+      "_next_id": 3
+    }
+  }
+}
+
+
+2025-11-06 14:55:26,351 | INFO | intent_router | 🟢 [route_intent] user='shenlan' input='去年今天的呢'
+2025-11-06 14:55:26,353 | INFO | llm_intent_parser | 🔍 [parse_intent] 用户输入: 去年今天的呢, 上次指标: 高炉工序能耗实绩报出值
+2025-11-06 14:55:26,440 | INFO | httpx | HTTP Request: GET http://192.168.92.13:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-06 14:55:26,826 | INFO | httpx | HTTP Request: POST http://192.168.92.13:11434/api/chat "HTTP/1.1 200 OK"
+2025-11-06 14:55:27,064 | INFO | llm_intent_parser | 📥 轻量意图分类结果: ENERGY_QUERY
+2025-11-06 14:55:27,064 | INFO | intent_router | 🔎 轻量意图分类结果: ENERGY_QUERY (raw: {'intent': 'ENERGY_QUERY'})
+2025-11-06 14:55:27,064 | INFO | intent_router | ⚙️ 检测到 ENERGY_QUERY，进入能源问数流程
+2025-11-06 14:55:27,064 | INFO | intent_router | ♻️ 复用已有 EnergyIntentParser（保留历史与 graph）
+2025-11-06 14:55:27,064 | INFO | llm_energy_intent_parser | 🧠 [parse_intent] user=shenlan | input=去年今天的呢
+2025-11-06 14:55:27,064 | INFO | llm_energy_intent_parser | 📤 发送意图识别 prompt 至 LLM
+2025-11-06 14:55:27,102 | INFO | httpx | HTTP Request: GET http://192.168.92.13:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-06 14:55:27,402 | INFO | httpx | HTTP Request: POST http://192.168.92.13:11434/api/chat "HTTP/1.1 200 OK"
+2025-11-06 14:55:27,754 | INFO | llm_energy_intent_parser | 📥 LLM 返回意图识别结果: {'intent': 'same_indicator_new_time'}
+2025-11-06 14:55:27,845 | INFO | httpx | HTTP Request: GET http://192.168.92.13:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-06 14:55:28,817 | INFO | httpx | HTTP Request: POST http://192.168.92.13:11434/api/chat "HTTP/1.1 200 OK"
+2025-11-06 14:55:29,974 | INFO | llm_energy_intent_parser | 📊 指标解析结果: {'indicator': None, 'timeString': '2024-11-06', 'timeType': 'DAY'}
+2025-11-06 14:55:29,974 | INFO | llm_energy_intent_parser | 🎯 最终意图确定: same_indicator_new_time
+2025-11-06 14:55:29,975 | INFO | llm_energy_intent_parser | 🧾 已追加解析历史记录（共 2 条），注意：这不是“查询成功历史”
+2025-11-06 14:55:29,975 | INFO | llm_energy_intent_parser | ✅ parse_intent 完成，返回结果: intent=same_indicator_new_time, indicator=None, time=2024-11-06
+2025-11-06 14:55:29,975 | INFO | intent_router | 🧾 EnergyIntentParser.parse_intent 返回: intent=same_indicator_new_time
+2025-11-06 14:55:29,975 | INFO | pipeline | 🟢 [process_message] user='shenlan' input='去年今天的呢'
+2025-11-06 14:55:29,975 | INFO | pipeline | 🚦 检测到意图: same_indicator_new_time
+2025-11-06 14:55:29,975 | INFO | pipeline.handlers | 🔁 进入 same_indicator_new_time 模式。
+2025-11-06 14:55:29,975 | INFO | pipeline.handlers | 当前 slots (before parsing): {'indicator': '高炉工序能耗实绩报出值', 'formula': 'GXNHLT1100.IXRL', 'formula_candidates': None, 'awaiting_confirmation': False, 'timeString': '2025-11-06', 'timeType': 'DAY', 'last_input': '去年今天的呢', 'intent': 'same_indicator_new_time'}
+2025-11-06 14:55:30,035 | INFO | httpx | HTTP Request: GET http://192.168.92.13:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-06 14:55:31,008 | INFO | httpx | HTTP Request: POST http://192.168.92.13:11434/api/chat "HTTP/1.1 200 OK"
+2025-11-06 14:55:32,101 | INFO | pipeline.handlers | 📦 当前 slots (after parsing): {'indicator': '高炉工序能耗实绩报出值', 'formula': 'GXNHLT1100.IXRL', 'formula_candidates': None, 'awaiting_confirmation': False, 'timeString': '2024-11-06', 'timeType': 'DAY', 'last_input': '去年今天的呢', 'intent': 'same_indicator_new_time'}
+2025-11-06 14:55:32,101 | INFO | pipeline.handlers | 🔎 调用 formula_api 查询公式: 高炉工序能耗实绩报出值
+2025-11-06 14:55:32,162 | INFO | pipeline.handlers | 📊 formula_api 返回: exact=1, candidates=0
+2025-11-06 14:55:32,163 | INFO | pipeline.handlers | ✅ 精确匹配公式: 高炉工序能耗实绩报出值 (FORMULAID=GXNHLT1100.IXRL)
+2025-11-06 14:55:32,163 | INFO | pipeline.handlers | ⚙️ 调用 platform_api.query_platform(formula=GXNHLT1100.IXRL, time=2024-11-06, type=DAY)
+🟡 调用接口: http://www.shbaoenergy.com:8081/emscore/api/services/nYMC/calcData/QueryItemValuesAsync
+🧩 请求参数: {'expressionList': {'GXNHLT1100.IXRL': 'GXNHLT1100.IXRL'}, 'clock': '2024-11-06', 'timegranId': 'DAY'}
+🟢 返回数据: {'error': None, 'data': {'GXNHLT1100.IXRL': None}, 'status': 200, 'msg': '操作成功', 'duration': -1}
+2025-11-06 14:55:32,331 | INFO | pipeline.handlers | ✅ 平台查询成功: {'GXNHLT1100.IXRL': None}
+2025-11-06 14:55:32,332 | INFO | context_graph | 🆕 ContextGraph.add_node -> id=2, indicator=高炉工序能耗实绩报出值, time=2024-11-06
+2025-11-06 14:55:32,332 | INFO | pipeline.handlers | 📘 已更新历史记录与图谱。
+2025-11-06 14:55:32,332 | INFO | intent_router | ✅ pipeline.process_message 执行成功
+INFO:     127.0.0.1:44948 - "GET /chat?user_id=shenlan&message=%E5%8E%BB%E5%B9%B4%E4%BB%8A%E5%A4%A9%E7%9A%84%E5%91%A2 HTTP/1.1" 200 OK
