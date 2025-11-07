@@ -1,0 +1,110 @@
+{
+  "reply": "✅ 1550酸洗高炉煤气使用量实绩单耗值 在 2022-11-07 (DAY) 的值是 0.00712 ",
+  "intent_info": {
+    "awaiting_confirmation": true,
+    "formula_candidates": null,
+    "intent": "same_indicator_new_time",
+    "indicator": "1550酸洗高炉煤气使用量实绩单耗值",
+    "formula": "LZ1201Z3021.EIRL.UCVALUE",
+    "timeString": "2022-11-07",
+    "timeType": "DAY",
+    "history": [
+      {
+        "user_input": "2022年的今天",
+        "indicator": "1550酸洗高炉煤气使用量实绩单耗值",
+        "formula": "LZ1201Z3021.EIRL.UCVALUE",
+        "timeString": "2022-11-07",
+        "timeType": "DAY",
+        "result": "✅ 1550酸洗高炉煤气使用量实绩单耗值 在 2022-11-07 (DAY) 的值是 0.00712 ",
+        "intent": "same_indicator_new_time"
+      }
+    ]
+  },
+  "graph_state": {
+    "graph": {
+      "nodes": [
+        {
+          "id": 1,
+          "indicator": "1550酸洗高炉煤气使用量实绩单耗值",
+          "timeString": "2022-11-07",
+          "timeType": "DAY"
+        }
+      ],
+      "relations": [],
+      "_next_id": 2
+    }
+  }
+}
+
+2025-11-07 15:34:11,898 | INFO | intent_router | 🟢 [route_intent] user='shenlan' input='2022年的今天'
+2025-11-07 15:34:11,898 | INFO | llm_intent_parser | 🔍 [parse_intent] 用户输入: 2022年的今天, 上次指标: None, awaiting=True
+2025-11-07 15:34:11,967 | INFO | httpx | HTTP Request: GET http://192.168.92.13:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-07 15:34:12,414 | INFO | httpx | HTTP Request: POST http://192.168.92.13:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "intent": "ENERGY_QUERY",
+  "parsed_number": null
+}
+```
+
+**理由：**
+
+根据识别规则第2条，当前处于能源查询流程（`awaiting_confirmation=True` 且 `indicator` 存在），且用户输入“2022年的今天”包含时间表达，因此应识别为 `ENERGY_QUERY`。用户是在补充查询时间，而不是单纯地询问时间。
+2025-11-07 15:34:15,021 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-07 15:34:15,023 | INFO | llm_intent_parser | 📥 轻量意图分类结果: ENERGY_QUERY, parsed_number=None
+2025-11-07 15:34:15,023 | INFO | intent_router | 🔎 轻量意图分类结果: ENERGY_QUERY (raw: {'intent': 'ENERGY_QUERY', 'parsed_number': None})
+2025-11-07 15:34:15,023 | INFO | intent_router | ⚙️ 检测到 ENERGY_QUERY，进入能源问数流程
+2025-11-07 15:34:15,023 | INFO | energy_query_runner | ⚙️ [run_energy_query] 开始执行 ENERGY_QUERY 流程
+2025-11-07 15:34:15,023 | INFO | energy_query_runner | ♻️ 复用已有 EnergyIntentParser（保留历史与 graph）
+2025-11-07 15:34:15,023 | INFO | energy_query_runner | 🧩 传入 EnergyIntentParser.parse_intent 参数: 2022年的今天
+2025-11-07 15:34:15,023 | INFO | llm_energy_intent_parser | 🧠 [parse_intent] user=shenlan | input=2022年的今天
+2025-11-07 15:34:15,024 | INFO | llm_energy_intent_parser | 📤 发送能源意图识别 prompt 至 LLM
+2025-11-07 15:34:15,088 | INFO | httpx | HTTP Request: GET http://192.168.92.13:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-07 15:34:15,406 | INFO | httpx | HTTP Request: POST http://192.168.92.13:11434/api/chat "HTTP/1.1 200 OK"
+{"intent": "same_indicator_new_time"}
+2025-11-07 15:34:15,742 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-07 15:34:15,744 | INFO | llm_energy_intent_parser | 📥 LLM 返回意图识别结果: {'intent': 'same_indicator_new_time'}
+2025-11-07 15:34:15,814 | INFO | httpx | HTTP Request: GET http://192.168.92.13:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-07 15:34:16,807 | INFO | httpx | HTTP Request: POST http://192.168.92.13:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "indicator": null,
+  "timeString": "2022-11-07",
+  "timeType": "DAY"
+}
+```
+2025-11-07 15:34:17,934 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-07 15:34:17,936 | INFO | llm_energy_intent_parser | 📊 指标解析结果: {'indicator': None, 'timeString': '2022-11-07', 'timeType': 'DAY'}
+2025-11-07 15:34:17,936 | INFO | llm_energy_intent_parser | 🎯 最终意图确定: same_indicator_new_time
+2025-11-07 15:34:17,936 | INFO | llm_energy_intent_parser | 🧾 已追加能源指标时间解析历史记录（共 2 条），注意：这不是“查询成功历史”
+2025-11-07 15:34:17,936 | INFO | llm_energy_intent_parser | ✅ parse_intent 完成，返回结果: intent=same_indicator_new_time, indicator=None, time=2022-11-07
+2025-11-07 15:34:17,936 | INFO | energy_query_runner | 🧾 parse_intent 返回 intent=same_indicator_new_time
+2025-11-07 15:34:17,936 | INFO | pipeline | 🟢 [process_message] user='shenlan' input='2022年的今天'
+2025-11-07 15:34:17,936 | INFO | pipeline | 🚦 检测到意图: same_indicator_new_time
+2025-11-07 15:34:17,936 | INFO | pipeline.handlers | 🔁 进入 same_indicator_new_time 模式。
+2025-11-07 15:34:17,936 | INFO | pipeline.handlers | 当前 slots (before parsing): {'indicator': '1550酸洗高炉煤气使用量实绩单耗值', 'formula': 'LZ1201Z3021.EIRL.UCVALUE', 'formula_candidates': None, 'awaiting_confirmation': True, 'timeString': None, 'timeType': None, 'last_input': '2022年的今天', 'intent': 'same_indicator_new_time'}
+2025-11-07 15:34:17,982 | INFO | httpx | HTTP Request: GET http://192.168.92.13:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-07 15:34:18,958 | INFO | httpx | HTTP Request: POST http://192.168.92.13:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "indicator": null,
+  "timeString": "2022-11-07",
+  "timeType": "DAY"
+}
+```
+2025-11-07 15:34:20,088 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-07 15:34:20,090 | INFO | pipeline.handlers | 📦 当前 slots (after parsing): {'indicator': '1550酸洗高炉煤气使用量实绩单耗值', 'formula': 'LZ1201Z3021.EIRL.UCVALUE', 'formula_candidates': None, 'awaiting_confirmation': True, 'timeString': '2022-11-07', 'timeType': 'DAY', 'last_input': '2022年的今天', 'intent': 'same_indicator_new_time'}
+2025-11-07 15:34:20,091 | INFO | pipeline.handlers | 🔎 调用 formula_api 查询公式: 1550酸洗高炉煤气使用量实绩单耗值
+2025-11-07 15:34:20,167 | INFO | pipeline.handlers | 📊 formula_api 返回: exact=1, candidates=0
+2025-11-07 15:34:20,167 | INFO | pipeline.handlers | ✅ 精确匹配公式: 1550酸洗高炉煤气使用量实绩单耗值 (FORMULAID=LZ1201Z3021.EIRL.UCVALUE)
+2025-11-07 15:34:20,167 | INFO | pipeline.handlers | ⚙️ 调用 platform_api.query_platform(formula=LZ1201Z3021.EIRL.UCVALUE, time=2022-11-07, type=DAY)
+🟢 登录返回： {'error': None, 'data': {'token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiIxNDMiLCJ0ZW5hbnRpZCI6IjEwNSIsInVuYW1lIjoi566h55CG5ZGYIiwidG5hbWUiOiLlrp3pkqLmuZvmsZ_pkqLpk4HmnInpmZDlhazlj7giLCJ0c2lkZSI6IjEiLCJncm91cGlkIjoiMCIsInNsaWRpbmciOiIwIiwicnNpbmNlIjoiMTc2MjY0NDU2MCIsIm5iZiI6MTc2MjUwMDI2MCwiZXhwIjoxNzYyNjE2MDYwLCJpc3MiOiJzaGJhb25lbmciLCJhdWQiOiJzaGJhb25lbmcifQ.LFMIjGcmokOJ-Uf8bz2TSDpL_irlzQQ26Rb18lGDiU0', 'expiresAt': '2025-11-08 23:33:20', 'tenantId': 105, 'tenancyName': 'zjis', 'userId': 143, 'userName': 'admin'}, 'status': 200, 'msg': '操作成功', 'duration': -1}
+🟡 调用接口: http://www.shbaoenergy.com:8081/emscore/api/services/nYMC/calcData/QueryItemValuesAsync
+🧩 请求参数: {'expressionList': {'LZ1201Z3021.EIRL.UCVALUE': 'LZ1201Z3021.EIRL.UCVALUE'}, 'clock': '2022-11-07', 'timegranId': 'DAY'}
+🟢 返回数据: {'error': None, 'data': {'LZ1201Z3021.EIRL.UCVALUE': '0.00712'}, 'status': 200, 'msg': '操作成功', 'duration': -1}
+2025-11-07 15:34:33,593 | INFO | pipeline.handlers | ✅ 平台查询成功: {'LZ1201Z3021.EIRL.UCVALUE': '0.00712'}
+2025-11-07 15:34:33,593 | INFO | context_graph | 🆕 ContextGraph.add_node -> id=1, indicator=1550酸洗高炉煤气使用量实绩单耗值, time=2022-11-07
+2025-11-07 15:34:33,593 | INFO | pipeline.handlers | 📘 已更新历史记录与图谱。
+2025-11-07 15:34:33,593 | INFO | energy_query_runner | ✅ pipeline.process_message 执行成功
+INFO:     127.0.0.1:54196 - "GET /chat?user_id=shenlan&message=2022%E5%B9%B4%E7%9A%84%E4%BB%8A%E5%A4%A9 HTTP/1.1" 200 OK
+

@@ -53,9 +53,13 @@ async def handle_new_query(user_id: str, message: str, graph: ContextGraph):
                 await _update_slots(user_id, slots)
                 return f"好的，要查【{slots['indicator']}】，请告诉我时间。", graph.to_state()
 
-            # 否则执行查询    
+            # 否则执行查询
+            slots["awaiting_confirmation"] = False
+            await _update_slots(user_id, slots)    
             return await _execute_query(user_id, message, graph)
         logger.warning("⚠️ 用户输入的候选编号超范围: %s", user_input)
+        slots["awaiting_confirmation"] = True
+        await _update_slots(user_id, slots)
         return f"请输入编号 1~{len(candidates)} 选择公式。", graph.to_state()
 
     # ---------- 非数字输入重新解析 ----------
@@ -82,6 +86,8 @@ async def handle_new_query(user_id: str, message: str, graph: ContextGraph):
     # 5️⃣ 如果指标缺失，要求用户补全
     if not slots.get("indicator"):
         logger.info("⚠️ 缺少 indicator，提示用户补全。")
+        slots["awaiting_confirmation"] = True
+        await _update_slots(user_id, slots)
         return "请告诉我您要查询的指标名称。", graph.to_state()
 
     # 6️⃣ 使用 formula_api 查找公式
@@ -90,6 +96,8 @@ async def handle_new_query(user_id: str, message: str, graph: ContextGraph):
         formula_resp = await asyncio.to_thread(formula_api.formula_query_dict, slots["indicator"])
     except Exception as e:
         logger.exception("❌ 调用 formula_api 失败: %s", e)
+        slots["awaiting_confirmation"] = True
+        await _update_slots(user_id, slots)
         return f"查找公式时出错: {e}", graph.to_state()
 
     exact_matches = formula_resp.get("exact_matches") or []
@@ -111,6 +119,8 @@ async def handle_new_query(user_id: str, message: str, graph: ContextGraph):
             await _update_slots(user_id, slots)
             return f"好的，要查【{slots['indicator']}】，请告诉我时间。", graph.to_state()
 
+        slots["awaiting_confirmation"] = False
+        await _update_slots(user_id, slots)
         return await _execute_query(user_id, slots, graph)
 
     # 候选匹配
@@ -130,6 +140,8 @@ async def handle_new_query(user_id: str, message: str, graph: ContextGraph):
                 return f"好的，要查【{slots['indicator']}】，请告诉我时间。", graph.to_state()
             
             # 否则执行查询
+            slots["awaiting_confirmation"] = False
+            await _update_slots(user_id, slots)   
             return await _execute_query(user_id, slots, graph)
         else:
             slots["formula_candidates"] = candidates[:TOP_N]
@@ -143,6 +155,8 @@ async def handle_new_query(user_id: str, message: str, graph: ContextGraph):
 
     # --- Step 4. 无匹配 ---
     logger.info(f"❌ 未找到匹配公式: {indicator}")
+    slots["awaiting_confirmation"] = True
+    await _update_slots(user_id, slots)
     return f"未找到匹配公式，请重新输入指标名称。", graph.to_state()
 
 

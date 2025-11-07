@@ -1,0 +1,50 @@
+{
+  "reply": "今天是2025年11月7日。",
+  "intent_info": {
+    "intent": "TIME_QUERY",
+    "question": "今天日期是多少",
+    "answer": "今天是2025年11月7日。",
+    "detail": {
+      "type": "DAY",
+      "start_date": "2025-11-07",
+      "end_date": null,
+      "extra": null
+    }
+  }
+}
+
+2025-11-07 14:59:54,165 | INFO | intent_router | 🟢 [route_intent] user='shenlan' input='今天日期是多少'
+2025-11-07 14:59:54,165 | INFO | llm_intent_parser | 🔍 [parse_intent] 用户输入: 今天日期是多少, 上次指标: None, awaiting=False
+2025-11-07 14:59:54,232 | INFO | httpx | HTTP Request: GET http://192.168.92.13:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-07 15:00:02,287 | INFO | httpx | HTTP Request: POST http://192.168.92.13:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "intent": "TOOL",
+  "parsed_number": null
+}
+```
+
+**理由：**
+
+用户输入“今天日期是多少”是一个关于日期的询问，属于工具类问题，应该识别为“TOOL”。  它不符合任何 ENERGY_QUERY、ENERGY_KNOWLEDGE_QA 或 CHAT 的条件。
+2025-11-07 15:00:04,243 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-07 15:00:04,244 | INFO | llm_intent_parser | 📥 轻量意图分类结果: TOOL, parsed_number=None
+2025-11-07 15:00:04,244 | INFO | intent_router | 🔎 轻量意图分类结果: TOOL (raw: {'intent': 'TOOL', 'parsed_number': None})
+2025-11-07 15:00:04,244 | INFO | intent_router | 🛠️ 检测到 TOOL 意图，进入工具处理
+2025-11-07 15:00:04,304 | INFO | httpx | HTTP Request: GET http://192.168.92.13:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-07 15:00:04,769 | INFO | httpx | HTTP Request: POST http://192.168.92.13:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "intent": "TIME_QUERY",
+  "question": "今天日期是多少",
+  "answer": "今天是2025年11月7日。",
+  "detail": {
+    "type": "DAY",
+    "start_date": "2025-11-07",
+    "end_date": null,
+    "extra": null
+  }
+}
+```
+2025-11-07 15:00:07,199 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+

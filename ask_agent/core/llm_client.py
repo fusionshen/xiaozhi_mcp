@@ -72,28 +72,43 @@ async def safe_llm_parse(prompt: str) -> dict:
     try:
         resp = await llm.agenerate([[HumanMessage(content=prompt)]])
         response_text = resp.generations[0][0].message.content.strip()
+        print(response_text)
 
         # 🧹 清理常见包裹字符
         text = response_text.strip()
         text = text.replace("```json", "").replace("```", "").strip()
         text = text.replace("JSON:", "").replace("json:", "").strip()
 
-        # 🧩 提取第一个 {...} JSON 块
-        match = re.search(r"\{[\s\S]*?\}", text)
-        if match:
-            json_str = match.group(0)
-            data = json.loads(json_str)
-            logger.info("✅ 从 LLM 输出中成功解析 JSON。")
-            return data
+        # 找第一个 '{' 和最后一个 '}' —— 保证取到最外层 JSON（比非贪婪正则更稳）
+        start = text.find('{')
+        end = text.rfind('}')
+        if start != -1 and end != -1 and end > start:
+            json_str = text[start:end+1]
+            try:
+                data = json.loads(json_str)
+                logger.info("✅ 从 LLM 输出中成功解析 JSON。")
+                return data
+            except json.JSONDecodeError as e_inner:
+                logger.warning("⚠️ 从首尾大括号提取的 JSON 解析失败: %s. 尝试正则兜底。", e_inner)
 
-        # ⚙️ 如果没找到标准 JSON，尝试 key:value 兜底解析
+        # 兜底：如果上面失败，尝试用正则找所有 {...} 并依次尝试解析（处理多 JSON 或嵌套复杂输出）
+        matches = re.findall(r"\{[\s\S]*?\}", text)
+        for m in matches:
+            try:
+                data = json.loads(m)
+                logger.info("✅ 正则兜底解析到 JSON。")
+                return data
+            except json.JSONDecodeError:
+                continue
+
+        # 再兜底：key:value 简单解析（保守）
         pairs = re.findall(r'"(\w+)"\s*:\s*"([^"]*)"', text)
         if pairs:
             data = {k: v for k, v in pairs}
-            logger.warning("⚠️ 使用正则兜底解析 JSON。")
+            logger.warning("⚠️ 使用正则键值对兜底解析 JSON。")
             return data
 
-        logger.warning("⚠️ 未识别到 JSON 格式，返回空 dict。原文: %s", text[:200])
+        logger.warning("⚠️ 未识别到 JSON 格式，返回空 dict。原文: %s", text[:400])
         return {}
     except Exception as e:
         logger.exception("❌ safe_llm_parse 解析失败: %s", e)

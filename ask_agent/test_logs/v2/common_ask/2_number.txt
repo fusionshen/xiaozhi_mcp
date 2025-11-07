@@ -18,3 +18,27 @@
     }
   }
 }
+
+2025-11-07 15:18:45,991 | INFO | intent_router | 🟢 [route_intent] user='shenlan' input='1'
+2025-11-07 15:18:45,994 | INFO | llm_intent_parser | 🔍 [parse_intent] 用户输入: 1, 上次指标: None, awaiting=True
+2025-11-07 15:18:46,056 | INFO | httpx | HTTP Request: GET http://192.168.92.13:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-07 15:18:53,665 | INFO | httpx | HTTP Request: POST http://192.168.92.13:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "intent": "ENERGY_QUERY",
+  "parsed_number": 1
+}
+```
+2025-11-07 15:18:54,426 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-07 15:18:54,428 | INFO | llm_intent_parser | 📥 轻量意图分类结果: ENERGY_QUERY, parsed_number=1
+2025-11-07 15:18:54,429 | INFO | intent_router | 🔎 轻量意图分类结果: ENERGY_QUERY (raw: {'intent': 'ENERGY_QUERY', 'parsed_number': 1})
+2025-11-07 15:18:54,429 | INFO | intent_router | ⚙️ 检测到 ENERGY_QUERY，进入能源问数流程
+2025-11-07 15:18:54,429 | INFO | energy_query_runner | ⚙️ [run_energy_query] 开始执行 ENERGY_QUERY 流程
+2025-11-07 15:18:54,429 | INFO | energy_query_runner | ♻️ 复用已有 EnergyIntentParser（保留历史与 graph）
+2025-11-07 15:18:54,429 | INFO | pipeline | 🟢 [process_message] user='shenlan' input='1'
+2025-11-07 15:18:54,429 | INFO | pipeline | 🚦 检测到意图: new_query
+2025-11-07 15:18:54,430 | INFO | pipeline.handlers | 当前 slots (before parsing): {'indicator': '高炉煤气耗', 'formula': None, 'formula_candidates': [{'number': 1, 'FORMULAID': 'LZ1201Z3021.EIRL.UCVALUE', 'FORMULANAME': '1550酸洗高炉煤气使用量实绩单耗值', 'score': 92.0815, 'fuzzy_score': 90.0, 'semantic_score': 82.101, 'match_kind': 'hybrid'}, {'number': 2, 'FORMULAID': 'LZ1207Z3021.EIRL.UCVALUE', 'FORMULANAME': '1550热镀锌高炉煤气使用量实绩单耗值', 'score': 92.0225, 'fuzzy_score': 90.0, 'semantic_score': 82.01, 'match_kind': 'hybrid'}, {'number': 3, 'FORMULAID': 'LZ1201Z3021.EIRL.UCSTDVALUE', 'FORMULANAME': '1550酸洗高炉煤气使用量实绩折标单耗值', 'score': 91.7633, 'fuzzy_score': 90.0, 'semantic_score': 81.61, 'match_kind': 'hybrid'}, {'number': 4, 'FORMULAID': 'LZ1207Z3021.EIRL', 'FORMULANAME': '1550热镀锌高炉煤气使用量实绩报出值', 'score': 91.4787, 'fuzzy_score': 90.9, 'semantic_score': 79.1731, 'match_kind': 'hybrid'}, {'number': 5, 'FORMULAID': 'LZ1201Z3021.EIRL', 'FORMULANAME': '1550酸洗高炉煤气使用量实绩报出值', 'score': 91.3793, 'fuzzy_score': 90.9, 'semantic_score': 79.0212, 'match_kind': 'hybrid'}], 'awaiting_confirmation': True, 'timeString': None, 'timeType': None, 'last_input': '1', 'intent': 'new_query'}
+2025-11-07 15:18:54,430 | INFO | pipeline.handlers | 🔢 检测到候选选择 index=0, count=5
+2025-11-07 15:18:54,430 | INFO | pipeline.handlers | ✅ 用户选择公式: 1550酸洗高炉煤气使用量实绩单耗值 (FORMULAID=LZ1201Z3021.EIRL.UCVALUE)
+2025-11-07 15:18:54,430 | INFO | energy_query_runner | ✅ pipeline.process_message 执行成功
+INFO:     127.0.0.1:55820 - "GET /chat?user_id=shenlan&message=1 HTTP/1.1" 200 OK

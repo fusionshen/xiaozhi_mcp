@@ -83,7 +83,7 @@ class EnergyIntentParser:
 
 当前用户输入: "{user_input}"
 """
-        logger.info("📤 发送意图识别 prompt 至 LLM")
+        logger.info("📤 发送能源意图识别 prompt 至 LLM")
         intent_result = await safe_llm_parse(intent_prompt)
         intent = (intent_result or {}).get("intent", "new_query")
         logger.info(f"📥 LLM 返回意图识别结果: {intent_result}")
@@ -114,7 +114,7 @@ class EnergyIntentParser:
             "intent": enhanced_intent
         }
         self.history.append(record)
-        logger.info(f"🧾 已追加解析历史记录（共 {len(self.history)} 条），注意：这不是“查询成功历史”")
+        logger.info(f"🧾 已追加能源指标时间解析历史记录（共 {len(self.history)} 条），注意：这不是“查询成功历史”")
 
         # parser 内部参考性 graph 标注（仅在有明确 compare/时间迁移时做参考）
         if enhanced_intent == "compare":

@@ -3,7 +3,6 @@
 import asyncio
 import logging
 from core.context_graph import ContextGraph
-from core.llm_energy_indicator_parser import parse_user_input
 from agent_state import get_state, update_state, default_slots
 from core.pipeline_handlers import (
     handle_new_query, handle_compare, handle_expand,
