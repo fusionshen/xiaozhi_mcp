@@ -1,0 +1,102 @@
+
+{
+  "reply": "能源查询流程执行失败。",
+  "error": "name 'indicator' is not defined",
+  "intent_info": {
+    "intent": "compare",
+    "indicator": "对比",
+    "timeString": "2025-11-06",
+    "timeType": "DAY",
+    "history": [
+      {
+        "user_input": "今天的高炉工序能耗是多少",
+        "indicator": "高炉工序能耗",
+        "timeString": "2025-11-07",
+        "timeType": "DAY",
+        "intent": "new_query"
+      },
+      {
+        "user_input": "对比昨日的呢",
+        "indicator": "对比",
+        "timeString": "2025-11-06",
+        "timeType": "DAY",
+        "intent": "compare"
+      }
+    ],
+    "graph": {
+      "graph": {
+        "nodes": [
+          {
+            "id": 1,
+            "indicator": "对比",
+            "timeString": "2025-11-06",
+            "timeType": "DAY"
+          }
+        ],
+        "relations": [],
+        "_next_id": 2
+      }
+    }
+  }
+}
+
+2025-11-07 16:43:00,049 | INFO | intent_router | 🟢 [route_intent] user='shenlan' input='对比昨日的呢'
+2025-11-07 16:43:00,049 | INFO | llm_intent_parser | 🔍 [parse_intent] 用户输入: 对比昨日的呢, 上次指标: 高炉工序能耗实绩报出值, awaiting=False
+2025-11-07 16:43:00,116 | INFO | httpx | HTTP Request: GET http://192.168.92.13:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-07 16:43:00,640 | INFO | httpx | HTTP Request: POST http://192.168.92.13:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "intent": "ENERGY_QUERY",
+  "parsed_number": null
+}
+```
+
+**理由：**
+
+根据识别规则，当前系统槽位状态中 `indicator` 存在 ("高炉工序能耗实绩报出值")，表明用户处于能源查询流程中。用户输入“对比昨日的呢”包含时间表达“昨日”，因此根据规则2，应识别为 `ENERGY_QUERY`。  用户意图是补充查询时间，对比昨日数据。
+2025-11-07 16:43:03,542 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-07 16:43:03,542 | INFO | llm_intent_parser | 📥 轻量意图分类结果: ENERGY_QUERY, parsed_number=None
+2025-11-07 16:43:03,543 | INFO | intent_router | 🔎 轻量意图分类结果: ENERGY_QUERY (raw: {'intent': 'ENERGY_QUERY', 'parsed_number': None})
+2025-11-07 16:43:03,543 | INFO | intent_router | ⚙️ 检测到 ENERGY_QUERY，进入能源问数流程
+2025-11-07 16:43:03,543 | INFO | energy_query_runner | ⚙️ [run_energy_query] 开始执行 ENERGY_QUERY 流程
+2025-11-07 16:43:03,543 | INFO | energy_query_runner | ♻️ 复用已有 EnergyIntentParser（保留历史与 graph）
+2025-11-07 16:43:03,543 | INFO | energy_query_runner | 🧩 传入 EnergyIntentParser.parse_intent 参数: 对比昨日的呢
+2025-11-07 16:43:03,543 | INFO | llm_energy_intent_parser | 🧠 [parse_intent] user=shenlan | input=对比昨日的呢
+2025-11-07 16:43:03,543 | INFO | llm_energy_intent_parser | 📤 发送能源意图识别 prompt 至 LLM
+2025-11-07 16:43:03,596 | INFO | httpx | HTTP Request: GET http://192.168.92.13:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-07 16:43:03,937 | INFO | httpx | HTTP Request: POST http://192.168.92.13:11434/api/chat "HTTP/1.1 200 OK"
+{"intent": "compare"}
+2025-11-07 16:43:04,112 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-07 16:43:04,113 | INFO | llm_energy_intent_parser | 📥 LLM 返回意图识别结果: {'intent': 'compare'}
+2025-11-07 16:43:04,176 | INFO | httpx | HTTP Request: GET http://192.168.92.13:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-07 16:43:05,139 | INFO | httpx | HTTP Request: POST http://192.168.92.13:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "indicator": "对比",
+  "timeString": "2025-11-06",
+  "timeType": "DAY"
+}
+```
+2025-11-07 16:43:06,285 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-07 16:43:06,286 | INFO | llm_energy_intent_parser | 📊 指标解析结果: {'indicator': '对比', 'timeString': '2025-11-06', 'timeType': 'DAY'}
+2025-11-07 16:43:06,286 | INFO | llm_energy_intent_parser | 🎯 最终意图确定: compare
+2025-11-07 16:43:06,286 | INFO | llm_energy_intent_parser | 🧾 已追加能源指标时间解析历史记录（共 2 条），注意：这不是“查询成功历史”
+2025-11-07 16:43:06,286 | INFO | context_graph | 🆕 ContextGraph.add_node -> id=1, indicator=对比, time=2025-11-06
+2025-11-07 16:43:06,286 | INFO | llm_energy_intent_parser | 🔗 parse_intent: 在 parser.graph 中记录 compare（参考）
+2025-11-07 16:43:06,286 | INFO | llm_energy_intent_parser | ✅ parse_intent 完成，返回结果: intent=compare, indicator=对比, time=2025-11-06
+2025-11-07 16:43:06,287 | INFO | energy_query_runner | 🧾 parse_intent 返回 intent=compare
+2025-11-07 16:43:06,287 | INFO | pipeline | 🟢 [process_message] user='shenlan' input='对比昨日的呢'
+2025-11-07 16:43:06,287 | INFO | pipeline | 🚦 检测到意图: compare
+2025-11-07 16:43:06,287 | ERROR | energy_query_runner | ❌ pipeline 执行失败: name 'indicator' is not defined
+Traceback (most recent call last):
+  File "/home/fusionshen/Desktop/LLM/ask_agent/core/energy_query_runner.py", line 61, in run_energy_query
+    reply, graph_state = await process_message(user_id, user_input, parser.graph.to_state())
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fusionshen/Desktop/LLM/ask_agent/core/pipeline.py", line 37, in process_message
+    return await handle_compare(user_id, message, graph)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fusionshen/Desktop/LLM/ask_agent/core/pipeline_handlers.py", line 267, in handle_compare
+    "indicator": indicator,
+                 ^^^^^^^^^
+NameError: name 'indicator' is not defined
+INFO:     127.0.0.1:41354 - "GET /chat?user_id=shenlan&message=%E5%AF%B9%E6%AF%94%E6%98%A8%E6%97%A5%E7%9A%84%E5%91%A2 HTTP/1.1" 200 OK

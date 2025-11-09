@@ -229,16 +229,17 @@ async def _update_slots(user_id, slots):
     state["slots"].update(slots)
     await update_state(user_id, state)
 
-
-# ========== 以下是预留的其他意图处理 ==========
-
 async def handle_compare(user_id: str, message: str, graph: ContextGraph):
-    # --- 更新状态 ---
     state = await get_state(user_id)
     state.setdefault("history", [])
     history = state["history"]
     state.setdefault("slots", default_slots())
     slots = state["slots"]
+
+    indicator = slots.get("indicator")
+    formula = slots.get("formula")
+    time_str = slots.get("timeString")
+    time_type = slots.get("timeType")
 
     do_compare = slots.get("intent") == "compare" or any(
         r.get("source") and r.get("target") for r in graph.get_relations("compare")
