@@ -56,7 +56,7 @@ async def handle_new_query(user_id: str, message: str, graph: ContextGraph):
             # 否则执行查询
             slots["awaiting_confirmation"] = False
             await _update_slots(user_id, slots)    
-            return await _execute_query(user_id, message, graph)
+            return await _execute_query(user_id, slots, graph)
         logger.warning("⚠️ 用户输入的候选编号超范围: %s", user_input)
         slots["awaiting_confirmation"] = True
         await _update_slots(user_id, slots)
@@ -154,7 +154,7 @@ async def handle_new_query(user_id: str, message: str, graph: ContextGraph):
             return "\n".join(msg_lines), graph.to_state()
 
     # --- Step 4. 无匹配 ---
-    logger.info(f"❌ 未找到匹配公式: {indicator}")
+    logger.info(f"❌ 未找到匹配公式: {slots["indicator"]}")
     slots["awaiting_confirmation"] = True
     await _update_slots(user_id, slots)
     return f"未找到匹配公式，请重新输入指标名称。", graph.to_state()
@@ -262,6 +262,7 @@ async def handle_compare(user_id: str, message: str, graph: ContextGraph):
                 graph.add_relation("compare", source_id=src_id, target_id=tgt_id)
                 resolved = (src_id, tgt_id)
             else:
+                reply = "二步问数对比正在开发中"
                 set_graph(user_id, graph)  # ✅ 替代 graph_store[user_id] = graph
                 state["history"].append({
                     "user_input": slots.get("last_input", ""),
