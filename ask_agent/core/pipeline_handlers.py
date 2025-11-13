@@ -1,13 +1,14 @@
 # core/pipeline_handlers.py
+import json
 import asyncio
 import logging
 import inspect
-from core.context_graph import ContextGraph
+import copy
+from core.context_graph import ContextGraph, default_indicators
 from core.llm_energy_indicator_parser import parse_user_input
 from tools import formula_api, platform_api
 from core.llm_client import safe_llm_chat
-from agent_state import get_state, update_state, default_slots
-from core.pipeline_context import set_graph  # ✅ 新增
+from core.pipeline_context import set_graph, get_graph
 
 logger = logging.getLogger("pipeline.handlers")
 if not logger.handlers:
@@ -18,321 +19,764 @@ if not logger.handlers:
 
 TOP_N = 5
 
-async def handle_new_query(user_id: str, message: str, graph: ContextGraph):
+# ------------------------- 单指标查询 -------------------------
+async def handle_single_query(user_id: str, user_input: str, graph: ContextGraph):
+    logger.info("✅ 进入 single query 模式。")
     """
-    基础能源查询（默认意图）：
-    - 调用公式查询接口
-    - 执行平台数据查询
-    - 更新图谱与历史
+    基础能源查询：
+    - 补全指标/时间
+    - 调用 formula_api 查询公式
+    - 自动选择公式或提示候选
+    - 执行平台查询
+    - 成功查询节点写入 graph.nodes，保留当时 intent_info
     """
-    session_state = await get_state(user_id)
-    session_state.setdefault("slots", default_slots())
-    slots = session_state["slots"]
-    logger.info(f"当前 slots (before parsing): {slots}")
+    user_input = str(user_input or "").strip()
+    logger.info(f"🔹 handle_single_query user_input={user_input}")
+
+    intent_info = graph.ensure_intent_info() or {}
+    intent_info.setdefault("user_input_list", []).append(user_input)
+    intent_info.setdefault("intent_list", []).append("single_query")  # 或 "clarify" 等
+
+    indicators = intent_info.setdefault("indicators", [])
     
-    user_input = str(message or "").strip()
-    # ---------- 数字输入选择公式 ----------
-    if slots.get("formula_candidates") and user_input.isdigit():
-        idx = int(user_input) - 1
-        candidates = slots["formula_candidates"]
-        logger.info(f"🔢 检测到候选选择 index={idx}, count={len(candidates)}")
-        if 0 <= idx < len(candidates):
-            chosen = candidates[idx]
-            slots.update({
-                "formula": chosen["FORMULAID"],
-                "indicator": chosen["FORMULANAME"],
-                "formula_candidates": None,
-                "awaiting_confirmation": False
-            })
-            await update_state(user_id, session_state)
-            logger.info(f"✅ 用户选择公式: {slots['indicator']} (FORMULAID={slots['formula']})")
-            
-            # 如果缺时间，提示补全
-            if not (slots.get("timeString") and slots.get("timeType")):
-                slots["awaiting_confirmation"] = True
-                await _update_slots(user_id, slots)
-                return f"好的，要查【{slots['indicator']}】，请告诉我时间。", graph.to_state()
+    # ---------- 查找当前 active indicator ----------
+    current_indicator = None
+    for ind in indicators:
+        if ind.get("status") == "active":
+            current_indicator = ind
+            break
 
-            # 否则执行查询
-            slots["awaiting_confirmation"] = False
-            await _update_slots(user_id, slots)    
-            return await _execute_query(user_id, slots, graph)
-        logger.warning("⚠️ 用户输入的候选编号超范围: %s", user_input)
-        slots["awaiting_confirmation"] = True
-        await _update_slots(user_id, slots)
-        return f"请输入编号 1~{len(candidates)} 选择公式。", graph.to_state()
+    # ---------- 若无 active indicator，则尝试从最近节点恢复 ----------
+    if not current_indicator:
+        last_node = graph.get_last_completed_node()
+        if last_node:
+            entry = last_node.get("indicator_entry", {})
+            if entry and entry.get("indicator"):
+                logger.info("🧩 从最近节点恢复 indicator: %s", entry.get("indicator"))
+                current_indicator = {
+                    "status": "active",
+                    "indicator": entry.get("indicator"),
+                    "formula": entry.get("formula"),
+                    "timeString": entry.get("timeString"),
+                    "timeType": entry.get("timeType"),
+                    "slot_status": {
+                        "formula": "missing",
+                        "time": "missing"
+                    },
+                    "value": None,
+                    "note": None,
+                    "formula_candidates": entry.get("formula_candidates"),
+                }
+                indicators.append(current_indicator)
+            else:
+                logger.info("⚠️ 最近节点无有效 indicator_entry，改用默认新建。")
+                current_indicator = default_indicators()
+                indicators.append(current_indicator)
+        else:
+            logger.info("⚠️ 无历史节点可用，创建默认 indicator。")
+            current_indicator = default_indicators()
+            indicators.append(current_indicator)
 
-    # ---------- 非数字输入重新解析 ----------
-    if slots.get("formula_candidates"):
-        slots["formula_candidates"] = None
-        slots["formula"] = None
-        await update_state(user_id, session_state)
-        logger.info("🧹 已清空 formula_candidates，准备重新解析")
 
-    # ---------- 调用 LLM 解析补全 ----------
+    # ---------- LLM 补全 ----------
     try:
         parsed = await parse_user_input(user_input)
         for key in ("indicator", "timeString", "timeType"):
             if parsed.get(key):
-                slots[key] = parsed[key]
-                logger.debug(f"🧩 补全 slots: {key}={parsed[key]}")
+                current_indicator[key] = parsed[key]
     except Exception as e:
-        logger.exception("❌ parse_user_input 失败: %s", e)
-        parsed = {}
+        logger.warning("parse_user_input 解析候选失败: %s -> %s", user_input, e)
 
-    await update_state(user_id, session_state)
-    logger.info(f"📦 当前 slots (after parsing): {slots}")
+    current_indicator["slot_status"]["time"] = "filled" if current_indicator.get("timeString") and current_indicator.get("timeType") else "missing"
 
-    # 5️⃣ 如果指标缺失，要求用户补全
-    if not slots.get("indicator"):
-        logger.info("⚠️ 缺少 indicator，提示用户补全。")
-        slots["awaiting_confirmation"] = True
-        await _update_slots(user_id, slots)
-        return "请告诉我您要查询的指标名称。", graph.to_state()
+    # ---------- 缺指标 ----------
+    if not current_indicator.get("indicator"):
+        reply = "请告诉我您要查询的指标名称。"
+        graph.add_history(user_input, reply)
+        graph.set_intent_info(intent_info)
+        set_graph(user_id, graph)
+        return reply, graph.to_state()
 
-    # 6️⃣ 使用 formula_api 查找公式
-    try:
-        logger.info(f"🔎 调用 formula_api 查询公式: {slots["indicator"]}")
-        formula_resp = await asyncio.to_thread(formula_api.formula_query_dict, slots["indicator"])
-    except Exception as e:
-        logger.exception("❌ 调用 formula_api 失败: %s", e)
-        slots["awaiting_confirmation"] = True
-        await _update_slots(user_id, slots)
-        return f"查找公式时出错: {e}", graph.to_state()
+    # ---------- 查询公式 ----------
+    if not current_indicator["slot_status"]["formula"] == "filled":
+        formula_resp = await asyncio.to_thread(formula_api.formula_query_dict, current_indicator["indicator"])
+        exact_matches = formula_resp.get("exact_matches") or []
+        candidates = formula_resp.get("candidates") or []
 
-    exact_matches = formula_resp.get("exact_matches") or []
-    candidates = formula_resp.get("candidates") or []
-    logger.info(f"📊 formula_api 返回: exact={len(exact_matches)}, candidates={len(candidates)}")
-
-    # 精确匹配
-    if exact_matches:
-        chosen = exact_matches[0]
-        slots["formula"] = chosen["FORMULAID"]
-        slots["indicator"] = chosen["FORMULANAME"]
-        slots["formula_candidates"] = None
-        await _update_slots(user_id, slots)
-        logger.info(f"✅ 精确匹配公式: {slots['indicator']} (FORMULAID={slots['formula']})")
-        
-        # 如果没有时间，询问时间
-        if not (slots.get("timeString") and slots.get("timeType")):
-            slots["awaiting_confirmation"] = True
-            await _update_slots(user_id, slots)
-            return f"好的，要查【{slots['indicator']}】，请告诉我时间。", graph.to_state()
-
-        slots["awaiting_confirmation"] = False
-        await _update_slots(user_id, slots)
-        return await _execute_query(user_id, slots, graph)
-
-    # 候选匹配
-    if candidates:
-        top = candidates[0]
-        logger.info("🔢 找到 %d 个候选公式, 最高候选: %s (score=%s)", len(candidates), top.get("FORMULANAME"), top.get("score"))
-        if top.get("score", 0) > 100:
-            slots["formula"] = top["FORMULAID"]
-            slots["indicator"] = top["FORMULANAME"]
-            slots["formula_candidates"] = None
-            await _update_slots(user_id, slots)
-            logger.info(f"🧠 自动选择高分候选公式: {slots['indicator']} (score={top['score']})")
-
-            if not (slots.get("timeString") and slots.get("timeType")):
-                slots["awaiting_confirmation"] = True
-                await _update_slots(user_id, slots)
-                return f"好的，要查【{slots['indicator']}】，请告诉我时间。", graph.to_state()
-            
-            # 否则执行查询
-            slots["awaiting_confirmation"] = False
-            await _update_slots(user_id, slots)   
-            return await _execute_query(user_id, slots, graph)
-        else:
-            slots["formula_candidates"] = candidates[:TOP_N]
-            slots["awaiting_confirmation"] = True
-            await _update_slots(user_id, slots)
-            msg_lines = ["请从以下候选公式选择编号："]
+        if exact_matches:
+            chosen = exact_matches[0]
+            current_indicator["formula"] = chosen["FORMULAID"]
+            current_indicator["indicator"] = chosen["FORMULANAME"]
+            current_indicator["slot_status"]["formula"] = "filled"
+            current_indicator["note"] = "精确匹配公式"
+        elif candidates and candidates[0].get("score", 0) > 100:
+            top = candidates[0]
+            current_indicator["formula"] = top["FORMULAID"]
+            current_indicator["indicator"] = top["FORMULANAME"]
+            current_indicator["slot_status"]["formula"] = "filled"
+            current_indicator["note"] = f"高分候选公式 (score {top.get('score')})"
+        elif candidates:
+            current_indicator["formula_candidates"] = candidates[:TOP_N]
+            current_indicator["slot_status"]["formula"] = "missing"
+            lines = ["请从以下候选公式选择编号："]
             for i, c in enumerate(candidates[:TOP_N], 1):
-                msg_lines.append(f"{i}) {c['FORMULANAME']} (score {c.get('score', 0):.2f})")
-            logger.info("➡️ 返回候选公式供用户选择")
-            return "\n".join(msg_lines), graph.to_state()
+                lines.append(f"{i}) {c['FORMULANAME']} (score {c.get('score',0):.2f})")
+            reply = "\n".join(lines) 
+            graph.add_history(user_input, reply)
+            graph.set_intent_info(intent_info)
+            set_graph(user_id, graph)
+            return reply, graph.to_state()
+        else:
+            current_indicator["slot_status"]["formula"] = "missing"
+            current_indicator["note"] = "未找到匹配公式"
+            reply = f"未找到匹配公式，请重新输入指标名称。" 
+            graph.add_history(user_input, reply)
+            graph.set_intent_info(intent_info)
+            set_graph(user_id, graph)
+            return reply, graph.to_state()
 
-    # --- Step 4. 无匹配 ---
-    logger.info(f"❌ 未找到匹配公式: {slots["indicator"]}")
-    slots["awaiting_confirmation"] = True
-    await _update_slots(user_id, slots)
-    return f"未找到匹配公式，请重新输入指标名称。", graph.to_state()
+    # ---------- 执行查询 ----------
+    if current_indicator["slot_status"]["formula"] == "filled" and current_indicator["slot_status"]["time"] == "filled":
+        val, reply = await _execute_query(current_indicator)
+        current_indicator["value"] = val
+        current_indicator["note"] = reply
+        current_indicator["status"] = "completed"
+        # 必须在addNode前
+        graph.set_intent_info(intent_info)
+        # 写入 graph.node
+        node_id = graph.add_node(current_indicator)
+        # 成功查询重置意图
+        graph.set_intent_info({})
+        graph.add_history(user_input, reply)
+        set_graph(user_id, graph)
+        return reply, graph.to_state()
+    reply = f"好的，要查【{current_indicator['indicator']}】，请告诉我时间。"
+    graph.add_history(user_input, reply)
+    current_indicator["note"] = reply
+    graph.set_intent_info(intent_info)
+    set_graph(user_id, graph)
+    return reply, graph.to_state()
 
-
-async def _execute_query(user_id: str, slots: dict, graph: ContextGraph):
-    """执行平台查询并更新图谱与历史"""
-    indicator = slots.get("indicator")
-    formula = slots.get("formula")
-    time_str = slots.get("timeString")
-    time_type = slots.get("timeType")
-
-    logger.info(f"⚙️ 调用 platform_api.query_platform(formula={formula}, time={time_str}, type={time_type})")
+# ------------------------- 辅助函数 -------------------------
+async def _execute_query(indicator_entry):
+    formula = indicator_entry.get("formula")
+    time_str = indicator_entry.get("timeString")
+    time_type = indicator_entry.get("timeType")
+    indicator = indicator_entry.get("indicator")
 
     try:
         if inspect.iscoroutinefunction(platform_api.query_platform):
             result = await platform_api.query_platform(formula, time_str, time_type)
         else:
             result = await asyncio.to_thread(platform_api.query_platform, formula, time_str, time_type)
-        logger.info(f"✅ 平台查询成功: {result}")
+        logger.info(f"⚙️ 平台查询成功: {result}")
     except Exception as e:
         logger.exception("❌ platform_api 查询失败: %s", e)
-        return f"执行查询时出错: {e}", graph.to_state()
+        return None, f"查询失败: {e}"
 
-    # --- 格式化结果 ---
-    reply = _format_query_result(result, indicator, time_str, time_type)
-
-    # --- 更新状态 ---
-    state = await get_state(user_id)
-    state.setdefault("history", [])
-    history = state["history"]
-
-    last_indicator = next((h["indicator"] for h in reversed(history) if h.get("indicator")), None)
-    if last_indicator and last_indicator != indicator:
-        try:
-            graph.update_node(old_indicator=last_indicator, new_indicator=indicator)
-        except Exception:
-            graph.add_node(indicator, time_str, time_type)
-    else:
-        graph.add_node(indicator, time_str, time_type)
-
-    history.append({
-        "user_input": slots.get("last_input", ""),
-        "indicator": indicator,
-        "formula": formula,
-        "timeString": time_str,
-        "timeType": time_type,
-        "result": reply,
-        "intent": slots.get("intent", "new_query")
-    })
-    await update_state(user_id, state)
-
-    logger.info("📘 已更新历史记录与图谱。")
-    return reply, graph.to_state()
-
-
-def _format_query_result(result, indicator, time_str, time_type):
+    # 提取数值 和 回复
+    val = None
+    reply = None
     if isinstance(result, dict):
         val = result.get("value") or next(iter(result.values()), None)
         unit = result.get("unit", "")
-        return f"✅ {indicator} 在 {time_str} ({time_type}) 的值是 {val} {unit}"
-    elif isinstance(result, list):
+        reply = f"✅ {indicator} 在 {time_str} ({time_type}) 的值是 {val} {unit}"
+    elif isinstance(result, list) and result:
+        val = result[0].get("itemValue") or result[0].get("value") or result[0].get("v")
         lines = [f"{r.get('clock') or r.get('time') or r.get("timestamp")}: {r.get('itemValue') or r.get('value') or r.get("v")}" for r in result]
-        return f"✅ {indicator} 在 {time_str} ({time_type}) 的查询结果:\n" + "\n".join(lines)
+        reply = f"✅ {indicator} 在 {time_str} ({time_type}) 的查询结果:\n" + "\n".join(lines)
     else:
-        return f"✅ {indicator} 在 {time_str} ({time_type}) 的查询结果: {result}"
+        reply = f"✅ {indicator} 在 {time_str} ({time_type}) 的查询结果: {result}"
+    return val, reply
+    
+# Replace existing handle_compare with this implementation
 
+async def handle_compare(user_id: str, user_input: str, graph: ContextGraph, current_intent: dict | None = None):
+    """
+    Unified compare implementation supporting:
+      - one-step (>=2 candidates provided): parse first two and compare
+      - two-step (1 candidate): use last completed indicator as other item (copy+replace) then compare
+      - three-step (no candidates): take last two nodes from graph and compare using their notes
+    Behavior:
+      - ensure_intent_info() used as base (so two-step can restore previous snapshot)
+      - when missing formula/time or multiple formula candidates, write to intent_info['pending'] and return a prompt for clarify/slot_fill
+      - when both items have note/value, directly send notes to LLM for comparison, write relation and history
+    """
+    user_input = str(user_input or "").strip()
+    logger.info("🔀 进入 handle_compare，user=%s, input=%s", user_id, user_input)
 
-async def _update_slots(user_id, slots):
-    """更新会话状态"""
-    state = await get_state(user_id)
-    state["slots"].update(slots)
-    await update_state(user_id, state)
+    # Ensure we have a working intent_info (use snapshot recovery)
+    intent_info = graph.ensure_intent_info() or {}
+    intent_info.setdefault("user_input_list", []).append(user_input)
+    intent_info.setdefault("intent_list", []).append("compare")
+    indicators = intent_info.setdefault("indicators", [])
 
-async def handle_compare(user_id: str, message: str, graph: ContextGraph):
-    state = await get_state(user_id)
-    state.setdefault("history", [])
-    history = state["history"]
-    state.setdefault("slots", default_slots())
-    slots = state["slots"]
+    # Helper: try fill formula (sync -> asyncio.to_thread) and handle candidates returned
+    async def _ensure_formula_on_entry(entry: dict):
+        """
+        Ensure entry has formula if possible. Return tuple:
+          (ok: bool, followup_text_or_None)
+        If multiple low-confidence candidates -> return (False, prompt_text)
+        """
+        if entry.get("slot_status", {}).get("formula") == "filled" and entry.get("formula"):
+            return True, None
 
-    indicator = slots.get("indicator")
-    formula = slots.get("formula")
-    time_str = slots.get("timeString")
-    time_type = slots.get("timeType")
+        name = entry.get("indicator")
+        if not name:
+            return False, "缺少指标名称，需要确认要查询的指标。"
 
-    do_compare = slots.get("intent") == "compare" or any(
-        r.get("source") and r.get("target") for r in graph.get_relations("compare")
-    )
+        # Query formula API in thread
+        try:
+            formula_resp = await asyncio.to_thread(formula_api.formula_query_dict, name)
+        except Exception as e:
+            logger.exception("❌ formula_api 查询失败: %s", e)
+            return False, f"公式检索失败: {e}"
 
-    if do_compare:
-        resolved = None
-        for r in reversed(graph.get_relations("compare")):
-            if r.get("source") and r.get("target"):
-                resolved = (r.get("source"), r.get("target"))
-                break
-        if not resolved:
-            resolved = graph.resolve_compare_nodes()
+        exact_matches = formula_resp.get("exact_matches") or []
+        candidates = formula_resp.get("candidates") or []
 
-        if not resolved:
-            if len(history) >= 2:
-                src_rec, tgt_rec = history[-2], history[-1]
-                src_id = graph.find_node(src_rec.get("indicator"), src_rec.get("timeString")) or graph.add_node(src_rec.get("indicator"), src_rec.get("timeString"), src_rec.get("timeType"))
-                tgt_id = graph.find_node(tgt_rec.get("indicator"), tgt_rec.get("timeString")) or graph.add_node(tgt_rec.get("indicator"), tgt_rec.get("timeString"), tgt_rec.get("timeType"))
-                graph.add_relation("compare", source_id=src_id, target_id=tgt_id)
-                resolved = (src_id, tgt_id)
-            else:
-                reply = "二步问数对比正在开发中"
-                set_graph(user_id, graph)  # ✅ 替代 graph_store[user_id] = graph
-                state["history"].append({
-                    "user_input": slots.get("last_input", ""),
-                    "indicator": indicator,
-                    "formula": formula,
-                    "timeString": time_str,
-                    "timeType": time_type,
-                    "result": reply,
-                    "intent": slots.get("intent", "new_query")
-                })
-                await update_state(user_id, state)
-                return reply, graph.to_state()
-
-        src_id, tgt_id = resolved
-        src_node, tgt_node = graph.get_node(src_id), graph.get_node(tgt_id)
-
-        def _find_history_for(node):
-            for rec in reversed(history):
-                if rec.get("indicator") == node.get("indicator") and rec.get("timeString") == node.get("timeString"):
-                    return rec
-            return None
-
-        src_rec = _find_history_for(src_node)
-        tgt_rec = _find_history_for(tgt_node)
-
-        if not src_rec or not src_rec.get("result"):
-            q_src = f"{src_node.get('indicator')} 在 {src_node.get('timeString')} 的值是多少"
-            await handle_new_query(user_id, q_src, graph.to_state())
-            state = await get_state(user_id)
-            history = state.get("history", [])
-            src_rec = _find_history_for(src_node)
-
-        if not tgt_rec or not tgt_rec.get("result"):
-            q_tgt = f"{tgt_node.get('indicator')} 在 {tgt_node.get('timeString')} 的值是多少"
-            await handle_new_query(user_id, q_tgt, graph.to_state())
-            state = await get_state(user_id)
-            history = state.get("history", [])
-            tgt_rec = _find_history_for(tgt_node)
-
-        val_a = src_rec.get("result")
-        val_b = tgt_rec.get("result")
-
-        analysis = ""
-        if val_a is not None and val_b is not None:
-            llm_prompt = f"""
-你是能源分析助手。请基于下面两次查询结果给出简洁对比（一句话总结 + 差值与百分比）：
-- 指标: {src_node.get('indicator')}
-- 时间A: {src_node.get('timeString')}, 结果A: {val_a}
-- 时间B: {tgt_node.get('timeString')}, 结果B: {val_b}
-"""
-            analysis = await safe_llm_chat(llm_prompt)
+        if exact_matches:
+            chosen = exact_matches[0]
+            entry["formula"] = chosen["FORMULAID"]
+            entry["indicator"] = chosen["FORMULANAME"]
+            entry["slot_status"]["formula"] = "filled"
+            entry["note"] = entry.get("note") or "精确匹配公式"
+            return True, None
+        elif candidates and candidates[0].get("score", 0) > 100:
+            top = candidates[0]
+            entry["formula"] = top["FORMULAID"]
+            entry["indicator"] = top["FORMULANAME"]
+            entry["slot_status"]["formula"] = "filled"
+            entry["note"] = entry.get("note") or f"高分候选公式 (score {top.get('score')})"
+            return True, None
+        elif candidates:
+            # need user to pick from candidates
+            entry["formula_candidates"] = candidates[:TOP_N]
+            entry["slot_status"]["formula"] = "missing"
+            lines = ["请从以下候选公式选择编号："]
+            for i, c in enumerate(candidates[:TOP_N], 1):
+                lines.append(f"{i}) {c['FORMULANAME']} (score {c.get('score',0):.2f})")
+            prompt = "\n".join(lines)
+            return False, prompt
         else:
-            analysis = "\n⚠️ 无法找到可用于对比的数值结果。"
+            return False, "未找到匹配公式，请重新输入或确认指标名称。"
 
-        graph.add_relation("compare", source_id=src_id, target_id=tgt_id, meta={"via": "pipeline.compare", "user_input": message,"result": analysis})
-        set_graph(user_id, graph)  # ✅ 替代 graph_store[user_id] = graph
+    # Helper: ensure time exists (try inherit from last node snapshot)
+    def _ensure_time_on_entry(entry: dict):
+        if entry.get("slot_status", {}).get("time") == "filled" and entry.get("timeString") and entry.get("timeType"):
+            return True, None
+        # inherit from latest node's snapshot if available
+        # prefer intent_info indicators that are completed
+        for ind in reversed(indicators):
+            if ind.get("status") == "completed" and ind.get("timeString"):
+                entry["timeString"] = entry.get("timeString") or ind.get("timeString")
+                entry["timeType"] = entry.get("timeType") or ind.get("timeType")
+                entry["slot_status"]["time"] = "inferred"
+                return True, None
+        # fallback to graph nodes
+        if graph.nodes:
+            last = graph.nodes[-1]["indicator_entry"]
+            if last.get("timeString"):
+                entry["timeString"] = entry.get("timeString") or last.get("timeString")
+                entry["timeType"] = entry.get("timeType") or last.get("timeType")
+                entry["slot_status"]["time"] = "inferred"
+                return True, None
+        return False, "缺少时间信息，请补充时间（例如：今天/昨天/本月/2025-11-01）。"
 
+    # Helper: call platform query via existing _execute_query
+    async def _query_and_add_node(entry: dict):
+        """
+        1) ensure formula and time (may return followup)
+        2) call _execute_query to get value and reply
+        3) add_node into graph and return node_id, node_entry (indicator_entry dict), note
+        """
+        # ensure formula
+        ok, follow = await _ensure_formula_on_entry(entry)
+        if not ok:
+            return None, entry, None, follow, True
+
+        # ensure time
+        ok2, follow2 = _ensure_time_on_entry(entry)
+        if not ok2:
+            return None, entry, None, follow2, True
+
+        # now we have formula + time -> query
+        val, reply = await _execute_query(entry)
+        entry["value"] = val
+        entry["note"] = reply
+        entry["status"] = "completed"
+
+        # add to graph and return id
+        nid = graph.add_node(entry)
+        return nid, entry, val, reply, False
+
+    # Acquire candidates from current_intent if present
+    candidates = []
+    if current_intent and isinstance(current_intent, dict):
+        candidates = current_intent.get("candidates") or []
+
+    # If intent_info already has indicators (e.g. from previous steps), we operate on that list.
+    # We'll append/modify indicators list as needed per scenario.
+
+    # ---------- One-step (>=2 candidates supplied) ----------
+    if candidates:
+        logger.info("🔎 compare: 使用 candidates 解析: %s", candidates)
+        parsed_items = []
+        for c in candidates:
+            # parse each candidate into a default indicator entry
+            n = default_indicators()
+            try:
+                parsed = await parse_user_input(c)
+                for key in ("indicator", "timeString", "timeType"):
+                    if parsed.get(key):
+                        n[key] = parsed[key]
+                # mark formula slot based on parsed
+                if parsed.get("formula"):
+                    n["formula"] = parsed.get("formula")
+                    n["slot_status"]["formula"] = "filled"
+                if parsed.get("timeString") and parsed.get("timeType"):
+                    n["slot_status"]["time"] = "filled"
+                n["raw_candidate"] = c
+                parsed_items.append(n)
+            except Exception as e:
+                logger.warning("parse_user_input 解析对比条目失败: %s -> %s", c, e)
+
+        # If more than 2 provided, refuse (per your rule)
+        if len(parsed_items) > 2:
+            reply = "当前只支持两项对比，请只提供两个要对比的目标，或改为趋势/分析接口。"
+            graph.add_history(user_input, reply)
+            graph.set_intent_info(intent_info)
+            set_graph(user_id, graph)
+            logger.warning("⚠️ compare: 用户提供超过两项 candidates")
+            return reply, graph.to_state()
+
+        # ensure both items have nodes/values
+        node_pairs = []
+        needs_followup = False
+        followup_msg = None
+        for item in parsed_items:
+            # Try find existing node identical
+            nid = graph.find_node(item.get("indicator"), item.get("timeString"))
+            if nid:
+                node = graph.get_node(nid)
+                ie = node.get("indicator_entry")
+                # if note/value exists, reuse
+                if ie.get("value") is not None or ie.get("note"):
+                    node_pairs.append((nid, ie))
+                    continue
+            # else query platform
+            nid, ie, val, note, need_follow = await _query_and_add_node(item)
+            if need_follow:
+                needs_followup = True
+                followup_msg = note
+                intent_info.setdefault("pending", []).append(item)
+            else:
+                node_pairs.append((nid, ie))
+        if needs_followup:
+            graph.set_intent_info(intent_info)
+            graph.add_history(user_input, followup_msg)
+            set_graph(user_id, graph)
+            logger.info("🔔 compare(one-step) 需要补槽 -> %s", followup_msg)
+            return followup_msg, graph.to_state()
+
+        # now have two node entries
+        left = node_pairs[0][1]
+        right = node_pairs[1][1]
+        note_a = left.get("note") or left.get("value") or ""
+        note_b = right.get("note") or right.get("value") or ""
+
+        # call LLM with two notes
+        prompt = f"""
+你是能源分析助手。下面是两条查询结果（可能包含 'None' 表示无数据）。
+请基于下列两条结果，给出一句简洁自然语言的对比结论（包含差值/方向/是否无数据说明）。
+结果A: {note_a}
+结果B: {note_b}
+请直接返回一句结论。
+"""
+        try:
+            analysis = (await safe_llm_chat(prompt) or "").strip()
+        except Exception as e:
+            logger.exception("safe_llm_chat 失败: %s", e)
+            analysis = f"对比结果: {note_a} || {note_b}"
+
+        # write relation and history
+        sid = node_pairs[0][0]
+        tid = node_pairs[1][0]
+        graph.add_relation("compare", source_id=sid, target_id=tid, meta={"via": "pipeline.compare", "user_input": user_input, "result": analysis})
+        graph.set_intent_info(intent_info)
+        graph.add_history(user_input, analysis)
+        set_graph(user_id, graph)
+        logger.info("✅ compare(one-step) 完成")
         return analysis, graph.to_state()
 
+    # ---------- Three-step (no candidates): use last two nodes from graph ----------
+    logger.info("🔎 compare: 未提供 candidates，尝试从 graph 回溯最近两个节点")
+    recent = graph.nodes[-2:] if len(graph.nodes) >= 2 else []
+    if recent and len(recent) >= 2:
+        node1 = recent[-2]
+        node2 = recent[-1]
+        ie1 = node1.get("indicator_entry", {})
+        ie2 = node2.get("indicator_entry", {})
+        note_a = ie1.get("note") or ie1.get("value") or ""
+        note_b = ie2.get("note") or ie2.get("value") or ""
 
-async def handle_expand(user_id: str, message: str, graph: ContextGraph):
-    logger.info("📈 进入 expand 模式（趋势扩展查询）")
+        prompt = f"""
+你是能源分析助手。下面是两条查询结果（可能包含 'None' 表示无数据）。
+请基于下列两条结果，给出一句简洁自然语言的对比结论（包含差值/方向/是否无数据说明）。
+结果A: {note_a}
+结果B: {note_b}
+请直接返回一句结论。
+"""
+        try:
+            analysis = (await safe_llm_chat(prompt) or "").strip()
+        except Exception as e:
+            logger.exception("safe_llm_chat 失败: %s", e)
+            analysis = f"对比结果: {note_a} || {note_b}"
+
+        # write relation
+        sid = node1.get("id")
+        tid = node2.get("id")
+        graph.add_relation("compare", source_id=sid, target_id=tid, meta={"via": "pipeline.compare", "user_input": user_input, "result": analysis})
+        # 成功查询重置意图
+        graph.set_intent_info({})
+        graph.add_history(user_input, analysis)
+        set_graph(user_id, graph)
+        logger.info("✅ compare(three-step) 完成")
+        return analysis, graph.to_state()
+
+    # ---------- Two-step (1 candidate): take last completed indicator as base, then parse candidate to replace fields ----------
+    logger.info("🔎 compare: single candidate 情形 -> two-step flow")
+    # find last completed indicator in intent_info or graph
+    base_indicator = None
+    # prefer from intent_info indicators
+    for ind in reversed(indicators):
+        if ind.get("status") == "completed":
+            base_indicator = ind
+            break
+    # fallback to graph nodes
+    if not base_indicator and graph.nodes:
+        base_indicator = graph.nodes[-1]["indicator_entry"]
+
+    if not base_indicator:
+        reply = "⚠️ 无可用的参考指标，请先进行至少一次查询以便进行对比。"
+        graph.add_history(user_input, reply)
+        graph.set_intent_info(intent_info)
+        set_graph(user_id, graph)
+        logger.warning("⚠️ compare(two-step) 无 base_indicator")
+        return reply, graph.to_state()
+
+    # parse the single candidate (it was placed in 'candidates' earlier; here we assume exactly 1)
+    single_cand = current_intent.get("candidates")[0] if current_intent and current_intent.get("candidates") else intent_info.get("candidates", [None])[0]
+    n = copy.deepcopy(base_indicator)  # copy completed base
+    # if candidate is a time only or indicator only, parse and overwrite corresponding fields
+    try:
+        parsed = await parse_user_input(single_cand)
+        for key in ("indicator", "timeString", "timeType", "formula"):
+            if parsed.get(key):
+                n[key] = parsed[key]
+        # adjust slot_status
+        n["slot_status"]["time"] = "filled" if n.get("timeString") and n.get("timeType") else n["slot_status"].get("time", "missing")
+        n["slot_status"]["formula"] = "filled" if n.get("formula") else n["slot_status"].get("formula", "missing")
+    except Exception as e:
+        logger.warning("parse_user_input 单 candidate 解析失败: %s -> %s", single_cand, e)
+
+    # Now ensure both base (possibly modified copy) and the other recent node have values
+    # Prepare the other existing node (the one to compare against): prefer previous completed node different from base copy
+    other_node = None
+    for node in reversed(graph.nodes):
+        ie = node.get("indicator_entry", {})
+        # skip if same as base snapshot (indicator+time same)
+        if ie.get("indicator") == base_indicator.get("indicator") and ie.get("timeString") == base_indicator.get("timeString"):
+            continue
+        other_node = node
+        break
+
+    if not other_node:
+        reply = "⚠️ 无可用的对比对象，请先查询另一项以进行对比。"
+        graph.add_history(user_input, reply)
+        graph.set_intent_info(intent_info)
+        set_graph(user_id, graph)
+        logger.warning("⚠️ compare(two-step) 无 other_node")
+        return reply, graph.to_state()
+
+    # Ensure n (the modified base copy) has node/value
+    nid1, ie1, val1, note1, need1 = await _query_and_add_node(n)
+    if need1:
+        intent_info.setdefault("pending", []).append(n)
+        graph.set_intent_info(intent_info)
+        graph.add_history(user_input, note1)
+        set_graph(user_id, graph)
+        logger.info("🔔 compare(two-step) 需要补槽 -> %s", note1)
+        return note1, graph.to_state()
+
+    # Ensure other_node has value (reuse if exists)
+    other_ie = other_node.get("indicator_entry")
+    if other_ie.get("value") is not None or other_ie.get("note"):
+        nid2 = other_node.get("id")
+        ie2 = other_ie
+        val2 = other_ie.get("value")
+        note2 = other_ie.get("note")
+    else:
+        nid2, ie2, val2, note2, need2 = await _query_and_add_node(other_ie)
+        if need2:
+            intent_info.setdefault("pending", []).append(other_ie)
+            graph.set_intent_info(intent_info)
+            graph.add_history(user_input, note2)
+            set_graph(user_id, graph)
+            logger.info("🔔 compare(two-step) 需要补槽(other) -> %s", note2)
+            return note2, graph.to_state()
+
+    # Now produce two notes and call LLM
+    note_a = ie1.get("note") or note1
+    note_b = ie2.get("note") or note2
+
+    prompt = f"""
+你是能源分析助手。下面是两条查询结果（可能包含 'None' 表示无数据）。
+请基于下列两条结果，给出一句简洁自然语言的对比结论（包含差值/方向/是否无数据说明）。
+结果A: {note_a}
+结果B: {note_b}
+请直接返回一句结论。
+"""
+    try:
+        analysis = (await safe_llm_chat(prompt) or "").strip()
+    except Exception as e:
+        logger.exception("safe_llm_chat 失败: %s", e)
+        analysis = f"对比结果: {note_a} || {note_b}"
+
+    # write relation and history
+    graph.add_relation("compare", source_id=nid1, target_id=nid2, meta={"via": "pipeline.compare", "user_input": user_input, "result": analysis})
+    graph.set_intent_info(intent_info)
+    graph.add_history(user_input, analysis)
+    set_graph(user_id, graph)
+    logger.info("✅ compare(two-step) 完成")
+    return analysis, graph.to_state()
+
+# ------------------------- 趋势分析 -------------------------
+async def handle_analysis(user_id: str, message: str, graph: ContextGraph):
+    logger.info("📈 进入 analysis 模式（趋势扩展查询）")
     return "趋势查询功能正在开发中。", graph.to_state()
 
+# ------------------------- Slot 填充 基本属于时间-------------------------
+async def handle_slot_fill(user_id: str, user_input: str, graph: ContextGraph, current_intent: dict | None = None):
+    logger.info("🔁 进入 slot_fill 模式。")
+    """
+    批量时间槽位补全逻辑：
+    1. 找出所有 active 的指标
+    2. 解析用户输入（时间）
+    3. 如果没有或多条时间 → 提示重新输入
+    4. 为每个 active 指标补全时间并执行查询
+    5. 汇总结果，写入 graph
+    """
+    user_input = str(user_input or "").strip()
+    logger.info(f"🔹 handle_slot_fill user_input={user_input}")
+    # 因为查询成功会清空当前intent_info，所以在成功查询一次后，后续问“那昨天的呢？”，会从最近的node中拉取snapshot
+    intent_info = graph.ensure_intent_info() or {}
+    intent_info.setdefault("user_input_list", []).append(user_input)
+    intent_info.setdefault("intent_list", []).append("slot_fill") 
+    indicators = intent_info.setdefault("indicators", [])
+    # ---------- 找到所有 active 指标 ----------
+    active_inds = [ind for ind in indicators if ind.get("status") == "active"]
+    if not active_inds:
+        active_inds = indicators
+    
+    # ---------- 解析时间 ----------
+    try:
+        print(current_intent)
+        candidates = current_intent.get("candidates", [])
+        if not candidates or len(candidates) != 1:
+            reply = "抱歉，我不确定您指的时间，请重新输入（例如：去年、上月、2024年10月）。"
+            graph.add_history(user_input, reply)
+            graph.set_intent_info(intent_info)
+            set_graph(user_id, graph)
+            return reply, graph.to_state()
+        parsed = await parse_user_input(candidates[0])
+        logger.info(f"✅ 解析到时间候选: {parsed}")
+    except Exception as e:
+        reply = f"解析时间出错: {e}"
+        graph.add_history(user_input, reply)
+        graph.set_intent_info(intent_info)
+        set_graph(user_id, graph)
+        return reply, graph.to_state()
 
-async def handle_same_indicator_new_time(user_id: str, message: str, graph: ContextGraph):
-    logger.info("🔁 进入 same_indicator_new_time 模式。")
-    return await handle_new_query(user_id, message, graph)
+    # ---------- 批量更新 ----------
+    results = []
+    for ind in active_inds:
+        for key in ("timeString", "timeType"):
+            if parsed.get(key):
+                ind[key] = parsed[key]
 
+        ind["slot_status"]["time"] = "filled" if ind.get("timeString") and ind.get("timeType") else "missing"
+                
+        # ---------- 查询公式 ----------
+        if not ind["slot_status"]["formula"] == "filled":
+            formula_resp = await asyncio.to_thread(formula_api.formula_query_dict, ind["indicator"])
+            exact_matches = formula_resp.get("exact_matches") or []
+            candidates = formula_resp.get("candidates") or []
 
+            if exact_matches:
+                chosen = exact_matches[0]
+                ind["formula"] = chosen["FORMULAID"]
+                ind["indicator"] = chosen["FORMULANAME"]
+                ind["slot_status"]["formula"] = "filled"
+                ind["note"] = "精确匹配公式"
+            elif candidates and candidates[0].get("score", 0) > 100:
+                top = candidates[0]
+                ind["formula"] = top["FORMULAID"]
+                ind["indicator"] = top["FORMULANAME"]
+                ind["slot_status"]["formula"] = "filled"
+                ind["note"] = f"高分候选公式 (score {top.get('score')})"
+            elif candidates:
+                ind["formula_candidates"] = candidates[:TOP_N]
+                ind["slot_status"]["formula"] = "missing"
+                lines = ["请从以下候选公式选择编号："]
+                for i, c in enumerate(candidates[:TOP_N], 1):
+                    lines.append(f"{i}) {c['FORMULANAME']} (score {c.get('score', 0):.2f})")
+                reply = "\n".join(lines)
+                graph.add_history(user_input, reply)
+                graph.set_intent_info(intent_info)
+                set_graph(user_id, graph)
+                return reply, graph.to_state()
+            else:
+                ind["slot_status"]["formula"] = "missing"
+                ind["note"] = "未找到匹配公式"
+                reply = f"未找到匹配公式，请重新输入指标名称。"
+                graph.add_history(user_input, reply)
+                graph.set_intent_info(intent_info)
+                set_graph(user_id, graph)
+                return reply, graph.to_state()
+
+        # ---------- 执行查询 ----------
+        if ind["slot_status"]["formula"] == "filled":
+            val, reply = await _execute_query(ind)
+            ind["value"] = val
+            ind["note"] = reply
+            ind["status"] = "completed"
+            graph.add_node(ind)
+            results.append(reply)
+
+    # ---------- 更新 graph ----------
+    graph.set_intent_info(intent_info)
+    set_graph(user_id, graph)
+    # 成功查询重置意图
+    graph.set_intent_info({})
+    final_reply = "\n".join(results) if results else "没有成功的查询结果。"
+    graph.add_history(user_input, final_reply)
+    logger.info(f"📊 slot_fill 汇总结果: {final_reply}")
+    return final_reply, graph.to_state()
+
+# ------------------------- clarify 选择备选项 -------------------------
+async def handle_clarify(user_id: str, user_input: str, graph: ContextGraph):
+    logger.info("✅ 进入 clarify 模式。")
+    """
+    基础能源查询：
+    - 选择备选
+    - 调用 formula_api 查询公式
+    - 自动选择公式或提示候选
+    - 执行平台查询
+    - 成功查询节点写入 graph.nodes，保留当时 intent_info
+    """
+    user_input = str(user_input or "").strip()
+    logger.info(f"🔹 handle_clarify user_input={user_input}")
+
+    intent_info = graph.get_intent_info() or {}
+    intent_info.setdefault("user_input_list", []).append(user_input)
+    intent_info.setdefault("intent_list", []).append("clarify")
+    
+    indicators = intent_info.setdefault("indicators", [])
+
+    # ---------- 查找当前 active indicator ----------
+    current_indicator = None
+    for ind in indicators:
+        if ind.get("status") == "active" and ind.get("formula_candidates"):
+            current_indicator = ind
+            break
+
+    # 如果没有 active 的，就新建一个
+    if not current_indicator:
+        current_indicator = default_indicators()
+        indicators.append(current_indicator)
+
+    # ---------- 数字输入选择公式 ----------
+    if user_input.isdigit():
+        idx = int(user_input) - 1
+        candidates = current_indicator["formula_candidates"]
+        logger.info(f"🔢 检测到候选选择 index={idx}, count={len(candidates)}")
+        if 0 <= idx < len(candidates):
+            chosen = candidates[idx]
+            current_indicator["formula"] = chosen["FORMULAID"]
+            current_indicator["indicator"] = chosen["FORMULANAME"]
+            current_indicator["slot_status"]["formula"] = "filled"
+            logger.info(f"✅ 用户选择公式: {current_indicator['indicator']} (FORMULAID={current_indicator['formula']})")
+        else:
+            logger.warning("⚠️ 用户输入的候选编号超范围: %s", user_input)
+            reply = f"请输入编号 1~{len(candidates)} 选择公式。"
+            graph.add_history(user_input, reply)
+            graph.set_intent_info(intent_info)
+            set_graph(user_id, graph)
+            return reply, graph.to_state()
+    # ---------- 执行查询 ----------
+    if current_indicator["slot_status"]["formula"] == "filled" and current_indicator["slot_status"]["time"] == "filled":
+        val, reply = await _execute_query(current_indicator)
+        current_indicator["value"] = val
+        current_indicator["note"] = reply
+        current_indicator["status"] = "completed"
+        # 必须在addNode前
+        graph.set_intent_info(intent_info)
+        # 写入 graph.node
+        node_id = graph.add_node(current_indicator)
+        # 成功查询重置意图
+        graph.set_intent_info({})  
+        graph.add_history(user_input, reply)
+        set_graph(user_id, graph)
+        return reply, graph.to_state()
+    reply = f"好的，要查【{current_indicator['indicator']}】，请告诉我时间。"
+    graph.add_history(user_input, reply)
+    current_indicator["note"] = reply
+    graph.set_intent_info(intent_info)
+    set_graph(user_id, graph)
+    return reply, graph.to_state()
+
+# ------------------------- 批量查询 -------------------------
 async def handle_list_query(user_id: str, message: str, graph: ContextGraph):
     logger.info("📋 进入 list_query 模式（批量指标查询）。")
     return "批量查询功能正在开发中。", graph.to_state()
+
+
+# ------------------------- 测试 main -------------------------
+async def main():
+    from tools import formula_api
+    # 只初始化一次，不会重复加载
+    formula_api.initialize()
+
+    user_id = "test_user"
+    graph = get_graph(user_id) or ContextGraph()
+    set_graph(user_id, graph)
+
+    # 测试单指标查询
+    reply, graph_state = await handle_single_query(user_id, "今天的高炉工序能耗是多少", graph)
+    print("Single Query Reply:", reply)
+    print(json.dumps(graph_state, indent=2, ensure_ascii=False))
+
+    # 测试
+    reply, graph_state = await handle_single_query(user_id, "昨天的呢", graph)
+    print("Single Query Reply 2:", reply)
+    print(json.dumps(graph_state, indent=2, ensure_ascii=False))
+
+    # 测试三步对比
+    reply, graph_state = await handle_compare(user_id, "它们对比呢？", graph, {"candidates": []})
+    print("Single Query Reply 3:", reply)
+    print(json.dumps(graph_state, indent=2, ensure_ascii=False))
+
+    # 再查询一个指标（可测试对比）
+    # msg2 = "昨天高炉工序能耗是多少"
+    # reply2, graph_state2 = await handle_single_query(user_id, msg2, graph)
+    # print("Single Query Reply 2:", reply2)
+    # print(json.dumps(graph_state2, indent=2, ensure_ascii=False))
+
+    # # 对比
+    # cmp_reply, _ = await handle_compare(user_id, "对比最新两条数据", graph)
+    # print("Compare Reply:", cmp_reply)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

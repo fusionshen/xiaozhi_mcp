@@ -9,7 +9,7 @@ from fastapi import FastAPI, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from core.intent_router import route_intent
-from tools import formula_api, platform_api
+from tools import formula_api
 from agent_state import get_state, update_state, cleanup_expired_sessions
 
 
@@ -22,7 +22,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="智能多意图对话引擎")
+app = FastAPI(title="智能能源多意图对话引擎")
 
 app.add_middleware(
     CORSMiddleware,

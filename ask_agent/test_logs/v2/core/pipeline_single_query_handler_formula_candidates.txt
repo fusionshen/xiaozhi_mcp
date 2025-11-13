@@ -1,0 +1,242 @@
+# 测试单指标查询
+reply, graph_state = await handle_single_query(user_id, "1号高炉工序能耗", graph)
+print("Single Query Reply:", reply)
+print(json.dumps(graph_state, indent=2, ensure_ascii=False))
+
+# 测试选择备选
+reply, graph_state = await handle_clarify(user_id, 1, graph)
+print("Single Query Reply 2:", reply)
+print(json.dumps(graph_state, indent=2, ensure_ascii=False))
+
+
+(myenv) fusionshen@fusionshen-ThinkPad-T14-Gen-1:~/Desktop/LLM/ask_agent$ python -m core.pipeline_handlers
+2025-11-12 16:08:59,380 | INFO | llm_client | ✅ Using ChatOllama from langchain-ollama
+/home/fusionshen/myenv/lib/python3.12/site-packages/jieba/_compat.py:18: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+✅ sentence-transformers 版本: 5.1.1
+<frozen runpy>:128: RuntimeWarning: 'core.pipeline_handlers' found in sys.modules after import of package 'core', but prior to execution of 'core.pipeline_handlers'; this may result in unpredictable behaviour
+2025-11-12 16:09:02,608 | INFO | formula-api | 🔄 正在初始化公式数据（full load）...
+Building prefix dict from the default dictionary ...
+2025-11-12 16:09:05,867 | DEBUG | jieba | Building prefix dict from the default dictionary ...
+Loading model from cache /tmp/jieba.cache
+2025-11-12 16:09:05,867 | DEBUG | jieba | Loading model from cache /tmp/jieba.cache
+Loading model cost 0.593 seconds.
+2025-11-12 16:09:06,461 | DEBUG | jieba | Loading model cost 0.593 seconds.
+Prefix dict has been built successfully.
+2025-11-12 16:09:06,461 | DEBUG | jieba | Prefix dict has been built successfully.
+2025-11-12 16:09:19,712 | INFO | formula-api | ✅ Loaded 270817 formulas. Tokenization ready.
+HAVE_ST : True
+2025-11-12 16:09:19,718 | INFO | formula-api | Auto-selected embedding device: cpu
+OFFLINE_MODEL_PATH:/home/fusionshen/Desktop/LLM/ask_agent/models/sbert_offline_models/86741b4e3f5cb7765a600d3a3d55a0f6a6cb443d
+2025-11-12 16:09:19,718 | INFO | formula-api | 🧩 尝试加载本地模型: /home/fusionshen/Desktop/LLM/ask_agent/models/sbert_offline_models/86741b4e3f5cb7765a600d3a3d55a0f6a6cb443d
+2025-11-12 16:09:19,719 | INFO | sentence_transformers.SentenceTransformer | Load pretrained SentenceTransformer: /home/fusionshen/Desktop/LLM/ask_agent/models/sbert_offline_models/86741b4e3f5cb7765a600d3a3d55a0f6a6cb443d
+2025-11-12 16:09:20,678 | INFO | formula-api | ✅ 已成功加载离线模型。
+2025-11-12 16:09:21,275 | INFO | formula-api | ✅ Loaded embeddings from cache ((270817, 384))
+2025-11-12 16:09:21,276 | INFO | formula-api | ✅ 初始化完成，用时 18.67s
+2025-11-12 16:09:21,276 | INFO | pipeline.handlers | ✅ 进入 single query 模式。
+2025-11-12 16:09:21,276 | INFO | pipeline.handlers | 🔹 handle_single_query user_input=1号高炉工序能耗
+2025-11-12 16:09:21,345 | INFO | httpx | HTTP Request: GET http://192.168.92.13:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-12 16:09:29,458 | INFO | httpx | HTTP Request: POST http://192.168.92.13:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "indicator": "1号高炉工序能耗",
+  "timeString": null,
+  "timeType": null
+}
+```
+2025-11-12 16:09:30,502 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+Batches: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00,  6.93it/s]
+2025-11-12 16:09:31,486 | INFO | context_graph | 🕘 add_history: 1号高炉工序能耗 -> 请从以下候选公式选择编号：
+1) 1高炉工序能耗实绩报出值 (score 87.77)
+2) 高炉工序能耗实绩报出值 (score 87.20)
+3) 1高炉工序平衡能耗实绩报出值 (score 86.29)
+4) 高炉工序能耗实绩累计值 (score 85.74)
+5) 1高炉工序平衡能耗实绩累计值 (score 85.73)
+Single Query Reply: 请从以下候选公式选择编号：
+1) 1高炉工序能耗实绩报出值 (score 87.77)
+2) 高炉工序能耗实绩报出值 (score 87.20)
+3) 1高炉工序平衡能耗实绩报出值 (score 86.29)
+4) 高炉工序能耗实绩累计值 (score 85.74)
+5) 1高炉工序平衡能耗实绩累计值 (score 85.73)
+{
+  "graph": {
+    "nodes": [],
+    "relations": [],
+    "_next_id": 1
+  },
+  "meta": {
+    "history": [
+      {
+        "ask": "1号高炉工序能耗",
+        "reply": "请从以下候选公式选择编号：\n1) 1高炉工序能耗实绩报出值 (score 87.77)\n2) 高炉工序能耗实绩报出值 (score 87.20)\n3) 1高炉工序平衡能耗实绩报出值 (score 86.29)\n4) 高炉工序能耗实绩累计值 (score 85.74)\n5) 1高炉工序平衡能耗实绩累计值 (score 85.73)"
+      }
+    ],
+    "current_intent_info": {
+      "user_input_list": [
+        "1号高炉工序能耗"
+      ],
+      "intent_list": [
+        "single_query"
+      ],
+      "indicators": [
+        {
+          "status": "active",
+          "indicator": "1号高炉工序能耗",
+          "formula": null,
+          "timeString": null,
+          "timeType": null,
+          "slot_status": {
+            "formula": "missing",
+            "time": "missing"
+          },
+          "value": null,
+          "note": null,
+          "formula_candidates": [
+            {
+              "number": 1,
+              "FORMULAID": "GXNHLT1101.IXRL",
+              "FORMULANAME": "1高炉工序能耗实绩报出值",
+              "score": 87.768,
+              "fuzzy_score": 99.1636,
+              "semantic_score": 67.9943,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 2,
+              "FORMULAID": "GXNHLT1100.IXRL",
+              "FORMULANAME": "高炉工序能耗实绩报出值",
+              "score": 87.2049,
+              "fuzzy_score": 87.264,
+              "semantic_score": 75.0671,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 3,
+              "FORMULAID": "PHNHLT1101.IXRL",
+              "FORMULANAME": "1高炉工序平衡能耗实绩报出值",
+              "score": 86.2949,
+              "fuzzy_score": 99.1636,
+              "semantic_score": 65.7436,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 4,
+              "FORMULAID": "GXNHLT1100.IXRL.SUMVALUE",
+              "FORMULANAME": "高炉工序能耗实绩累计值",
+              "score": 85.7415,
+              "fuzzy_score": 84.672,
+              "semantic_score": 78.5695,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 5,
+              "FORMULAID": "PHNHLT1101.IXRL.SUMVALUE",
+              "FORMULANAME": "1高炉工序平衡能耗实绩累计值",
+              "score": 85.7281,
+              "fuzzy_score": 96.2182,
+              "semantic_score": 70.851,
+              "match_kind": "hybrid"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
+2025-11-12 16:09:31,487 | INFO | pipeline.handlers | ✅ 进入 clarify 模式。
+2025-11-12 16:09:31,487 | INFO | pipeline.handlers | 🔹 handle_clarify user_input=1
+2025-11-12 16:09:31,487 | INFO | pipeline.handlers | 🔢 检测到候选选择 index=0, count=5
+2025-11-12 16:09:31,487 | INFO | pipeline.handlers | ✅ 用户选择公式: 1高炉工序能耗实绩报出值 (FORMULAID=GXNHLT1101.IXRL)
+2025-11-12 16:09:31,487 | INFO | context_graph | 🕘 add_history: 1 -> 好的，要查【1高炉工序能耗实绩报出值】，请告诉我时间。
+Single Query Reply 2: 好的，要查【1高炉工序能耗实绩报出值】，请告诉我时间。
+{
+  "graph": {
+    "nodes": [],
+    "relations": [],
+    "_next_id": 1
+  },
+  "meta": {
+    "history": [
+      {
+        "ask": "1号高炉工序能耗",
+        "reply": "请从以下候选公式选择编号：\n1) 1高炉工序能耗实绩报出值 (score 87.77)\n2) 高炉工序能耗实绩报出值 (score 87.20)\n3) 1高炉工序平衡能耗实绩报出值 (score 86.29)\n4) 高炉工序能耗实绩累计值 (score 85.74)\n5) 1高炉工序平衡能耗实绩累计值 (score 85.73)"
+      },
+      {
+        "ask": "1",
+        "reply": "好的，要查【1高炉工序能耗实绩报出值】，请告诉我时间。"
+      }
+    ],
+    "current_intent_info": {
+      "user_input_list": [
+        "1号高炉工序能耗",
+        "1"
+      ],
+      "intent_list": [
+        "single_query",
+        "clarify"
+      ],
+      "indicators": [
+        {
+          "status": "active",
+          "indicator": "1高炉工序能耗实绩报出值",
+          "formula": "GXNHLT1101.IXRL",
+          "timeString": null,
+          "timeType": null,
+          "slot_status": {
+            "formula": "filled",
+            "time": "missing"
+          },
+          "value": null,
+          "note": "好的，要查【1高炉工序能耗实绩报出值】，请告诉我时间。",
+          "formula_candidates": [
+            {
+              "number": 1,
+              "FORMULAID": "GXNHLT1101.IXRL",
+              "FORMULANAME": "1高炉工序能耗实绩报出值",
+              "score": 87.768,
+              "fuzzy_score": 99.1636,
+              "semantic_score": 67.9943,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 2,
+              "FORMULAID": "GXNHLT1100.IXRL",
+              "FORMULANAME": "高炉工序能耗实绩报出值",
+              "score": 87.2049,
+              "fuzzy_score": 87.264,
+              "semantic_score": 75.0671,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 3,
+              "FORMULAID": "PHNHLT1101.IXRL",
+              "FORMULANAME": "1高炉工序平衡能耗实绩报出值",
+              "score": 86.2949,
+              "fuzzy_score": 99.1636,
+              "semantic_score": 65.7436,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 4,
+              "FORMULAID": "GXNHLT1100.IXRL.SUMVALUE",
+              "FORMULANAME": "高炉工序能耗实绩累计值",
+              "score": 85.7415,
+              "fuzzy_score": 84.672,
+              "semantic_score": 78.5695,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 5,
+              "FORMULAID": "PHNHLT1101.IXRL.SUMVALUE",
+              "FORMULANAME": "1高炉工序平衡能耗实绩累计值",
+              "score": 85.7281,
+              "fuzzy_score": 96.2182,
+              "semantic_score": 70.851,
+              "match_kind": "hybrid"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

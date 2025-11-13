@@ -1,7 +1,7 @@
+# core/llm_energy_indicator_parser.py
 import asyncio
 import re
-import httpx
-from datetime import datetime, timedelta
+from datetime import datetime
 from core.llm_client import safe_llm_parse
 
 
@@ -139,6 +139,7 @@ async def parse_user_input(user_input: str, now: datetime = None):
 - 班次词（早班、白班、夜班、中班、晚班）属于时间，不属于指标。
 - SHIFT 类型优先于 HOUR：不要将“早班”错误地转化为具体小时。
 - 若原文不包含时间或者无法推算出时间，不要私自赋予时间，保持null即可。
+- 当“本月"、"1号”连在一起出现时，尽量不要将”本月1号“解析成本月第一天，而是将”1号“解析成指标开头部分。
 - 只有明确确认描述的是时间区间才使用区间方式，否则一律使用时间点方式
   例如：
   - “今年累计的” → indicator=null、timeString="2025"、timeType="YEAR"
@@ -177,6 +178,7 @@ if __name__ == "__main__":
     now = datetime(2025, 10, 16, 14, 0)
 
     test_inputs = [
+        "1号高炉工序能耗"
         "今天是什么日期",
         "2023上半年",
         "2023年上半年",
