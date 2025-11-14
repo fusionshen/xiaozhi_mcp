@@ -1,3 +1,19 @@
+    # 测试单指标查询
+    reply, graph_state = await handle_single_query(user_id, "今天的高炉工序能耗是多少", graph)
+    print("Single Query Reply:", reply)
+    print(json.dumps(graph_state, indent=2, ensure_ascii=False))
+
+    # 测试
+    reply, graph_state = await handle_single_query(user_id, "昨天的呢", graph)
+    print("Single Query Reply 2:", reply)
+    print(json.dumps(graph_state, indent=2, ensure_ascii=False))
+
+    # 测试三步对比
+    reply, graph_state = await handle_compare(user_id, "它们对比呢？", graph, {"candidates": []})
+    print("Single Query Reply 3:", reply)
+    print(json.dumps(graph_state, indent=2, ensure_ascii=False))
+
+
 (myenv) fusionshen@fusionshen-ThinkPad-T14-Gen-1:~/Desktop/LLM/ask_agent$ python -m core.pipeline_handlers
 2025-11-13 18:37:52,893 | INFO | llm_client | ✅ Using ChatOllama from langchain-ollama
 /home/fusionshen/myenv/lib/python3.12/site-packages/jieba/_compat.py:18: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.

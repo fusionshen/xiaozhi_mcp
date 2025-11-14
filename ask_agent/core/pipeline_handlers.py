@@ -81,7 +81,7 @@ async def handle_single_query(user_id: str, user_input: str, graph: ContextGraph
     # ---------- LLM 补全 ----------
     try:
         parsed = await parse_user_input(user_input)
-        for key in ("indicator", "timeString", "timeType"):
+        for key in ("indicator", "formula", "timeString", "timeType"):
             if parsed.get(key):
                 current_indicator[key] = parsed[key]
     except Exception as e:
@@ -118,7 +118,7 @@ async def handle_single_query(user_id: str, user_input: str, graph: ContextGraph
         elif candidates:
             current_indicator["formula_candidates"] = candidates[:TOP_N]
             current_indicator["slot_status"]["formula"] = "missing"
-            lines = ["请从以下候选公式选择编号："]
+            lines = ["没有匹配到精确的指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称)："]
             for i, c in enumerate(candidates[:TOP_N], 1):
                 lines.append(f"{i}) {c['FORMULANAME']} (score {c.get('score',0):.2f})")
             reply = "\n".join(lines) 
@@ -189,18 +189,27 @@ async def _execute_query(indicator_entry):
         reply = f"✅ {indicator} 在 {time_str} ({time_type}) 的查询结果: {result}"
     return val, reply
     
-# Replace existing handle_compare with this implementation
-
+# ------------------------- 对比、偏差 -------------------------
 async def handle_compare(user_id: str, user_input: str, graph: ContextGraph, current_intent: dict | None = None):
     """
-    Unified compare implementation supporting:
-      - one-step (>=2 candidates provided): parse first two and compare
-      - two-step (1 candidate): use last completed indicator as other item (copy+replace) then compare
-      - three-step (no candidates): take last two nodes from graph and compare using their notes
-    Behavior:
-      - ensure_intent_info() used as base (so two-step can restore previous snapshot)
-      - when missing formula/time or multiple formula candidates, write to intent_info['pending'] and return a prompt for clarify/slot_fill
-      - when both items have note/value, directly send notes to LLM for comparison, write relation and history
+    Compare 统一处理逻辑（一步/两步/三步模式）：
+
+    一步：用户当前输入解析出 >=2 条 candidates
+            → 全部解析补全 slot → 查询 → 得到两条 entry.note → LLM 比较
+
+    两步：用户当前输入解析出 ==1 条 candidate
+            → 从 graph 取最后一条已完成 entry
+            → 复制其 indicator 数据
+            → 用 candidate 的解析结果替换（可替换指标/时间/计划 vs 实绩）
+            → 查询新 entry → 与旧 entry 比较
+
+    三步：用户当前输入解析出 0 条 candidate
+            → 直接从 graph.nodes 回溯最近两个已成功节点
+            → 不再查平台数据 → 直接 LLM 比较
+
+    所有步骤:
+      - 若过程中缺公式 or 时间 → intent_info.pending 标记 → 返回提示用户补槽
+      - 结果写回 graph.nodes 与 intent_info.compare_history
     """
     user_input = str(user_input or "").strip()
     logger.info("🔀 进入 handle_compare，user=%s, input=%s", user_id, user_input)
@@ -253,7 +262,7 @@ async def handle_compare(user_id: str, user_input: str, graph: ContextGraph, cur
             # need user to pick from candidates
             entry["formula_candidates"] = candidates[:TOP_N]
             entry["slot_status"]["formula"] = "missing"
-            lines = ["请从以下候选公式选择编号："]
+            lines = ["没有匹配到精确的指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称："]
             for i, c in enumerate(candidates[:TOP_N], 1):
                 lines.append(f"{i}) {c['FORMULANAME']} (score {c.get('score',0):.2f})")
             prompt = "\n".join(lines)
@@ -319,7 +328,7 @@ async def handle_compare(user_id: str, user_input: str, graph: ContextGraph, cur
     # We'll append/modify indicators list as needed per scenario.
 
     # ---------- One-step (>=2 candidates supplied) ----------
-    if candidates:
+    if len(candidates) >= 2:
         logger.info("🔎 compare: 使用 candidates 解析: %s", candidates)
         parsed_items = []
         for c in candidates:
@@ -409,6 +418,169 @@ async def handle_compare(user_id: str, user_input: str, graph: ContextGraph, cur
         logger.info("✅ compare(one-step) 完成")
         return analysis, graph.to_state()
 
+    # ---------- Two-step (1 candidate): take last completed indicator as base, then parse candidate to replace fields ----------
+    if len(candidates) == 1:
+        logger.info("🔎 compare: single candidate 情形 -> two-step flow")
+        # find last completed indicator in intent_info or graph
+        base_indicator = None
+        # prefer from intent_info indicators
+        for ind in reversed(indicators):
+            if ind.get("status") == "completed":
+                base_indicator = ind
+                break
+        # fallback to graph nodes
+        if not base_indicator and graph.nodes:
+            base_indicator = graph.nodes[-1]["indicator_entry"]
+
+        if not base_indicator:
+            reply = "⚠️ 无可用的参考指标，请先进行至少一次查询以便进行对比。"
+            graph.add_history(user_input, reply)
+            graph.set_intent_info(intent_info)
+            set_graph(user_id, graph)
+            logger.warning("⚠️ compare(two-step) 无 base_indicator")
+            return reply, graph.to_state()
+
+        # parse the single candidate (it was placed in 'candidates' earlier; here we assume exactly 1)
+        current_indicator = {
+            "status": "active",
+            "indicator": base_indicator.get("indicator"),
+            "formula": base_indicator.get("formula"),
+            "timeString": base_indicator.get("timeString"),
+            "timeType": base_indicator.get("timeType"),
+            "slot_status": {
+                "formula": "missing",
+                "time": "missing"
+            },
+            "value": None,
+            "note": None,
+            "formula_candidates": base_indicator.get("formula_candidates"),
+        }
+        indicators.append(current_indicator)
+        # if candidate is a time only or indicator only, parse and overwrite corresponding fields
+        try:
+            parsed = await parse_user_input(candidates[0])
+            for key in ("indicator", "formula", "timeString", "timeType"):
+                if parsed.get(key):
+                    current_indicator[key] = parsed[key]
+        except Exception as e:
+            logger.warning("parse_user_input 单 candidate 解析失败: %s -> %s", candidates[0], e)
+
+         # 计划特例
+        def convert_to_plan_name(last_indicator: str, new_partial_indicator: str) -> str:
+            if new_partial_indicator in ["计划", "计划值", "计划报出值"]:
+                # 常见“实绩/计划”关键词【你可以扩展】
+                mapping = {
+                    "实绩": "计划",
+                    "实绩值": "计划值",
+                    "实绩报出值": "计划报出值",
+                }
+                for k, v in mapping.items():
+                    if k in last_indicator:
+                        return last_indicator.replace(k, v)   
+            return new_partial_indicator
+
+        current_indicator["indicator"] = convert_to_plan_name(base_indicator.get("indicator"), current_indicator["indicator"])
+
+        current_indicator["slot_status"]["time"] = "filled" if current_indicator.get("timeString") and current_indicator.get("timeType") else "missing"
+                
+        # ---------- 缺指标 ----------
+        if not current_indicator.get("indicator"):
+            reply = "请告诉我您要对比的指标名称。"
+            graph.add_history(user_input, reply)
+            graph.set_intent_info(intent_info)
+            set_graph(user_id, graph)
+            return reply, graph.to_state()
+
+        # ---------- 查询公式 ----------
+        if not current_indicator["slot_status"]["formula"] == "filled":
+            print(current_indicator["indicator"])
+            formula_resp = await asyncio.to_thread(formula_api.formula_query_dict, current_indicator["indicator"])
+            print(formula_resp)
+            exact_matches = formula_resp.get("exact_matches") or []
+            candidates = formula_resp.get("candidates") or []
+
+            if exact_matches:
+                chosen = exact_matches[0]
+                current_indicator["formula"] = chosen["FORMULAID"]
+                current_indicator["indicator"] = chosen["FORMULANAME"]
+                current_indicator["slot_status"]["formula"] = "filled"
+                current_indicator["note"] = "精确匹配公式"
+            elif candidates and candidates[0].get("score", 0) > 100:
+                top = candidates[0]
+                current_indicator["formula"] = top["FORMULAID"]
+                current_indicator["indicator"] = top["FORMULANAME"]
+                current_indicator["slot_status"]["formula"] = "filled"
+                current_indicator["note"] = f"高分候选公式 (score {top.get('score')})"
+            elif candidates:
+                current_indicator["formula_candidates"] = candidates[:TOP_N]
+                current_indicator["slot_status"]["formula"] = "missing"
+                lines = ["没有匹配到精确的指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称："]
+                for i, c in enumerate(candidates[:TOP_N], 1):
+                    lines.append(f"{i}) {c['FORMULANAME']} (score {c.get('score',0):.2f})")
+                reply = "\n".join(lines) 
+                graph.add_history(user_input, reply)
+                graph.set_intent_info(intent_info)
+                set_graph(user_id, graph)
+                return reply, graph.to_state()
+            else:
+                current_indicator["slot_status"]["formula"] = "missing"
+                current_indicator["note"] = "未找到匹配公式"
+                reply = f"未找到匹配公式，请重新输入指标名称。" 
+                graph.add_history(user_input, reply)
+                graph.set_intent_info(intent_info)
+                set_graph(user_id, graph)
+                return reply, graph.to_state()
+
+        # Now ensure both base (possibly modified copy) and the other recent node have values
+        # Prepare the other existing node (the one to compare against): prefer previous completed node different from base copy
+        other_node = None
+        for node in reversed(graph.nodes):
+            ie = node.get("indicator_entry", {})
+            # only indicator and timeString is ok
+            if ie.get("indicator") == current_indicator.get("indicator") and ie.get("timeString") == current_indicator.get("timeString"):
+                other_node = node
+                break
+            
+        if not other_node:
+            # ---------- 执行查询 ----------
+            if current_indicator["slot_status"]["formula"] == "filled" and current_indicator["slot_status"]["time"] == "filled":
+                val, reply = await _execute_query(current_indicator)
+                current_indicator["value"] = val
+                current_indicator["note"] = reply
+                current_indicator["status"] = "completed"
+                # 必须在addNode前
+                graph.set_intent_info(intent_info)
+                # 写入 graph.node
+                node_id = graph.add_node(current_indicator)
+                other_node = graph.get_node(node_id)
+
+        # Now produce two notes and call LLM
+        note_a = base_indicator.get("note")
+        note_b = current_indicator.get("note")
+
+        prompt = f"""
+    你是能源分析助手。下面是两条查询结果（可能包含 'None' 表示无数据）。
+    请基于下列两条结果，给出一句简洁自然语言的对比结论（包含差值/方向/是否无数据说明）。
+    结果A: {note_a}
+    结果B: {note_b}
+    请直接返回一句结论。
+    """
+        try:
+            analysis = (await safe_llm_chat(prompt) or "").strip()
+        except Exception as e:
+            logger.exception("safe_llm_chat 失败: %s", e)
+            analysis = f"对比结果: {note_a} || {note_b}"
+        
+        sid = graph.find_node(base_indicator.get("indicator"), base_indicator.get("timeString"))
+        # write relation and history
+        graph.add_relation("compare", source_id=sid, target_id=other_node.get("id"), meta={"via": "pipeline.compare", "user_input": user_input, "result": analysis})
+        # 成功查询重置意图
+        graph.set_intent_info({})
+        graph.add_history(user_input, analysis)
+        set_graph(user_id, graph)
+        logger.info("✅ compare(two-step) 完成")
+        return analysis, graph.to_state()
+    
     # ---------- Three-step (no candidates): use last two nodes from graph ----------
     logger.info("🔎 compare: 未提供 candidates，尝试从 graph 回溯最近两个节点")
     recent = graph.nodes[-2:] if len(graph.nodes) >= 2 else []
@@ -443,113 +615,6 @@ async def handle_compare(user_id: str, user_input: str, graph: ContextGraph, cur
         set_graph(user_id, graph)
         logger.info("✅ compare(three-step) 完成")
         return analysis, graph.to_state()
-
-    # ---------- Two-step (1 candidate): take last completed indicator as base, then parse candidate to replace fields ----------
-    logger.info("🔎 compare: single candidate 情形 -> two-step flow")
-    # find last completed indicator in intent_info or graph
-    base_indicator = None
-    # prefer from intent_info indicators
-    for ind in reversed(indicators):
-        if ind.get("status") == "completed":
-            base_indicator = ind
-            break
-    # fallback to graph nodes
-    if not base_indicator and graph.nodes:
-        base_indicator = graph.nodes[-1]["indicator_entry"]
-
-    if not base_indicator:
-        reply = "⚠️ 无可用的参考指标，请先进行至少一次查询以便进行对比。"
-        graph.add_history(user_input, reply)
-        graph.set_intent_info(intent_info)
-        set_graph(user_id, graph)
-        logger.warning("⚠️ compare(two-step) 无 base_indicator")
-        return reply, graph.to_state()
-
-    # parse the single candidate (it was placed in 'candidates' earlier; here we assume exactly 1)
-    single_cand = current_intent.get("candidates")[0] if current_intent and current_intent.get("candidates") else intent_info.get("candidates", [None])[0]
-    n = copy.deepcopy(base_indicator)  # copy completed base
-    # if candidate is a time only or indicator only, parse and overwrite corresponding fields
-    try:
-        parsed = await parse_user_input(single_cand)
-        for key in ("indicator", "timeString", "timeType", "formula"):
-            if parsed.get(key):
-                n[key] = parsed[key]
-        # adjust slot_status
-        n["slot_status"]["time"] = "filled" if n.get("timeString") and n.get("timeType") else n["slot_status"].get("time", "missing")
-        n["slot_status"]["formula"] = "filled" if n.get("formula") else n["slot_status"].get("formula", "missing")
-    except Exception as e:
-        logger.warning("parse_user_input 单 candidate 解析失败: %s -> %s", single_cand, e)
-
-    # Now ensure both base (possibly modified copy) and the other recent node have values
-    # Prepare the other existing node (the one to compare against): prefer previous completed node different from base copy
-    other_node = None
-    for node in reversed(graph.nodes):
-        ie = node.get("indicator_entry", {})
-        # skip if same as base snapshot (indicator+time same)
-        if ie.get("indicator") == base_indicator.get("indicator") and ie.get("timeString") == base_indicator.get("timeString"):
-            continue
-        other_node = node
-        break
-
-    if not other_node:
-        reply = "⚠️ 无可用的对比对象，请先查询另一项以进行对比。"
-        graph.add_history(user_input, reply)
-        graph.set_intent_info(intent_info)
-        set_graph(user_id, graph)
-        logger.warning("⚠️ compare(two-step) 无 other_node")
-        return reply, graph.to_state()
-
-    # Ensure n (the modified base copy) has node/value
-    nid1, ie1, val1, note1, need1 = await _query_and_add_node(n)
-    if need1:
-        intent_info.setdefault("pending", []).append(n)
-        graph.set_intent_info(intent_info)
-        graph.add_history(user_input, note1)
-        set_graph(user_id, graph)
-        logger.info("🔔 compare(two-step) 需要补槽 -> %s", note1)
-        return note1, graph.to_state()
-
-    # Ensure other_node has value (reuse if exists)
-    other_ie = other_node.get("indicator_entry")
-    if other_ie.get("value") is not None or other_ie.get("note"):
-        nid2 = other_node.get("id")
-        ie2 = other_ie
-        val2 = other_ie.get("value")
-        note2 = other_ie.get("note")
-    else:
-        nid2, ie2, val2, note2, need2 = await _query_and_add_node(other_ie)
-        if need2:
-            intent_info.setdefault("pending", []).append(other_ie)
-            graph.set_intent_info(intent_info)
-            graph.add_history(user_input, note2)
-            set_graph(user_id, graph)
-            logger.info("🔔 compare(two-step) 需要补槽(other) -> %s", note2)
-            return note2, graph.to_state()
-
-    # Now produce two notes and call LLM
-    note_a = ie1.get("note") or note1
-    note_b = ie2.get("note") or note2
-
-    prompt = f"""
-你是能源分析助手。下面是两条查询结果（可能包含 'None' 表示无数据）。
-请基于下列两条结果，给出一句简洁自然语言的对比结论（包含差值/方向/是否无数据说明）。
-结果A: {note_a}
-结果B: {note_b}
-请直接返回一句结论。
-"""
-    try:
-        analysis = (await safe_llm_chat(prompt) or "").strip()
-    except Exception as e:
-        logger.exception("safe_llm_chat 失败: %s", e)
-        analysis = f"对比结果: {note_a} || {note_b}"
-
-    # write relation and history
-    graph.add_relation("compare", source_id=nid1, target_id=nid2, meta={"via": "pipeline.compare", "user_input": user_input, "result": analysis})
-    graph.set_intent_info(intent_info)
-    graph.add_history(user_input, analysis)
-    set_graph(user_id, graph)
-    logger.info("✅ compare(two-step) 完成")
-    return analysis, graph.to_state()
 
 # ------------------------- 趋势分析 -------------------------
 async def handle_analysis(user_id: str, message: str, graph: ContextGraph):
@@ -628,7 +693,7 @@ async def handle_slot_fill(user_id: str, user_input: str, graph: ContextGraph, c
             elif candidates:
                 ind["formula_candidates"] = candidates[:TOP_N]
                 ind["slot_status"]["formula"] = "missing"
-                lines = ["请从以下候选公式选择编号："]
+                lines = ["没有匹配到精确的指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称："]
                 for i, c in enumerate(candidates[:TOP_N], 1):
                     lines.append(f"{i}) {c['FORMULANAME']} (score {c.get('score', 0):.2f})")
                 reply = "\n".join(lines)
@@ -678,7 +743,7 @@ async def handle_clarify(user_id: str, user_input: str, graph: ContextGraph):
     user_input = str(user_input or "").strip()
     logger.info(f"🔹 handle_clarify user_input={user_input}")
 
-    intent_info = graph.get_intent_info() or {}
+    intent_info = graph.ensure_intent_info() or {}
     intent_info.setdefault("user_input_list", []).append(user_input)
     intent_info.setdefault("intent_list", []).append("clarify")
     
@@ -724,6 +789,14 @@ async def handle_clarify(user_id: str, user_input: str, graph: ContextGraph):
         graph.set_intent_info(intent_info)
         # 写入 graph.node
         node_id = graph.add_node(current_indicator)
+
+        # 💡 clarify 完成后不直接清空，而是先检查之前的 intent
+        prev_intents = intent_info.get("intent_list", [])
+        is_compare = "compare" in prev_intents
+        if is_compare:
+            logger.info("🔄 clarify 完成并检测到 compare 上下文，继续执行 handle_compare...")
+            return await handle_compare(user_id, "system:clarify 完成并检测到 compare 上下文，继续执行 handle_compare...", graph)
+
         # 成功查询重置意图
         graph.set_intent_info({})  
         graph.add_history(user_input, reply)
@@ -753,20 +826,20 @@ async def main():
     set_graph(user_id, graph)
 
     # 测试单指标查询
-    reply, graph_state = await handle_single_query(user_id, "今天的高炉工序能耗是多少", graph)
+    reply, graph_state = await handle_single_query(user_id, "昨天的高炉工序能耗是多少", graph)
     print("Single Query Reply:", reply)
     print(json.dumps(graph_state, indent=2, ensure_ascii=False))
 
-    # 测试
-    reply, graph_state = await handle_single_query(user_id, "昨天的呢", graph)
+    # 测试二步对比
+    reply, graph_state = await handle_compare(user_id, "和前天的酸扎工序能耗对比呢", graph, {"candidates": ["前天酸扎工序能耗"]})
     print("Single Query Reply 2:", reply)
     print(json.dumps(graph_state, indent=2, ensure_ascii=False))
 
-    # 测试三步对比
-    reply, graph_state = await handle_compare(user_id, "它们对比呢？", graph, {"candidates": []})
-    print("Single Query Reply 3:", reply)
+    # 测试选择备选
+    reply, graph_state = await handle_clarify(user_id, 1, graph)
+    print("Single Query Reply 2:", reply)
     print(json.dumps(graph_state, indent=2, ensure_ascii=False))
-
+    
     # 再查询一个指标（可测试对比）
     # msg2 = "昨天高炉工序能耗是多少"
     # reply2, graph_state2 = await handle_single_query(user_id, msg2, graph)

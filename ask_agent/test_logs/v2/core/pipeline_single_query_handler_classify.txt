@@ -1,12 +1,12 @@
-# 测试单指标查询
-reply, graph_state = await handle_single_query(user_id, "1号高炉工序能耗", graph)
-print("Single Query Reply:", reply)
-print(json.dumps(graph_state, indent=2, ensure_ascii=False))
+      # 测试单指标查询
+      reply, graph_state = await handle_single_query(user_id, "1号高炉工序能耗", graph)
+      print("Single Query Reply:", reply)
+      print(json.dumps(graph_state, indent=2, ensure_ascii=False))
 
-# 测试选择备选
-reply, graph_state = await handle_clarify(user_id, 1, graph)
-print("Single Query Reply 2:", reply)
-print(json.dumps(graph_state, indent=2, ensure_ascii=False))
+      # 测试选择备选
+      reply, graph_state = await handle_clarify(user_id, 1, graph)
+      print("Single Query Reply 2:", reply)
+      print(json.dumps(graph_state, indent=2, ensure_ascii=False))
 
 
 (myenv) fusionshen@fusionshen-ThinkPad-T14-Gen-1:~/Desktop/LLM/ask_agent$ python -m core.pipeline_handlers
