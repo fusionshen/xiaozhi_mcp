@@ -3,7 +3,6 @@ import json
 import asyncio
 import logging
 import inspect
-import copy
 from core.context_graph import ContextGraph, default_indicators
 from core.llm_energy_indicator_parser import parse_user_input
 from tools import formula_api, platform_api
@@ -220,105 +219,6 @@ async def handle_compare(user_id: str, user_input: str, graph: ContextGraph, cur
     intent_info.setdefault("intent_list", []).append("compare")
     indicators = intent_info.setdefault("indicators", [])
 
-    # Helper: try fill formula (sync -> asyncio.to_thread) and handle candidates returned
-    async def _ensure_formula_on_entry(entry: dict):
-        """
-        Ensure entry has formula if possible. Return tuple:
-          (ok: bool, followup_text_or_None)
-        If multiple low-confidence candidates -> return (False, prompt_text)
-        """
-        if entry.get("slot_status", {}).get("formula") == "filled" and entry.get("formula"):
-            return True, None
-
-        name = entry.get("indicator")
-        if not name:
-            return False, "缺少指标名称，需要确认要查询的指标。"
-
-        # Query formula API in thread
-        try:
-            formula_resp = await asyncio.to_thread(formula_api.formula_query_dict, name)
-        except Exception as e:
-            logger.exception("❌ formula_api 查询失败: %s", e)
-            return False, f"公式检索失败: {e}"
-
-        exact_matches = formula_resp.get("exact_matches") or []
-        candidates = formula_resp.get("candidates") or []
-
-        if exact_matches:
-            chosen = exact_matches[0]
-            entry["formula"] = chosen["FORMULAID"]
-            entry["indicator"] = chosen["FORMULANAME"]
-            entry["slot_status"]["formula"] = "filled"
-            entry["note"] = entry.get("note") or "精确匹配公式"
-            return True, None
-        elif candidates and candidates[0].get("score", 0) > 100:
-            top = candidates[0]
-            entry["formula"] = top["FORMULAID"]
-            entry["indicator"] = top["FORMULANAME"]
-            entry["slot_status"]["formula"] = "filled"
-            entry["note"] = entry.get("note") or f"高分候选公式 (score {top.get('score')})"
-            return True, None
-        elif candidates:
-            # need user to pick from candidates
-            entry["formula_candidates"] = candidates[:TOP_N]
-            entry["slot_status"]["formula"] = "missing"
-            lines = ["没有匹配到精确的指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称："]
-            for i, c in enumerate(candidates[:TOP_N], 1):
-                lines.append(f"{i}) {c['FORMULANAME']} (score {c.get('score',0):.2f})")
-            prompt = "\n".join(lines)
-            return False, prompt
-        else:
-            return False, "未找到匹配公式，请重新输入或确认指标名称。"
-
-    # Helper: ensure time exists (try inherit from last node snapshot)
-    def _ensure_time_on_entry(entry: dict):
-        if entry.get("slot_status", {}).get("time") == "filled" and entry.get("timeString") and entry.get("timeType"):
-            return True, None
-        # inherit from latest node's snapshot if available
-        # prefer intent_info indicators that are completed
-        for ind in reversed(indicators):
-            if ind.get("status") == "completed" and ind.get("timeString"):
-                entry["timeString"] = entry.get("timeString") or ind.get("timeString")
-                entry["timeType"] = entry.get("timeType") or ind.get("timeType")
-                entry["slot_status"]["time"] = "inferred"
-                return True, None
-        # fallback to graph nodes
-        if graph.nodes:
-            last = graph.nodes[-1]["indicator_entry"]
-            if last.get("timeString"):
-                entry["timeString"] = entry.get("timeString") or last.get("timeString")
-                entry["timeType"] = entry.get("timeType") or last.get("timeType")
-                entry["slot_status"]["time"] = "inferred"
-                return True, None
-        return False, "缺少时间信息，请补充时间（例如：今天/昨天/本月/2025-11-01）。"
-
-    # Helper: call platform query via existing _execute_query
-    async def _query_and_add_node(entry: dict):
-        """
-        1) ensure formula and time (may return followup)
-        2) call _execute_query to get value and reply
-        3) add_node into graph and return node_id, node_entry (indicator_entry dict), note
-        """
-        # ensure formula
-        ok, follow = await _ensure_formula_on_entry(entry)
-        if not ok:
-            return None, entry, None, follow, True
-
-        # ensure time
-        ok2, follow2 = _ensure_time_on_entry(entry)
-        if not ok2:
-            return None, entry, None, follow2, True
-
-        # now we have formula + time -> query
-        val, reply = await _execute_query(entry)
-        entry["value"] = val
-        entry["note"] = reply
-        entry["status"] = "completed"
-
-        # add to graph and return id
-        nid = graph.add_node(entry)
-        return nid, entry, val, reply, False
-
     # Acquire candidates from current_intent if present
     candidates = []
     if current_intent and isinstance(current_intent, dict):
@@ -330,63 +230,103 @@ async def handle_compare(user_id: str, user_input: str, graph: ContextGraph, cur
     # ---------- One-step (>=2 candidates supplied) ----------
     if len(candidates) >= 2:
         logger.info("🔎 compare: 使用 candidates 解析: %s", candidates)
-        parsed_items = []
+        parsed_indicators = []
         for c in candidates:
             # parse each candidate into a default indicator entry
             n = default_indicators()
             try:
                 parsed = await parse_user_input(c)
-                for key in ("indicator", "timeString", "timeType"):
+                for key in ("indicator", "formula", "timeString", "timeType"):
                     if parsed.get(key):
                         n[key] = parsed[key]
-                # mark formula slot based on parsed
-                if parsed.get("formula"):
-                    n["formula"] = parsed.get("formula")
-                    n["slot_status"]["formula"] = "filled"
-                if parsed.get("timeString") and parsed.get("timeType"):
-                    n["slot_status"]["time"] = "filled"
-                n["raw_candidate"] = c
-                parsed_items.append(n)
             except Exception as e:
-                logger.warning("parse_user_input 解析对比条目失败: %s -> %s", c, e)
+                logger.warning("parse_user_input 单 candidate 解析失败: %s -> %s", candidates[0], e)
+            n["slot_status"]["time"] = "filled" if n.get("timeString") and n.get("timeType") else "missing"
+            parsed_indicators.append(n)
 
         # If more than 2 provided, refuse (per your rule)
-        if len(parsed_items) > 2:
-            reply = "当前只支持两项对比，请只提供两个要对比的目标，或改为趋势/分析接口。"
+        if len(parsed_indicators) > 2:
+            reply = "当前只支持两项对比，请只提供两个要对比的目标，或改问趋势/分析。"
             graph.add_history(user_input, reply)
             graph.set_intent_info(intent_info)
             set_graph(user_id, graph)
             logger.warning("⚠️ compare: 用户提供超过两项 candidates")
             return reply, graph.to_state()
-
+        
+        # replace intent indicators
+        intent_info["indicators"] = parsed_indicators
+        indicators = intent_info["indicators"]
         # ensure both items have nodes/values
         node_pairs = []
-        needs_followup = False
-        followup_msg = None
-        for item in parsed_items:
+        for item in indicators:
+            # ---------- 缺指标 ----------
+            if not item.get("indicator"):
+                reply = "请告诉我您要对比的指标名称。"
+                graph.add_history(user_input, reply)
+                graph.set_intent_info(intent_info)
+                set_graph(user_id, graph)
+                return reply, graph.to_state()
+
+            # ---------- 查询公式 ----------
+            if not item["slot_status"]["formula"] == "filled":
+                formula_resp = await asyncio.to_thread(formula_api.formula_query_dict, item["indicator"])
+                exact_matches = formula_resp.get("exact_matches") or []
+                candidates = formula_resp.get("candidates") or []
+                if exact_matches:
+                    chosen = exact_matches[0]
+                    item["formula"] = chosen["FORMULAID"]
+                    item["indicator"] = chosen["FORMULANAME"]
+                    item["slot_status"]["formula"] = "filled"
+                    item["note"] = "精确匹配公式"
+                elif candidates and candidates[0].get("score", 0) > 100:
+                    top = candidates[0]
+                    item["formula"] = top["FORMULAID"]
+                    item["indicator"] = top["FORMULANAME"]
+                    item["slot_status"]["formula"] = "filled"
+                    item["note"] = f"高分候选公式 (score {top.get('score')})"
+                elif candidates:
+                    item["formula_candidates"] = candidates[:TOP_N]
+                    item["slot_status"]["formula"] = "missing"
+                    lines = ["没有匹配到精确的指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称："]
+                    for i, c in enumerate(candidates[:TOP_N], 1):
+                        lines.append(f"{i}) {c['FORMULANAME']} (score {c.get('score',0):.2f})")
+                    reply = "\n".join(lines) 
+                    graph.add_history(user_input, reply)
+                    graph.set_intent_info(intent_info)
+                    set_graph(user_id, graph)
+                    return reply, graph.to_state()
+                else:
+                    item["slot_status"]["formula"] = "missing"
+                    item["note"] = "未找到匹配公式"
+                    reply = f"未找到匹配公式，请重新输入指标名称。" 
+                    graph.add_history(user_input, reply)
+                    graph.set_intent_info(intent_info)
+                    set_graph(user_id, graph)
+                    return reply, graph.to_state()
+            
             # Try find existing node identical
             nid = graph.find_node(item.get("indicator"), item.get("timeString"))
             if nid:
                 node = graph.get_node(nid)
                 ie = node.get("indicator_entry")
-                # if note/value exists, reuse
-                if ie.get("value") is not None or ie.get("note"):
-                    node_pairs.append((nid, ie))
-                    continue
-            # else query platform
-            nid, ie, val, note, need_follow = await _query_and_add_node(item)
-            if need_follow:
-                needs_followup = True
-                followup_msg = note
-                intent_info.setdefault("pending", []).append(item)
-            else:
+                item["value"] = ie.get("value")
+                item["note"] = ie.get("note")
+                item["status"] = "completed"
+                graph.set_intent_info(intent_info)
                 node_pairs.append((nid, ie))
-        if needs_followup:
-            graph.set_intent_info(intent_info)
-            graph.add_history(user_input, followup_msg)
-            set_graph(user_id, graph)
-            logger.info("🔔 compare(one-step) 需要补槽 -> %s", followup_msg)
-            return followup_msg, graph.to_state()
+                continue
+            # else query platform
+            if item["slot_status"]["formula"] == "filled" and item["slot_status"]["time"] == "filled":
+                val, reply = await _execute_query(item)
+                item["value"] = val
+                item["note"] = reply
+                item["status"] = "completed"
+                # 必须在addNode前
+                graph.set_intent_info(intent_info)
+                # 写入 graph.node
+                node_id = graph.add_node(item)
+                other_node = graph.get_node(node_id)
+                node_pairs.append((node_id, other_node.get("indicator_entry")))
 
         # now have two node entries
         left = node_pairs[0][1]
@@ -412,7 +352,8 @@ async def handle_compare(user_id: str, user_input: str, graph: ContextGraph, cur
         sid = node_pairs[0][0]
         tid = node_pairs[1][0]
         graph.add_relation("compare", source_id=sid, target_id=tid, meta={"via": "pipeline.compare", "user_input": intent_info.get("user_input_list"), "result": analysis})
-        graph.set_intent_info(intent_info)
+        # 成功查询重置意图
+        graph.set_intent_info({})
         graph.add_history(user_input, analysis)
         set_graph(user_id, graph)
         logger.info("✅ compare(one-step) 完成")
@@ -465,7 +406,7 @@ async def handle_compare(user_id: str, user_input: str, graph: ContextGraph, cur
         except Exception as e:
             logger.warning("parse_user_input 单 candidate 解析失败: %s -> %s", candidates[0], e)
 
-         # 计划特例
+        # 计划特例
         def convert_to_plan_name(last_indicator: str, new_partial_indicator: str) -> str:
             if new_partial_indicator in ["计划", "计划值", "计划报出值"]:
                 # 常见“实绩/计划”关键词【你可以扩展】
@@ -482,7 +423,7 @@ async def handle_compare(user_id: str, user_input: str, graph: ContextGraph, cur
         current_indicator["indicator"] = convert_to_plan_name(base_indicator.get("indicator"), current_indicator["indicator"])
 
         current_indicator["slot_status"]["time"] = "filled" if current_indicator.get("timeString") and current_indicator.get("timeType") else "missing"
-                
+            
         # ---------- 缺指标 ----------
         if not current_indicator.get("indicator"):
             reply = "请告诉我您要对比的指标名称。"
@@ -825,18 +766,8 @@ async def main():
     graph = get_graph(user_id) or ContextGraph()
     set_graph(user_id, graph)
 
-    # 测试单指标查询
-    reply, graph_state = await handle_single_query(user_id, "昨天的高炉工序能耗是多少", graph)
-    print("Single Query Reply:", reply)
-    print(json.dumps(graph_state, indent=2, ensure_ascii=False))
-
-    # 测试二步对比
-    reply, graph_state = await handle_compare(user_id, "和前天的酸扎工序能耗对比呢", graph, {"candidates": ["前天酸扎工序能耗"]})
-    print("Single Query Reply 2:", reply)
-    print(json.dumps(graph_state, indent=2, ensure_ascii=False))
-
-    # 测试选择备选
-    reply, graph_state = await handle_clarify(user_id, 1, graph)
+    # 测试一步对比
+    reply, graph_state = await handle_compare(user_id, "本月高炉工序能耗是多少，对比计划偏差多少", graph, {"candidates": ["本月高炉工序能耗", "本月高炉工序能耗计划"]})
     print("Single Query Reply 2:", reply)
     print(json.dumps(graph_state, indent=2, ensure_ascii=False))
     
