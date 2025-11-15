@@ -411,7 +411,7 @@ async def handle_compare(user_id: str, user_input: str, graph: ContextGraph, cur
         # write relation and history
         sid = node_pairs[0][0]
         tid = node_pairs[1][0]
-        graph.add_relation("compare", source_id=sid, target_id=tid, meta={"via": "pipeline.compare", "user_input": user_input, "result": analysis})
+        graph.add_relation("compare", source_id=sid, target_id=tid, meta={"via": "pipeline.compare", "user_input": intent_info.get("user_input_list"), "result": analysis})
         graph.set_intent_info(intent_info)
         graph.add_history(user_input, analysis)
         set_graph(user_id, graph)
@@ -573,7 +573,7 @@ async def handle_compare(user_id: str, user_input: str, graph: ContextGraph, cur
         
         sid = graph.find_node(base_indicator.get("indicator"), base_indicator.get("timeString"))
         # write relation and history
-        graph.add_relation("compare", source_id=sid, target_id=other_node.get("id"), meta={"via": "pipeline.compare", "user_input": user_input, "result": analysis})
+        graph.add_relation("compare", source_id=sid, target_id=other_node.get("id"), meta={"via": "pipeline.compare", "user_input": intent_info.get("user_input_list"), "result": analysis})
         # 成功查询重置意图
         graph.set_intent_info({})
         graph.add_history(user_input, analysis)
@@ -608,7 +608,7 @@ async def handle_compare(user_id: str, user_input: str, graph: ContextGraph, cur
         # write relation
         sid = node1.get("id")
         tid = node2.get("id")
-        graph.add_relation("compare", source_id=sid, target_id=tid, meta={"via": "pipeline.compare", "user_input": user_input, "result": analysis})
+        graph.add_relation("compare", source_id=sid, target_id=tid, meta={"via": "pipeline.compare", "user_input": intent_info.get("user_input_list"), "result": analysis})
         # 成功查询重置意图
         graph.set_intent_info({})
         graph.add_history(user_input, analysis)
@@ -795,7 +795,7 @@ async def handle_clarify(user_id: str, user_input: str, graph: ContextGraph):
         is_compare = "compare" in prev_intents
         if is_compare:
             logger.info("🔄 clarify 完成并检测到 compare 上下文，继续执行 handle_compare...")
-            return await handle_compare(user_id, "system:clarify 完成并检测到 compare 上下文，继续执行 handle_compare...", graph)
+            return await handle_compare(user_id, f"{user_input} -> system:完成 clarify 并检测到 compare 上下文，继续执行 handle_compare...", graph)
 
         # 成功查询重置意图
         graph.set_intent_info({})  

@@ -57,10 +57,10 @@ class ContextGraph:
     # ---------------------
     # history 管理
     # ---------------------
-    def add_history(self, user: str, reply: str):
+    def add_history(self, user_input: str, reply: str):
         hist = self.meta.setdefault("history", [])
-        hist.append({"ask": user, "reply": reply})
-        logger.info(f"🕘 add_history: {user} -> {reply}")
+        hist.append({"ask": user_input, "reply": reply})
+        logger.info(f"🕘 add_history: {user_input} -> {reply}")
 
     def get_history(self) -> List[Dict[str, str]]:
         return self.meta.get("history", [])
