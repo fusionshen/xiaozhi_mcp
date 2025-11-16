@@ -756,10 +756,125 @@ async def handle_clarify(user_id: str, user_input: str, graph: ContextGraph):
     return reply, graph.to_state()
 
 # ------------------------- 批量查询 -------------------------
-async def handle_list_query(user_id: str, message: str, graph: ContextGraph):
-    logger.info("📋 进入 list_query 模式（批量指标查询）。")
-    return "批量查询功能正在开发中。", graph.to_state()
+async def handle_list_query(user_id: str, user_input: str, graph: ContextGraph, current_intent: dict | None = None):
+    user_input = str(user_input or "").strip()
+    logger.info("📋 进入 list_query，user=%s, input=%s", user_id, user_input)
 
+    # Ensure we have a working intent_info (use snapshot recovery)
+    intent_info = graph.ensure_intent_info() or {}
+    intent_info.setdefault("user_input_list", []).append(user_input)
+    intent_info.setdefault("intent_list", []).append("list_query，user")
+    indicators = intent_info.setdefault("indicators", [])
+
+    # Acquire candidates from current_intent if present
+    candidates = []
+    if current_intent and isinstance(current_intent, dict):
+        candidates = current_intent.get("candidates") or []
+
+    parsed_indicators = []
+    for c in candidates:
+        # parse each candidate into a default indicator entry
+        n = default_indicators()
+        try:
+            parsed = await parse_user_input(c)
+            for key in ("indicator", "formula", "timeString", "timeType"):
+                if parsed.get(key):
+                    n[key] = parsed[key]
+        except Exception as e:
+            logger.warning("parse_user_input 单 candidate 解析失败: %s -> %s", candidates[0], e)
+        n["slot_status"]["time"] = "filled" if n.get("timeString") and n.get("timeType") else "missing"
+        parsed_indicators.append(n)
+    
+    # replace intent indicators
+    intent_info["indicators"] = parsed_indicators
+    indicators = intent_info["indicators"]
+    # batch
+    results = []
+    sids = []
+    for item in indicators:
+        # ---------- 缺指标 ----------
+        if not item.get("indicator"):
+            reply = "请告诉我您要对比的指标名称。"
+            graph.add_history(user_input, reply)
+            graph.set_intent_info(intent_info)
+            set_graph(user_id, graph)
+            return reply, graph.to_state()
+        # ---------- 查询公式 ----------
+        if not item["slot_status"]["formula"] == "filled":
+            formula_resp = await asyncio.to_thread(formula_api.formula_query_dict, item["indicator"])
+            exact_matches = formula_resp.get("exact_matches") or []
+            candidates = formula_resp.get("candidates") or []
+            if exact_matches:
+                chosen = exact_matches[0]
+                item["formula"] = chosen["FORMULAID"]
+                item["indicator"] = chosen["FORMULANAME"]
+                item["slot_status"]["formula"] = "filled"
+                item["note"] = "精确匹配公式"
+            elif candidates and candidates[0].get("score", 0) > 100:
+                top = candidates[0]
+                item["formula"] = top["FORMULAID"]
+                item["indicator"] = top["FORMULANAME"]
+                item["slot_status"]["formula"] = "filled"
+                item["note"] = f"高分候选公式 (score {top.get('score')})"
+            elif candidates:
+                item["formula_candidates"] = candidates[:TOP_N]
+                item["slot_status"]["formula"] = "missing"
+                lines = [f"没有完全匹配的[{item["indicator"]}]指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称："]
+                for i, c in enumerate(candidates[:TOP_N], 1):
+                    lines.append(f"{i}) {c['FORMULANAME']} (score {c.get('score',0):.2f})")
+                reply = "\n".join(lines) 
+                graph.add_history(user_input, reply)
+                graph.set_intent_info(intent_info)
+                set_graph(user_id, graph)
+                return reply, graph.to_state()
+            else:
+                item["slot_status"]["formula"] = "missing"
+                item["note"] = "未找到匹配公式"
+                reply = f"未找到匹配公式，请重新输入指标名称。" 
+                graph.add_history(user_input, reply)
+                graph.set_intent_info(intent_info)
+                set_graph(user_id, graph)
+                return reply, graph.to_state()
+        #  check time 
+        if  not item["slot_status"]["time"] == "filled":
+            reply = f"好的，要查【{item['indicator']}】，请告诉我时间。"
+            graph.add_history(user_input, reply)
+            item["note"] = reply
+            graph.set_intent_info(intent_info)
+            set_graph(user_id, graph)
+            return reply, graph.to_state()
+
+        # Try find existing node identical
+        nid = graph.find_node(item.get("indicator"), item.get("timeString"))
+        if nid:
+            sids.append(nid)
+            node = graph.get_node(nid)
+            ie = node.get("indicator_entry")
+            item["value"] = ie.get("value")
+            item["note"] = ie.get("note")
+            item["status"] = "completed"
+            graph.set_intent_info(intent_info)
+            continue
+        # else query platform
+        if item["slot_status"]["formula"] == "filled" and item["slot_status"]["time"] == "filled":
+            val, reply = await _execute_query(item)
+            item["value"] = val
+            item["note"] = reply
+            item["status"] = "completed"
+            # 必须在addNode前
+            graph.set_intent_info(intent_info)
+            # 写入 graph.node
+            node_id = graph.add_node(item)
+            sids.append(node_id)
+        results.append(item["note"])
+    # write relation and history
+    graph.add_relation("group", meta={"via": "pipeline.list.query", "user_input": intent_info.get("user_input_list"), "ids": sids, "result": "\n".join(results)})
+    # 成功查询重置意图
+    graph.set_intent_info({})
+    graph.add_history(user_input, "\n".join(results))
+    set_graph(user_id, graph)
+    logger.info("✅ list query 完成")
+    return "\n".join(results), graph.to_state()
 
 # ------------------------- 测试 main -------------------------
 async def main():
@@ -771,19 +886,15 @@ async def main():
     graph = get_graph(user_id) or ContextGraph()
     set_graph(user_id, graph)
 
-    # 测试一步对比
-    reply, graph_state = await handle_compare(user_id, "2022年1号高炉工序能耗是多少，对比计划偏差多少", graph, {"candidates": ["2022年1号高炉工序能耗", "2022年1号高炉工序能耗计划"]})
-    print("Single Query Reply 1:", reply)
-    print(json.dumps(graph_state, indent=2, ensure_ascii=False))
-    
-    # 测试选择备选
-    reply, graph_state = await handle_clarify(user_id, 4, graph)
-    print("Single Query Reply 2:", reply)
-    print(json.dumps(graph_state, indent=2, ensure_ascii=False))
+    from core.llm_energy_intent_parser import EnergyIntentParser
+    parser = EnergyIntentParser()
+    user_input = "本月高炉工序能耗实绩报出值、计划报出值和实绩累计值分别是多少"
+    current_info = await parser.parse_intent(user_input)
+    print(current_info)
 
-    # 测试选择备选
-    reply, graph_state = await handle_single_query(user_id, "高炉工序能耗实绩报出值", graph)
-    print("Single Query Reply 3:", reply)
+    # 测试批量查询
+    reply, graph_state = await handle_list_query(user_id, user_input, graph, current_info)
+    print("Single Query Reply 1:", reply)
     print(json.dumps(graph_state, indent=2, ensure_ascii=False))
     
     # 再查询一个指标（可测试对比）
