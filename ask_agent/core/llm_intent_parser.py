@@ -141,82 +141,304 @@ if __name__ == "__main__":
 
     test_graph_state = {
         "graph": {
-            "nodes": [],
-            "relations": [],
-            "_next_id": 1
-        },
-        "meta": {
-            "history": [
-                {
-                    "ask": "1号高炉工序能耗",
-                    "reply": "请从以下候选公式选择编号：\n1) 1高炉工序能耗实绩报出值 (score 87.77)\n2) 高炉工序能耗实绩报出值 (score 87.20)\n3) 1高炉工序平衡能耗实绩报出值 (score 86.29)\n4) 高炉工序能耗实绩累计值 (score 85.74)\n5) 1高炉工序平衡能耗实绩累计值 (score 85.73)"
-                }
+            "nodes": [
+            {
+                "id": 1,
+                "indicator_entry": {
+                "status": "completed",
+                "indicator": "1高炉工序能耗实绩报出值",
+                "formula": "GXNHLT1101.IXRL",
+                "timeString": "2022-01-01",
+                "timeType": "DAY",
+                "slot_status": {
+                    "formula": "filled",
+                    "time": "filled"
+                },
+                "value": "381.65",
+                "note": "✅ 1高炉工序能耗实绩报出值 在 2022-01-01 (DAY) 的值是 381.65 ",
+                "formula_candidates": [
+                    {
+                    "number": 1,
+                    "FORMULAID": "GXNHLT1101.IXPL",
+                    "FORMULANAME": "1高炉工序能耗计划报出值",
+                    "score": 91.7787,
+                    "fuzzy_score": 95.4909,
+                    "semantic_score": 81.9644,
+                    "match_kind": "hybrid"
+                    },
+                    {
+                    "number": 2,
+                    "FORMULAID": "GXNHLT1101.IXPL.SUMVALUE",
+                    "FORMULANAME": "1高炉工序能耗计划累计值",
+                    "score": 88.6605,
+                    "fuzzy_score": 92.6545,
+                    "semantic_score": 83.2141,
+                    "match_kind": "hybrid"
+                    },
+                    {
+                    "number": 3,
+                    "FORMULAID": "PHNHLT1101.IXPL",
+                    "FORMULANAME": "1高炉工序平衡能耗计划报出值",
+                    "score": 88.4603,
+                    "fuzzy_score": 95.4909,
+                    "semantic_score": 76.6991,
+                    "match_kind": "hybrid"
+                    },
+                    {
+                    "number": 4,
+                    "FORMULAID": "GXNHLT1101.IXRL",
+                    "FORMULANAME": "1高炉工序能耗实绩报出值",
+                    "score": 87.768,
+                    "fuzzy_score": 99.1636,
+                    "semantic_score": 67.9943,
+                    "match_kind": "hybrid"
+                    },
+                    {
+                    "number": 5,
+                    "FORMULAID": "GXNHLT1100.IXRL",
+                    "FORMULANAME": "高炉工序能耗实绩报出值",
+                    "score": 87.2049,
+                    "fuzzy_score": 87.264,
+                    "semantic_score": 75.0671,
+                    "match_kind": "hybrid"
+                    }
+                ]
+                },
+                "intent_info_snapshot": {
+                "user_input_list": [
+                    "2022年1号高炉工序能耗是多少，对比计划偏差多少",
+                    "4"
                 ],
-                "current_intent_info": {
-                "user_input": "1号高炉工序能耗",
-                "intent": "single_query",
+                "intent_list": [
+                    "compare",
+                    "clarify"
+                ],
                 "indicators": [
                     {
+                    "status": "completed",
+                    "indicator": "1高炉工序能耗实绩报出值",
+                    "formula": "GXNHLT1101.IXRL",
+                    "timeString": "2022-01-01",
+                    "timeType": "DAY",
+                    "slot_status": {
+                        "formula": "filled",
+                        "time": "filled"
+                    },
+                    "value": "381.65",
+                    "note": "✅ 1高炉工序能耗实绩报出值 在 2022-01-01 (DAY) 的值是 381.65 ",
+                    "formula_candidates": [
+                        {
+                        "number": 1,
+                        "FORMULAID": "GXNHLT1101.IXPL",
+                        "FORMULANAME": "1高炉工序能耗计划报出值",
+                        "score": 91.7787,
+                        "fuzzy_score": 95.4909,
+                        "semantic_score": 81.9644,
+                        "match_kind": "hybrid"
+                        },
+                        {
+                        "number": 2,
+                        "FORMULAID": "GXNHLT1101.IXPL.SUMVALUE",
+                        "FORMULANAME": "1高炉工序能耗计划累计值",
+                        "score": 88.6605,
+                        "fuzzy_score": 92.6545,
+                        "semantic_score": 83.2141,
+                        "match_kind": "hybrid"
+                        },
+                        {
+                        "number": 3,
+                        "FORMULAID": "PHNHLT1101.IXPL",
+                        "FORMULANAME": "1高炉工序平衡能耗计划报出值",
+                        "score": 88.4603,
+                        "fuzzy_score": 95.4909,
+                        "semantic_score": 76.6991,
+                        "match_kind": "hybrid"
+                        },
+                        {
+                        "number": 4,
+                        "FORMULAID": "GXNHLT1101.IXRL",
+                        "FORMULANAME": "1高炉工序能耗实绩报出值",
+                        "score": 87.768,
+                        "fuzzy_score": 99.1636,
+                        "semantic_score": 67.9943,
+                        "match_kind": "hybrid"
+                        },
+                        {
+                        "number": 5,
+                        "FORMULAID": "GXNHLT1100.IXRL",
+                        "FORMULANAME": "高炉工序能耗实绩报出值",
+                        "score": 87.2049,
+                        "fuzzy_score": 87.264,
+                        "semantic_score": 75.0671,
+                        "match_kind": "hybrid"
+                        }
+                    ]
+                    },
+                    {
                     "status": "active",
-                    "indicator": "1号高炉工序能耗",
+                    "indicator": "1号高炉工序能耗计划",
                     "formula": None,
-                    "timeString": None,
-                    "timeType": None,
+                    "timeString": "2022-01",
+                    "timeType": "MONTH",
                     "slot_status": {
                         "formula": "missing",
-                        "time": "missing"
+                        "time": "filled"
                     },
                     "value": None,
                     "note": None,
-                    "formula_candidates": [
-                        {
-                            "number": 1,
-                            "FORMULAID": "GXNHLT1101.IXRL",
-                            "FORMULANAME": "1高炉工序能耗实绩报出值",
-                            "score": 87.768,
-                            "fuzzy_score": 99.1636,
-                            "semantic_score": 67.9943,
-                            "match_kind": "hybrid"
-                        },
-                        {
-                            "number": 2,
-                            "FORMULAID": "GXNHLT1100.IXRL",
-                            "FORMULANAME": "高炉工序能耗实绩报出值",
-                            "score": 87.2049,
-                            "fuzzy_score": 87.264,
-                            "semantic_score": 75.0671,
-                            "match_kind": "hybrid"
-                        },
-                        {
-                            "number": 3,
-                            "FORMULAID": "PHNHLT1101.IXRL",
-                            "FORMULANAME": "1高炉工序平衡能耗实绩报出值",
-                            "score": 86.2949,
-                            "fuzzy_score": 99.1636,
-                            "semantic_score": 65.7436,
-                            "match_kind": "hybrid"
-                        },
-                        {
-                            "number": 4,
-                            "FORMULAID": "GXNHLT1100.IXRL.SUMVALUE",
-                            "FORMULANAME": "高炉工序能耗实绩累计值",
-                            "score": 85.7415,
-                            "fuzzy_score": 84.672,
-                            "semantic_score": 78.5695,
-                            "match_kind": "hybrid"
-                        },
-                        {
-                            "number": 5,
-                            "FORMULAID": "PHNHLT1101.IXRL.SUMVALUE",
-                            "FORMULANAME": "1高炉工序平衡能耗实绩累计值",
-                            "score": 85.7281,
-                            "fuzzy_score": 96.2182,
-                            "semantic_score": 70.851,
-                            "match_kind": "hybrid"
-                        }
-                    ]
+                    "formula_candidates": None
                     }
                 ]
+                }
+            }
+            ],
+            "relations": [],
+            "_next_id": 2
+        },
+        "meta": {
+            "history": [
+            {
+                "ask": "2022年1号高炉工序能耗是多少，对比计划偏差多少",
+                "reply": "没有完全匹配的[1号高炉工序能耗]指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称：\n1) 1高炉工序能耗计划报出值 (score 91.78)\n2) 1高炉工序能耗计划累计值 (score 88.66)\n3) 1高炉工序平衡能耗计划报出值 (score 88.46)\n4) 1高炉工序能耗实绩报出值 (score 87.77)\n5) 高炉工序能耗实绩报出值 (score 87.20)"
+            },
+            {
+                "ask": "4 -> system:完成 clarify 并检测到 compare 上下文，继续执行 handle_compare...",
+                "reply": "没有完全匹配的[1号高炉工序能耗计划]指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称：\n1) 1高炉工序能耗计划报出值 (score 93.78)\n2) 高炉工序能耗计划报出值 (score 90.66)\n3) 1高炉工序平衡能耗计划报出值 (score 90.47)\n4) 1高炉工序能耗计划累计值 (score 90.09)\n5) 2高炉工序能耗计划报出值 (score 87.18)"
+            }
+            ],
+            "current_intent_info": {
+            "user_input_list": [
+                "2022年1号高炉工序能耗是多少，对比计划偏差多少",
+                "4",
+                "4 -> system:完成 clarify 并检测到 compare 上下文，继续执行 handle_compare..."
+            ],
+            "intent_list": [
+                "compare",
+                "clarify",
+                "compare"
+            ],
+            "indicators": [
+                {
+                "status": "completed",
+                "indicator": "1高炉工序能耗实绩报出值",
+                "formula": "GXNHLT1101.IXRL",
+                "timeString": "2022-01-01",
+                "timeType": "DAY",
+                "slot_status": {
+                    "formula": "filled",
+                    "time": "filled"
+                },
+                "value": "381.65",
+                "note": "✅ 1高炉工序能耗实绩报出值 在 2022-01-01 (DAY) 的值是 381.65 ",
+                "formula_candidates": [
+                    {
+                    "number": 1,
+                    "FORMULAID": "GXNHLT1101.IXPL",
+                    "FORMULANAME": "1高炉工序能耗计划报出值",
+                    "score": 91.7787,
+                    "fuzzy_score": 95.4909,
+                    "semantic_score": 81.9644,
+                    "match_kind": "hybrid"
+                    },
+                    {
+                    "number": 2,
+                    "FORMULAID": "GXNHLT1101.IXPL.SUMVALUE",
+                    "FORMULANAME": "1高炉工序能耗计划累计值",
+                    "score": 88.6605,
+                    "fuzzy_score": 92.6545,
+                    "semantic_score": 83.2141,
+                    "match_kind": "hybrid"
+                    },
+                    {
+                    "number": 3,
+                    "FORMULAID": "PHNHLT1101.IXPL",
+                    "FORMULANAME": "1高炉工序平衡能耗计划报出值",
+                    "score": 88.4603,
+                    "fuzzy_score": 95.4909,
+                    "semantic_score": 76.6991,
+                    "match_kind": "hybrid"
+                    },
+                    {
+                    "number": 4,
+                    "FORMULAID": "GXNHLT1101.IXRL",
+                    "FORMULANAME": "1高炉工序能耗实绩报出值",
+                    "score": 87.768,
+                    "fuzzy_score": 99.1636,
+                    "semantic_score": 67.9943,
+                    "match_kind": "hybrid"
+                    },
+                    {
+                    "number": 5,
+                    "FORMULAID": "GXNHLT1100.IXRL",
+                    "FORMULANAME": "高炉工序能耗实绩报出值",
+                    "score": 87.2049,
+                    "fuzzy_score": 87.264,
+                    "semantic_score": 75.0671,
+                    "match_kind": "hybrid"
+                    }
+                ]
+                },
+                {
+                "status": "active",
+                "indicator": "1号高炉工序能耗计划",
+                "formula": None,
+                "timeString": "2022-01",
+                "timeType": "MONTH",
+                "slot_status": {
+                    "formula": "missing",
+                    "time": "filled"
+                },
+                "value": None,
+                "note": None,
+                "formula_candidates": [
+                    {
+                    "number": 1,
+                    "FORMULAID": "GXNHLT1101.IXPL",
+                    "FORMULANAME": "1高炉工序能耗计划报出值",
+                    "score": 93.7797,
+                    "fuzzy_score": 97.5371,
+                    "semantic_score": 83.7753,
+                    "match_kind": "hybrid"
+                    },
+                    {
+                    "number": 2,
+                    "FORMULAID": "GXNHLT1100.IXPL",
+                    "FORMULANAME": "高炉工序能耗计划报出值",
+                    "score": 90.6642,
+                    "fuzzy_score": 88.88,
+                    "semantic_score": 84.6033,
+                    "match_kind": "hybrid"
+                    },
+                    {
+                    "number": 3,
+                    "FORMULAID": "PHNHLT1101.IXPL",
+                    "FORMULANAME": "1高炉工序平衡能耗计划报出值",
+                    "score": 90.4736,
+                    "fuzzy_score": 97.5371,
+                    "semantic_score": 78.5294,
+                    "match_kind": "hybrid"
+                    },
+                    {
+                    "number": 4,
+                    "FORMULAID": "GXNHLT1101.IXPL.SUMVALUE",
+                    "FORMULANAME": "1高炉工序能耗计划累计值",
+                    "score": 90.0906,
+                    "fuzzy_score": 94.64,
+                    "semantic_score": 84.229,
+                    "match_kind": "hybrid"
+                    },
+                    {
+                    "number": 5,
+                    "FORMULAID": "GXNHLT1102.IXPL",
+                    "FORMULANAME": "2高炉工序能耗计划报出值",
+                    "score": 87.1809,
+                    "fuzzy_score": 88.88,
+                    "semantic_score": 79.0764,
+                    "match_kind": "hybrid"
+                    }
+                ]
+                }
+            ]
             }
         }
     }
@@ -225,10 +447,12 @@ if __name__ == "__main__":
    
     async def test():
         result1 = await parse_intent("test_user", "选第一个")  # 今天 
-        result2 = await parse_intent("test_user", "今天的能耗")
+        result2 = await parse_intent("test_user", "1高炉工序能耗计划报出值")
         result3 = await parse_intent("test_user", "现在几点")
+        result4 = await parse_intent("test_user", "高炉工序能耗实绩报出值")
         print("结果1:", result1)
         print("结果2:", result2)
         print("结果3:", result3)
+        print("结果4:", result4)
 
     asyncio.run(test())

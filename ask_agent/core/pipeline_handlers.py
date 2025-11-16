@@ -6,8 +6,9 @@ import inspect
 from core.context_graph import ContextGraph, default_indicators
 from core.llm_energy_indicator_parser import parse_user_input
 from tools import formula_api, platform_api
-from core.llm_client import safe_llm_chat
 from core.pipeline_context import set_graph, get_graph
+from core.llm_indicator_compare import call_compare_llm
+
 
 logger = logging.getLogger("pipeline.handlers")
 if not logger.handlers:
@@ -31,7 +32,10 @@ async def handle_single_query(user_id: str, user_input: str, graph: ContextGraph
     """
     user_input = str(user_input or "").strip()
     logger.info(f"🔹 handle_single_query user_input={user_input}")
-
+    # 需要提前判断，支持不选择备选，重新开始查询
+    is_compare = (ri := (graph.get_intent_info() or {})) and "compare" in ri.get("intent_list", []) \
+             and any(ind.get("status") == "active" for ind in ri.get("indicators", []))
+    # 实际操作
     intent_info = graph.ensure_intent_info() or {}
     intent_info.setdefault("user_input_list", []).append(user_input)
     intent_info.setdefault("intent_list", []).append("single_query")  # 或 "clarify" 等
@@ -75,7 +79,6 @@ async def handle_single_query(user_id: str, user_input: str, graph: ContextGraph
             logger.info("⚠️ 无历史节点可用，创建默认 indicator。")
             current_indicator = default_indicators()
             indicators.append(current_indicator)
-
 
     # ---------- LLM 补全 ----------
     try:
@@ -144,6 +147,18 @@ async def handle_single_query(user_id: str, user_input: str, graph: ContextGraph
         graph.set_intent_info(intent_info)
         # 写入 graph.node
         node_id = graph.add_node(current_indicator)
+
+        # 连续判断需要找到当前intent中active的indicator，作为当前current_info传入即可
+        if is_compare:
+            logger.info("🔄 clarify 完成并检测到 compare 上下文，继续执行 handle_compare...")
+            current_intents = [
+                ind.get("indicator")
+                for ind in intent_info.get("indicators")
+                if ind.get("status") == "active" and ind.get("indicator")
+            ]
+            print(f"current_intents:{current_intents}")
+            return await handle_compare(user_id, f"{user_input} -> system:完成 clarify 并检测到 compare 上下文，继续执行 handle_compare...", graph, current_intent={"candidates": current_intents})
+        
         # 成功查询重置意图
         graph.set_intent_info({})
         graph.add_history(user_input, reply)
@@ -339,22 +354,9 @@ async def handle_compare(user_id: str, user_input: str, graph: ContextGraph, cur
         # now have two node entries
         left = node_pairs[0][1]
         right = node_pairs[1][1]
-        note_a = left.get("note") or left.get("value") or ""
-        note_b = right.get("note") or right.get("value") or ""
 
         # call LLM with two notes
-        prompt = f"""
-你是能源分析助手。下面是两条查询结果（可能包含 'None' 表示无数据）。
-请基于下列两条结果，给出一句简洁自然语言的对比结论（包含差值/方向/是否无数据说明）。
-结果A: {note_a}
-结果B: {note_b}
-请直接返回一句结论。
-"""
-        try:
-            analysis = (await safe_llm_chat(prompt) or "").strip()
-        except Exception as e:
-            logger.exception("safe_llm_chat 失败: %s", e)
-            analysis = f"对比结果: {note_a} || {note_b}"
+        analysis = await call_compare_llm(left, right)
 
         # write relation and history
         sid = node_pairs[0][0]
@@ -510,21 +512,8 @@ async def handle_compare(user_id: str, user_input: str, graph: ContextGraph, cur
                 other_node = graph.get_node(node_id)
 
         # Now produce two notes and call LLM
-        note_a = base_indicator.get("note")
-        note_b = current_indicator.get("note")
 
-        prompt = f"""
-    你是能源分析助手。下面是两条查询结果（可能包含 'None' 表示无数据）。
-    请基于下列两条结果，给出一句简洁自然语言的对比结论（包含差值/方向/是否无数据说明）。
-    结果A: {note_a}
-    结果B: {note_b}
-    请直接返回一句结论。
-    """
-        try:
-            analysis = (await safe_llm_chat(prompt) or "").strip()
-        except Exception as e:
-            logger.exception("safe_llm_chat 失败: %s", e)
-            analysis = f"对比结果: {note_a} || {note_b}"
+        analysis = await call_compare_llm(base_indicator, current_indicator)
         
         sid = graph.find_node(base_indicator.get("indicator"), base_indicator.get("timeString"))
         # write relation and history
@@ -544,21 +533,8 @@ async def handle_compare(user_id: str, user_input: str, graph: ContextGraph, cur
         node2 = recent[-1]
         ie1 = node1.get("indicator_entry", {})
         ie2 = node2.get("indicator_entry", {})
-        note_a = ie1.get("note") or ie1.get("value") or ""
-        note_b = ie2.get("note") or ie2.get("value") or ""
 
-        prompt = f"""
-你是能源分析助手。下面是两条查询结果（可能包含 'None' 表示无数据）。
-请基于下列两条结果，给出一句简洁自然语言的对比结论（包含差值/方向/是否无数据说明）。
-结果A: {note_a}
-结果B: {note_b}
-请直接返回一句结论。
-"""
-        try:
-            analysis = (await safe_llm_chat(prompt) or "").strip()
-        except Exception as e:
-            logger.exception("safe_llm_chat 失败: %s", e)
-            analysis = f"对比结果: {note_a} || {note_b}"
+        analysis = await call_compare_llm(ie1, ie2)
 
         # write relation
         sid = node1.get("id")
@@ -797,7 +773,7 @@ async def main():
 
     # 测试一步对比
     reply, graph_state = await handle_compare(user_id, "2022年1号高炉工序能耗是多少，对比计划偏差多少", graph, {"candidates": ["2022年1号高炉工序能耗", "2022年1号高炉工序能耗计划"]})
-    print("Single Query Reply 2:", reply)
+    print("Single Query Reply 1:", reply)
     print(json.dumps(graph_state, indent=2, ensure_ascii=False))
     
     # 测试选择备选
@@ -806,8 +782,8 @@ async def main():
     print(json.dumps(graph_state, indent=2, ensure_ascii=False))
 
     # 测试选择备选
-    reply, graph_state = await handle_clarify(user_id, 1, graph)
-    print("Single Query Reply 2:", reply)
+    reply, graph_state = await handle_single_query(user_id, "高炉工序能耗实绩报出值", graph)
+    print("Single Query Reply 3:", reply)
     print(json.dumps(graph_state, indent=2, ensure_ascii=False))
     
     # 再查询一个指标（可测试对比）

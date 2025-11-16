@@ -1,9 +1,9 @@
 (myenv) fusionshen@fusionshen-ThinkPad-T14-Gen-1:~/Desktop/LLM/ask_agent$ python -m core.llm_intent_parser
-2025-11-12 14:29:12,456 | INFO | llm_client | ✅ Using ChatOllama from langchain-ollama
+2025-11-16 14:38:45,342 | INFO | llm_client | ✅ Using ChatOllama from langchain-ollama
 /home/fusionshen/myenv/lib/python3.12/site-packages/jieba/_compat.py:18: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
   import pkg_resources
 ✅ sentence-transformers 版本: 5.1.1
-2025-11-12 14:29:14,408 | INFO | llm_intent_parser | 🔍 [parse_intent] user_input='选第一个', indicator='1号高炉工序能耗', awaiting=True
+2025-11-16 14:38:47,291 | INFO | llm_intent_parser | 🔍 [parse_intent] user_input='选第一个', indicator='1号高炉工序能耗计划', awaiting=True
 
 你是一个智能意图识别器，请根据上下文判断当前用户输入属于哪类意图。
 
@@ -15,23 +15,29 @@
 
 当前上下文：
 - 用户输入: "选第一个"
-- 当前指标: "1号高炉工序能耗"
+- 当前指标: "1号高炉工序能耗计划"
 - 最近对话记录:
-- 1号高炉工序能耗 -> 请从以下候选公式选择编号：
-1) 1高炉工序能耗实绩报出值 (score 87.77)
-2) 高炉工序能耗实绩报出值 (score 87.20)
-3) 1高炉工序平衡能耗实绩报出值 (score 86.29)
-4) 高炉工序能耗实绩累计值 (score 85.74)
-5) 1高炉工序平衡能耗实绩累计值 (score 85.73)...
+- 2022年1号高炉工序能耗是多少，对比计划偏差多少 -> 没有完全匹配的[1号高炉工序能耗]指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称：
+1) 1高炉工序能耗计划报出值 (score 91.78)
+2) 1高炉工序能耗计划累计值 (score 88.66)
+3) 1高炉工序平衡能耗计划报出值 (score 88.46)
+4) 1高炉工序能耗实绩报出值 (score 87.77)
+5) 高炉工序能耗实绩报出值 (score 87.20)...
+- 4 -> system:完成 clarify 并检测到 compare 上下文，继续执行 handle_compare... -> 没有完全匹配的[1号高炉工序能耗计划]指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称：
+1) 1高炉工序能耗计划报出值 (score 93.78)
+2) 高炉工序能耗计划报出值 (score 90.66)
+3) 1高炉工序平衡能耗计划报出值 (score 90.47)
+4) 1高炉工序能耗计划累计值 (score 90.09)
+5) 2高炉工序能耗计划报出值 (score 87.18)...
 - 当前槽位状态:
 formula: missing
-time: missing
+time: filled
 - 当前候选公式:
-1) 1高炉工序能耗实绩报出值 (score 87.77)
-2) 高炉工序能耗实绩报出值 (score 87.20)
-3) 1高炉工序平衡能耗实绩报出值 (score 86.29)
-4) 高炉工序能耗实绩累计值 (score 85.74)
-5) 1高炉工序平衡能耗实绩累计值 (score 85.73)
+1) 1高炉工序能耗计划报出值 (score 93.78)
+2) 高炉工序能耗计划报出值 (score 90.66)
+3) 1高炉工序平衡能耗计划报出值 (score 90.47)
+4) 1高炉工序能耗计划累计值 (score 90.09)
+5) 2高炉工序能耗计划报出值 (score 87.18)
 
 识别规则（优先级从高到低）：
 1. 如果用户正在选择候选公式：
@@ -52,17 +58,17 @@ time: missing
   "parsed_number": 若输入为候选编号或“选第一条”等 → 提取数字，否则为 null
 }
 
-2025-11-12 14:29:14,492 | INFO | httpx | HTTP Request: GET http://192.168.92.13:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-12 14:29:15,019 | INFO | httpx | HTTP Request: POST http://192.168.92.13:11434/api/chat "HTTP/1.1 200 OK"
+2025-11-16 14:38:47,383 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 14:38:47,954 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "intent": "ENERGY_QUERY",
   "parsed_number": 1
 }
 ```
-2025-11-12 14:29:15,716 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-2025-11-12 14:29:15,718 | INFO | llm_intent_parser | 📥 轻量意图分类结果: intent=ENERGY_QUERY, parsed_number=1
-2025-11-12 14:29:15,718 | INFO | llm_intent_parser | 🔍 [parse_intent] user_input='今天的能耗', indicator='1号高炉工序能耗', awaiting=True
+2025-11-16 14:38:48,701 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-16 14:38:48,702 | INFO | llm_intent_parser | 📥 轻量意图分类结果: intent=ENERGY_QUERY, parsed_number=1
+2025-11-16 14:38:48,702 | INFO | llm_intent_parser | 🔍 [parse_intent] user_input='1高炉工序能耗计划报出值', indicator='1号高炉工序能耗计划', awaiting=True
 
 你是一个智能意图识别器，请根据上下文判断当前用户输入属于哪类意图。
 
@@ -73,24 +79,30 @@ time: missing
 - ENERGY_KNOWLEDGE_QA: 解释能源概念或定义的问题
 
 当前上下文：
-- 用户输入: "今天的能耗"
-- 当前指标: "1号高炉工序能耗"
+- 用户输入: "1高炉工序能耗计划报出值"
+- 当前指标: "1号高炉工序能耗计划"
 - 最近对话记录:
-- 1号高炉工序能耗 -> 请从以下候选公式选择编号：
-1) 1高炉工序能耗实绩报出值 (score 87.77)
-2) 高炉工序能耗实绩报出值 (score 87.20)
-3) 1高炉工序平衡能耗实绩报出值 (score 86.29)
-4) 高炉工序能耗实绩累计值 (score 85.74)
-5) 1高炉工序平衡能耗实绩累计值 (score 85.73)...
+- 2022年1号高炉工序能耗是多少，对比计划偏差多少 -> 没有完全匹配的[1号高炉工序能耗]指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称：
+1) 1高炉工序能耗计划报出值 (score 91.78)
+2) 1高炉工序能耗计划累计值 (score 88.66)
+3) 1高炉工序平衡能耗计划报出值 (score 88.46)
+4) 1高炉工序能耗实绩报出值 (score 87.77)
+5) 高炉工序能耗实绩报出值 (score 87.20)...
+- 4 -> system:完成 clarify 并检测到 compare 上下文，继续执行 handle_compare... -> 没有完全匹配的[1号高炉工序能耗计划]指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称：
+1) 1高炉工序能耗计划报出值 (score 93.78)
+2) 高炉工序能耗计划报出值 (score 90.66)
+3) 1高炉工序平衡能耗计划报出值 (score 90.47)
+4) 1高炉工序能耗计划累计值 (score 90.09)
+5) 2高炉工序能耗计划报出值 (score 87.18)...
 - 当前槽位状态:
 formula: missing
-time: missing
+time: filled
 - 当前候选公式:
-1) 1高炉工序能耗实绩报出值 (score 87.77)
-2) 高炉工序能耗实绩报出值 (score 87.20)
-3) 1高炉工序平衡能耗实绩报出值 (score 86.29)
-4) 高炉工序能耗实绩累计值 (score 85.74)
-5) 1高炉工序平衡能耗实绩累计值 (score 85.73)
+1) 1高炉工序能耗计划报出值 (score 93.78)
+2) 高炉工序能耗计划报出值 (score 90.66)
+3) 1高炉工序平衡能耗计划报出值 (score 90.47)
+4) 1高炉工序能耗计划累计值 (score 90.09)
+5) 2高炉工序能耗计划报出值 (score 87.18)
 
 识别规则（优先级从高到低）：
 1. 如果用户正在选择候选公式：
@@ -111,21 +123,17 @@ time: missing
   "parsed_number": 若输入为候选编号或“选第一条”等 → 提取数字，否则为 null
 }
 
-2025-11-12 14:29:15,811 | INFO | httpx | HTTP Request: GET http://192.168.92.13:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-12 14:29:16,369 | INFO | httpx | HTTP Request: POST http://192.168.92.13:11434/api/chat "HTTP/1.1 200 OK"
+2025-11-16 14:38:48,805 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 14:38:49,442 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "intent": "ENERGY_QUERY",
-  "parsed_number": null
+  "parsed_number": 1
 }
 ```
-
-**理由:**
-
-用户输入“今天的能耗”包含时间表达“今天”，且上下文处于能源查询流程中（正在选择候选公式），因此根据识别规则2，应判断为 `ENERGY_QUERY`。用户是在补充查询时间，而不是单纯问时间。
-2025-11-12 14:29:18,425 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-2025-11-12 14:29:18,426 | INFO | llm_intent_parser | 📥 轻量意图分类结果: intent=ENERGY_QUERY, parsed_number=None
-2025-11-12 14:29:18,426 | INFO | llm_intent_parser | 🔍 [parse_intent] user_input='现在几点', indicator='1号高炉工序能耗', awaiting=True
+2025-11-16 14:38:50,174 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-16 14:38:50,175 | INFO | llm_intent_parser | 📥 轻量意图分类结果: intent=ENERGY_QUERY, parsed_number=1
+2025-11-16 14:38:50,176 | INFO | llm_intent_parser | 🔍 [parse_intent] user_input='现在几点', indicator='1号高炉工序能耗计划', awaiting=True
 
 你是一个智能意图识别器，请根据上下文判断当前用户输入属于哪类意图。
 
@@ -137,23 +145,29 @@ time: missing
 
 当前上下文：
 - 用户输入: "现在几点"
-- 当前指标: "1号高炉工序能耗"
+- 当前指标: "1号高炉工序能耗计划"
 - 最近对话记录:
-- 1号高炉工序能耗 -> 请从以下候选公式选择编号：
-1) 1高炉工序能耗实绩报出值 (score 87.77)
-2) 高炉工序能耗实绩报出值 (score 87.20)
-3) 1高炉工序平衡能耗实绩报出值 (score 86.29)
-4) 高炉工序能耗实绩累计值 (score 85.74)
-5) 1高炉工序平衡能耗实绩累计值 (score 85.73)...
+- 2022年1号高炉工序能耗是多少，对比计划偏差多少 -> 没有完全匹配的[1号高炉工序能耗]指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称：
+1) 1高炉工序能耗计划报出值 (score 91.78)
+2) 1高炉工序能耗计划累计值 (score 88.66)
+3) 1高炉工序平衡能耗计划报出值 (score 88.46)
+4) 1高炉工序能耗实绩报出值 (score 87.77)
+5) 高炉工序能耗实绩报出值 (score 87.20)...
+- 4 -> system:完成 clarify 并检测到 compare 上下文，继续执行 handle_compare... -> 没有完全匹配的[1号高炉工序能耗计划]指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称：
+1) 1高炉工序能耗计划报出值 (score 93.78)
+2) 高炉工序能耗计划报出值 (score 90.66)
+3) 1高炉工序平衡能耗计划报出值 (score 90.47)
+4) 1高炉工序能耗计划累计值 (score 90.09)
+5) 2高炉工序能耗计划报出值 (score 87.18)...
 - 当前槽位状态:
 formula: missing
-time: missing
+time: filled
 - 当前候选公式:
-1) 1高炉工序能耗实绩报出值 (score 87.77)
-2) 高炉工序能耗实绩报出值 (score 87.20)
-3) 1高炉工序平衡能耗实绩报出值 (score 86.29)
-4) 高炉工序能耗实绩累计值 (score 85.74)
-5) 1高炉工序平衡能耗实绩累计值 (score 85.73)
+1) 1高炉工序能耗计划报出值 (score 93.78)
+2) 高炉工序能耗计划报出值 (score 90.66)
+3) 1高炉工序平衡能耗计划报出值 (score 90.47)
+4) 1高炉工序能耗计划累计值 (score 90.09)
+5) 2高炉工序能耗计划报出值 (score 87.18)
 
 识别规则（优先级从高到低）：
 1. 如果用户正在选择候选公式：
@@ -174,8 +188,8 @@ time: missing
   "parsed_number": 若输入为候选编号或“选第一条”等 → 提取数字，否则为 null
 }
 
-2025-11-12 14:29:18,517 | INFO | httpx | HTTP Request: GET http://192.168.92.13:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-12 14:29:19,005 | INFO | httpx | HTTP Request: POST http://192.168.92.13:11434/api/chat "HTTP/1.1 200 OK"
+2025-11-16 14:38:50,284 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 14:38:50,844 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "intent": "TOOL",
@@ -185,9 +199,79 @@ time: missing
 
 **理由:**
 
-虽然上下文中有能源查询流程，但用户输入“现在几点”是一个纯粹的日期时间类问题，与能源查询无关。根据识别规则的第5条，此类问题应归类为 TOOL。
-2025-11-12 14:29:20,926 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-2025-11-12 14:29:20,927 | INFO | llm_intent_parser | 📥 轻量意图分类结果: intent=TOOL, parsed_number=None
+虽然对话历史与能源查询相关，但用户当前输入“现在几点”是一个纯粹的日期时间类问题，不涉及任何能源指标或概念。根据识别规则的第5条，此类问题应被归类为 TOOL。
+2025-11-16 14:38:52,977 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-16 14:38:52,979 | INFO | llm_intent_parser | 📥 轻量意图分类结果: intent=TOOL, parsed_number=None
+2025-11-16 14:38:52,979 | INFO | llm_intent_parser | 🔍 [parse_intent] user_input='高炉工序能耗实绩报出值', indicator='1号高炉工序能耗计划', awaiting=True
+
+你是一个智能意图识别器，请根据上下文判断当前用户输入属于哪类意图。
+
+意图类型：
+- ENERGY_QUERY: 用户想查询能源指标数据（包括初次查询、补充时间、或正在选择候选公式）
+- CHAT: 普通闲聊或非结构化提问
+- TOOL: 工具类问题（时间、日期、天气等）
+- ENERGY_KNOWLEDGE_QA: 解释能源概念或定义的问题
+
+当前上下文：
+- 用户输入: "高炉工序能耗实绩报出值"
+- 当前指标: "1号高炉工序能耗计划"
+- 最近对话记录:
+- 2022年1号高炉工序能耗是多少，对比计划偏差多少 -> 没有完全匹配的[1号高炉工序能耗]指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称：
+1) 1高炉工序能耗计划报出值 (score 91.78)
+2) 1高炉工序能耗计划累计值 (score 88.66)
+3) 1高炉工序平衡能耗计划报出值 (score 88.46)
+4) 1高炉工序能耗实绩报出值 (score 87.77)
+5) 高炉工序能耗实绩报出值 (score 87.20)...
+- 4 -> system:完成 clarify 并检测到 compare 上下文，继续执行 handle_compare... -> 没有完全匹配的[1号高炉工序能耗计划]指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称：
+1) 1高炉工序能耗计划报出值 (score 93.78)
+2) 高炉工序能耗计划报出值 (score 90.66)
+3) 1高炉工序平衡能耗计划报出值 (score 90.47)
+4) 1高炉工序能耗计划累计值 (score 90.09)
+5) 2高炉工序能耗计划报出值 (score 87.18)...
+- 当前槽位状态:
+formula: missing
+time: filled
+- 当前候选公式:
+1) 1高炉工序能耗计划报出值 (score 93.78)
+2) 高炉工序能耗计划报出值 (score 90.66)
+3) 1高炉工序平衡能耗计划报出值 (score 90.47)
+4) 1高炉工序能耗计划累计值 (score 90.09)
+5) 2高炉工序能耗计划报出值 (score 87.18)
+
+识别规则（优先级从高到低）：
+1. 如果用户正在选择候选公式：
+   - 输入为数字或序号指代（如“1”“第二个”） → ENERGY_QUERY。
+   - 输入与能源无关 → CHAT。
+2. 如果当前处于能源查询流程，
+   且用户输入包含时间表达（如“今天”“昨天”“2022年的今天”“上月”），
+   则视为 ENERGY_QUERY —— 表示用户在补充查询时间，而不是单纯问时间。
+3. 如果用户输入包含能源指标、单位、能耗类词汇（如“电耗”“高炉煤气使用量”），
+   视为 ENERGY_QUERY。
+4. 如果用户提问能源定义、概念、用途 → ENERGY_KNOWLEDGE_QA。
+5. 如果输入与能源查询流程无关且是日期、时间、天气类问题 → TOOL。
+6. 其他普通问答 → CHAT。
+
+返回 JSON：
+{
+  "intent": "ENERGY_QUERY" 或 "CHAT" 或 "TOOL" 或 "ENERGY_KNOWLEDGE_QA",
+  "parsed_number": 若输入为候选编号或“选第一条”等 → 提取数字，否则为 null
+}
+
+2025-11-16 14:38:53,085 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 14:38:53,710 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "intent": "ENERGY_QUERY",
+  "parsed_number": null
+}
+```
+
+**理由:**
+
+根据上下文，用户正在进行能源指标查询流程，并且之前的对话记录显示用户正在从候选公式中选择。虽然用户输入“高炉工序能耗实绩报出值”不是一个明确的候选编号，但它与候选公式列表中的指标名称高度相关，可以理解为用户在确认或细化查询指标。因此，将其归类为 `ENERGY_QUERY` 更合适。
+2025-11-16 14:38:56,791 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-16 14:38:56,792 | INFO | llm_intent_parser | 📥 轻量意图分类结果: intent=ENERGY_QUERY, parsed_number=None
 结果1: {'intent': 'ENERGY_QUERY', 'parsed_number': 1}
-结果2: {'intent': 'ENERGY_QUERY', 'parsed_number': None}
+结果2: {'intent': 'ENERGY_QUERY', 'parsed_number': 1}
 结果3: {'intent': 'TOOL', 'parsed_number': None}
+结果4: {'intent': 'ENERGY_QUERY', 'parsed_number': None}

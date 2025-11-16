@@ -1,383 +1,512 @@
-(myenv) fusionshen@fusionshen-ThinkPad-T14-Gen-1:~/Desktop/LLM/ask_agent$ python -m core.llm_energy_intent_parser
-2025-11-15 18:33:02,098 | INFO | llm_client | ✅ Using ChatOllama from langchain-ollama
+(myenv) fusionshen@fusionshen-ThinkPad-T14-Gen-1:~/Desktop/LLM/ask_agent$ python -m core.llm_energy_indicator_parser
+2025-11-16 15:08:15,802 | INFO | llm_client | ✅ Using ChatOllama from langchain-ollama
 /home/fusionshen/myenv/lib/python3.12/site-packages/jieba/_compat.py:18: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
   import pkg_resources
 ✅ sentence-transformers 版本: 5.1.1
-<frozen runpy>:128: RuntimeWarning: 'core.llm_energy_intent_parser' found in sys.modules after import of package 'core', but prior to execution of 'core.llm_energy_intent_parser'; this may result in unpredictable behaviour
-2025-11-15 18:33:04,789 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-15 18:33:05,409 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+<frozen runpy>:128: RuntimeWarning: 'core.llm_energy_indicator_parser' found in sys.modules after import of package 'core', but prior to execution of 'core.llm_energy_indicator_parser'; this may result in unpredictable behaviour
+2025-11-16 15:08:18,066 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:08:19,161 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
-{"intent":"compare","candidates":["高炉工序能耗","高炉工序能耗计划"]}
+{
+  "indicator": "1号高炉工序能耗计划",
+  "timeString": null,
+  "timeType": null
+}
 ```
-2025-11-15 18:33:06,143 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-2025-11-15 18:33:06,144 | INFO | llm_energy_intent_parser | [parse_intent] user_input=高炉工序能耗是多少，对比计划偏差多少 => {'intent': 'compare', 'candidates': ['高炉工序能耗', '高炉工序能耗计划']}
-
-🧠 输入: 高炉工序能耗是多少，对比计划偏差多少
-➡️ 解析结果: {
-  "intent": "compare",
-  "candidates": [
-    "高炉工序能耗",
-    "高炉工序能耗计划"
-  ]
-}
-2025-11-15 18:33:06,246 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-15 18:33:06,600 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
-{"intent":"compare","candidates":["本月高炉工序能耗","本月高炉工序能耗计划"]}
-2025-11-15 18:33:07,272 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-2025-11-15 18:33:07,273 | INFO | llm_energy_intent_parser | [parse_intent] user_input=本月高炉工序能耗是多少，对比计划偏差多少 => {'intent': 'compare', 'candidates': ['本月高炉工序能耗', '本月高炉工序能耗计划']}
-
-🧠 输入: 本月高炉工序能耗是多少，对比计划偏差多少
-➡️ 解析结果: {
-  "intent": "compare",
-  "candidates": [
-    "本月高炉工序能耗",
-    "本月高炉工序能耗计划"
-  ]
-}
-2025-11-15 18:33:07,367 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-15 18:33:07,684 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
-{"intent":"slot_fill","candidates":["今天"]}
-2025-11-15 18:33:08,001 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-2025-11-15 18:33:08,002 | INFO | llm_energy_intent_parser | [parse_intent] user_input=今天 => {'intent': 'slot_fill', 'candidates': ['今天']}
-
-🧠 输入: 今天
-➡️ 解析结果: {
-  "intent": "slot_fill",
-  "candidates": [
-    "今天"
-  ]
-}
-2025-11-15 18:33:08,088 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-15 18:33:08,384 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+2025-11-16 15:08:20,180 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+1号高炉工序能耗计划 => {'indicator': '1号高炉工序能耗计划', 'timeString': None, 'timeType': None}
+2025-11-16 15:08:20,293 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:08:21,372 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
-{"intent":"single_query","candidates":["今天高炉工序能耗"]}
+{
+  "indicator": "1号高炉工序能耗计划",
+  "timeString": "2022",
+  "timeType": "YEAR"
+}
 ```
-2025-11-15 18:33:08,985 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-2025-11-15 18:33:08,986 | INFO | llm_energy_intent_parser | [parse_intent] user_input=高炉今天的工序能耗是多少 => {'intent': 'single_query', 'candidates': ['今天高炉工序能耗']}
-
-🧠 输入: 高炉今天的工序能耗是多少
-➡️ 解析结果: {
-  "intent": "single_query",
-  "candidates": [
-    "今天高炉工序能耗"
-  ]
-}
-2025-11-15 18:33:09,091 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-15 18:33:09,414 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
-{"intent":"single_query","candidates":["本月高炉工序能耗累计"]}
-2025-11-15 18:33:09,900 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-2025-11-15 18:33:09,901 | INFO | llm_energy_intent_parser | [parse_intent] user_input=本月累计的高炉工序能耗是多少 => {'intent': 'single_query', 'candidates': ['本月高炉工序能耗累计']}
-
-🧠 输入: 本月累计的高炉工序能耗是多少
-➡️ 解析结果: {
-  "intent": "single_query",
-  "candidates": [
-    "本月高炉工序能耗累计"
-  ]
-}
-2025-11-15 18:33:09,971 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-15 18:33:10,320 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+2025-11-16 15:08:22,566 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2022年1号高炉工序能耗计划 => {'indicator': '1号高炉工序能耗计划', 'timeString': '2022', 'timeType': 'YEAR'}
+2025-11-16 15:08:22,644 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:08:23,781 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
-{"intent":"single_query","candidates":["昨天1号高炉工序能耗"]}
-```
-2025-11-15 18:33:10,982 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-2025-11-15 18:33:10,984 | INFO | llm_energy_intent_parser | [parse_intent] user_input=1号高炉昨天的工序能耗是多少 => {'intent': 'single_query', 'candidates': ['昨天1号高炉工序能耗']}
-
-🧠 输入: 1号高炉昨天的工序能耗是多少
-➡️ 解析结果: {
-  "intent": "single_query",
-  "candidates": [
-    "昨天1号高炉工序能耗"
-  ]
+{
+  "indicator": "1号高炉工序能耗",
+  "timeString": "2025-11-16",
+  "timeType": "DAY"
 }
-2025-11-15 18:33:11,083 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-15 18:33:11,399 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```
+2025-11-16 15:08:25,103 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+1号高炉工序能耗今天是什么日期 => {'indicator': '1号高炉工序能耗', 'timeString': '2025-11-16', 'timeType': 'DAY'}
+2025-11-16 15:08:25,210 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:08:26,308 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
-{"intent":"single_query","candidates":["去年今天高炉工序能耗"]}
-```
-2025-11-15 18:33:12,025 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-2025-11-15 18:33:12,026 | INFO | llm_energy_intent_parser | [parse_intent] user_input=去年今天的高炉工序能耗是多少 => {'intent': 'single_query', 'candidates': ['去年今天高炉工序能耗']}
-
-🧠 输入: 去年今天的高炉工序能耗是多少
-➡️ 解析结果: {
-  "intent": "single_query",
-  "candidates": [
-    "去年今天高炉工序能耗"
-  ]
+{
+  "indicator": null,
+  "timeString": "2023-01~2023-06",
+  "timeType": "MONTH"
 }
-2025-11-15 18:33:12,130 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-15 18:33:12,464 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```
+2025-11-16 15:08:27,550 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2023上半年 => {'indicator': None, 'timeString': '2023-01~2023-06', 'timeType': 'MONTH'}
+2025-11-16 15:08:27,663 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:08:28,773 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
-{"intent":"single_query","candidates":["2021年10月23日1高炉工序能耗"]}
+{
+  "indicator": null,
+  "timeString": "2023-01~2023-06",
+  "timeType": "MONTH"
+}
 ```
-2025-11-15 18:33:13,377 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-2025-11-15 18:33:13,378 | INFO | llm_energy_intent_parser | [parse_intent] user_input=2021年10月23日的1高炉工序能耗是多少 => {'intent': 'single_query', 'candidates': ['2021年10月23日1高炉工序能耗']}
-
-🧠 输入: 2021年10月23日的1高炉工序能耗是多少
-➡️ 解析结果: {
-  "intent": "single_query",
-  "candidates": [
-    "2021年10月23日1高炉工序能耗"
-  ]
-}
-2025-11-15 18:33:13,482 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-15 18:33:13,780 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
-{"intent":"single_query","candidates":["2021年10月23日1高炉工序能耗"]}
-2025-11-15 18:33:14,502 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-2025-11-15 18:33:14,503 | INFO | llm_energy_intent_parser | [parse_intent] user_input=时间：2021-10-23，1高炉工序能耗是多少 => {'intent': 'single_query', 'candidates': ['2021年10月23日1高炉工序能耗']}
-
-🧠 输入: 时间：2021-10-23，1高炉工序能耗是多少
-➡️ 解析结果: {
-  "intent": "single_query",
-  "candidates": [
-    "2021年10月23日1高炉工序能耗"
-  ]
-}
-2025-11-15 18:33:14,575 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-15 18:33:14,960 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
-{"intent":"single_query","candidates":["高炉工序能耗"]}
-2025-11-15 18:33:15,421 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-2025-11-15 18:33:15,423 | INFO | llm_energy_intent_parser | [parse_intent] user_input=高炉工序能耗是多少 => {'intent': 'single_query', 'candidates': ['高炉工序能耗']}
-
-🧠 输入: 高炉工序能耗是多少
-➡️ 解析结果: {
-  "intent": "single_query",
-  "candidates": [
-    "高炉工序能耗"
-  ]
-}
-2025-11-15 18:33:15,523 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-15 18:33:15,845 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+2025-11-16 15:08:30,030 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2023年上半年 => {'indicator': None, 'timeString': '2023-01~2023-06', 'timeType': 'MONTH'}
+2025-11-16 15:08:30,140 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:08:31,313 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
-{"intent":"list_query","candidates":["本月1号高炉工序能耗","本月2号高炉工序能耗"]}
-```
-2025-11-15 18:33:16,809 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-2025-11-15 18:33:16,810 | INFO | llm_energy_intent_parser | [parse_intent] user_input=本月1、2号高炉工序能耗是多少 => {'intent': 'list_query', 'candidates': ['本月1号高炉工序能耗', '本月2号高炉工序能耗']}
-
-🧠 输入: 本月1、2号高炉工序能耗是多少
-➡️ 解析结果: {
-  "intent": "list_query",
-  "candidates": [
-    "本月1号高炉工序能耗",
-    "本月2号高炉工序能耗"
-  ]
+{
+  "indicator": "吨钢蒸汽消耗",
+  "timeString": "2025-01~2025-03",
+  "timeType": "MONTH"
 }
-2025-11-15 18:33:16,896 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-15 18:33:17,220 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```
+2025-11-16 15:08:32,670 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+一月到三月的吨钢蒸汽消耗 => {'indicator': '吨钢蒸汽消耗', 'timeString': '2025-01~2025-03', 'timeType': 'MONTH'}
+2025-11-16 15:08:32,789 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:08:33,869 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
-{"intent":"single_query","candidates":["本月高炉工序能耗计划"]}
+{
+  "indicator": "吨钢用水量",
+  "timeString": "2024-01~2024-08",
+  "timeType": "MONTH"
+}
 ```
-2025-11-15 18:33:17,859 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-2025-11-15 18:33:17,860 | INFO | llm_energy_intent_parser | [parse_intent] user_input=高炉工序能耗本月计划是多少 => {'intent': 'single_query', 'candidates': ['本月高炉工序能耗计划']}
-
-🧠 输入: 高炉工序能耗本月计划是多少
-➡️ 解析结果: {
-  "intent": "single_query",
-  "candidates": [
-    "本月高炉工序能耗计划"
-  ]
-}
-2025-11-15 18:33:17,927 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-15 18:33:18,280 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
-{"intent":"single_query","candidates":["本月高炉工序能耗计划"]}
-2025-11-15 18:33:18,777 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-2025-11-15 18:33:18,779 | INFO | llm_energy_intent_parser | [parse_intent] user_input=本月高炉工序能耗的计划值是多少 => {'intent': 'single_query', 'candidates': ['本月高炉工序能耗计划']}
-
-🧠 输入: 本月高炉工序能耗的计划值是多少
-➡️ 解析结果: {
-  "intent": "single_query",
-  "candidates": [
-    "本月高炉工序能耗计划"
-  ]
-}
-2025-11-15 18:33:18,880 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-15 18:33:19,181 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+2025-11-16 15:08:35,217 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+去年一月到8月吨钢用水量 => {'indicator': '吨钢用水量', 'timeString': '2024-01~2024-08', 'timeType': 'MONTH'}
+2025-11-16 15:08:35,326 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:08:36,421 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
-{"intent":"single_query","candidates":["今天高炉工序能耗"]}
+{
+  "indicator": "吨钢用水量",
+  "timeString": "2024-01~2024-02",
+  "timeType": "MONTH"
+}
 ```
-2025-11-15 18:33:19,754 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-2025-11-15 18:33:19,756 | INFO | llm_energy_intent_parser | [parse_intent] user_input=今天的高炉工序能耗是多少 => {'intent': 'single_query', 'candidates': ['今天高炉工序能耗']}
-
-🧠 输入: 今天的高炉工序能耗是多少
-➡️ 解析结果: {
-  "intent": "single_query",
-  "candidates": [
-    "今天高炉工序能耗"
-  ]
-}
-2025-11-15 18:33:19,861 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-15 18:33:20,140 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
-{"intent":"compare","candidates":["上月"]}
-2025-11-15 18:33:20,437 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-2025-11-15 18:33:20,438 | INFO | llm_energy_intent_parser | [parse_intent] user_input=对比上月有什么变化 => {'intent': 'compare', 'candidates': ['上月']}
-
-🧠 输入: 对比上月有什么变化
-➡️ 解析结果: {
-  "intent": "compare",
-  "candidates": [
-    "上月"
-  ]
-}
-2025-11-15 18:33:20,539 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-15 18:33:20,871 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+2025-11-16 15:08:37,766 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+去年一、二月吨钢用水量 => {'indicator': '吨钢用水量', 'timeString': '2024-01~2024-02', 'timeType': 'MONTH'}
+2025-11-16 15:08:37,875 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:08:38,963 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
-{"intent":"single_query","candidates":["本月1高炉工序能耗"]}
-```
-2025-11-15 18:33:21,514 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-2025-11-15 18:33:21,515 | INFO | llm_energy_intent_parser | [parse_intent] user_input=本月的1高炉工序能耗是多少？ => {'intent': 'single_query', 'candidates': ['本月1高炉工序能耗']}
-
-🧠 输入: 本月的1高炉工序能耗是多少？
-➡️ 解析结果: {
-  "intent": "single_query",
-  "candidates": [
-    "本月1高炉工序能耗"
-  ]
+{
+  "indicator": "计划",
+  "timeString": "2025-01~2025-06",
+  "timeType": "MONTH"
 }
-2025-11-15 18:33:21,594 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-15 18:33:21,913 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```
+2025-11-16 15:08:40,233 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+上半年计划 => {'indicator': '计划', 'timeString': '2025-01~2025-06', 'timeType': 'MONTH'}
+2025-11-16 15:08:40,339 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:08:41,461 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
-{"intent":"compare","candidates":["2高炉"]}
-```
-2025-11-15 18:33:22,344 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-2025-11-15 18:33:22,345 | INFO | llm_energy_intent_parser | [parse_intent] user_input=对比2高炉有什么变化 => {'intent': 'compare', 'candidates': ['2高炉']}
-
-🧠 输入: 对比2高炉有什么变化
-➡️ 解析结果: {
-  "intent": "compare",
-  "candidates": [
-    "2高炉"
-  ]
+{
+  "indicator": "纯水消耗",
+  "timeString": "2025-07~2025-12",
+  "timeType": "MONTH"
 }
-2025-11-15 18:33:22,438 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-15 18:33:22,739 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```
+2025-11-16 15:08:42,782 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+下半年纯水消耗 => {'indicator': '纯水消耗', 'timeString': '2025-07~2025-12', 'timeType': 'MONTH'}
+2025-11-16 15:08:42,859 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:08:43,949 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
-{"intent":"single_query","candidates":["本月高炉电耗"]}
-```
-2025-11-15 18:33:23,312 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-2025-11-15 18:33:23,314 | INFO | llm_energy_intent_parser | [parse_intent] user_input=本月的高炉电耗是多少 => {'intent': 'single_query', 'candidates': ['本月高炉电耗']}
-
-🧠 输入: 本月的高炉电耗是多少
-➡️ 解析结果: {
-  "intent": "single_query",
-  "candidates": [
-    "本月高炉电耗"
-  ]
+{
+  "indicator": "高炉能耗",
+  "timeString": "2024-09-01~2024-09-07",
+  "timeType": "DAY"
 }
-2025-11-15 18:33:23,407 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-15 18:33:23,712 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```
+2025-11-16 15:08:45,477 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2024年9月1日到9月7日高炉能耗 => {'indicator': '高炉能耗', 'timeString': '2024-09-01~2024-09-07', 'timeType': 'DAY'}
+2025-11-16 15:08:45,555 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:08:46,628 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
-{"intent":"single_query","candidates":["本月高炉电使用量"]}
-```
-2025-11-15 18:33:24,269 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-2025-11-15 18:33:24,270 | INFO | llm_energy_intent_parser | [parse_intent] user_input=本月的高炉电使用量是多少 => {'intent': 'single_query', 'candidates': ['本月高炉电使用量']}
-
-🧠 输入: 本月的高炉电使用量是多少
-➡️ 解析结果: {
-  "intent": "single_query",
-  "candidates": [
-    "本月高炉电使用量"
-  ]
+{
+  "indicator": "连退纯水使用量",
+  "timeString": "2025-11-16",
+  "timeType": "DAY"
 }
-2025-11-15 18:33:24,369 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-15 18:33:24,666 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```
+2025-11-16 15:08:47,937 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+今天的连退纯水使用量 => {'indicator': '连退纯水使用量', 'timeString': '2025-11-16', 'timeType': 'DAY'}
+2025-11-16 15:08:48,012 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:08:49,131 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
-{"intent":"single_query","candidates":["高炉煤气耗"]}
-```
-2025-11-15 18:33:25,197 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-2025-11-15 18:33:25,198 | INFO | llm_energy_intent_parser | [parse_intent] user_input=高炉的煤气耗是多少 => {'intent': 'single_query', 'candidates': ['高炉煤气耗']}
-
-🧠 输入: 高炉的煤气耗是多少
-➡️ 解析结果: {
-  "intent": "single_query",
-  "candidates": [
-    "高炉煤气耗"
-  ]
+{
+  "indicator": null,
+  "timeString": "2022-10-02",
+  "timeType": "DAY"
 }
-2025-11-15 18:33:25,270 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-15 18:33:25,614 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```
+2025-11-16 15:08:50,274 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2022年10月2日 => {'indicator': None, 'timeString': '2022-10-02', 'timeType': 'DAY'}
+2025-11-16 15:08:50,386 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:08:51,489 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
-{"intent":"single_query","candidates":["今天10号高炉工序能耗"]}
-```
-2025-11-15 18:33:26,303 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-2025-11-15 18:33:26,304 | INFO | llm_energy_intent_parser | [parse_intent] user_input=10号高炉今天的工序能耗是多少 => {'intent': 'single_query', 'candidates': ['今天10号高炉工序能耗']}
-
-🧠 输入: 10号高炉今天的工序能耗是多少
-➡️ 解析结果: {
-  "intent": "single_query",
-  "candidates": [
-    "今天10号高炉工序能耗"
-  ]
+{
+  "indicator": "450酸轧纯水使用量",
+  "timeString": null,
+  "timeType": null
 }
-2025-11-15 18:33:26,405 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-15 18:33:26,684 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```
+2025-11-16 15:08:52,498 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+450酸轧纯水使用量 => {'indicator': '450酸轧纯水使用量', 'timeString': None, 'timeType': None}
+2025-11-16 15:08:52,579 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:08:53,685 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
-{"intent":"single_query","candidates":["本月高炉工序能耗"]}
+{
+  "indicator": "2030酸轧纯水使用量",
+  "timeString": "2025",
+  "timeType": "YEAR"
+}
 ```
-2025-11-15 18:33:27,282 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-2025-11-15 18:33:27,283 | INFO | llm_energy_intent_parser | [parse_intent] user_input=本月的高炉工序能耗是多少？ => {'intent': 'single_query', 'candidates': ['本月高炉工序能耗']}
-
-🧠 输入: 本月的高炉工序能耗是多少？
-➡️ 解析结果: {
-  "intent": "single_query",
-  "candidates": [
-    "本月高炉工序能耗"
-  ]
-}
-2025-11-15 18:33:27,357 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-15 18:33:27,684 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
-{"intent":"list_query","candidates":["1#高炉","2#高炉","3#高炉"]}
-2025-11-15 18:33:28,309 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-2025-11-15 18:33:28,309 | INFO | llm_energy_intent_parser | [parse_intent] user_input=1#，2#，3#高炉分别是多少 => {'intent': 'list_query', 'candidates': ['1#高炉', '2#高炉', '3#高炉']}
-
-🧠 输入: 1#，2#，3#高炉分别是多少
-➡️ 解析结果: {
-  "intent": "list_query",
-  "candidates": [
-    "1#高炉",
-    "2#高炉",
-    "3#高炉"
-  ]
-}
-2025-11-15 18:33:28,413 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-15 18:33:28,724 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+2025-11-16 15:08:54,908 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+查询今年的2030酸轧纯水使用量 => {'indicator': '2030酸轧纯水使用量', 'timeString': '2025', 'timeType': 'YEAR'}
+2025-11-16 15:08:54,985 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:08:56,120 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
-{"intent":"compare","candidates":["本月高炉工序能耗","本月高炉工序能耗计划"]}
+{
+  "indicator": "酸轧纯水使用量",
+  "timeString": "2025-11-16",
+  "timeType": "DAY"
+}
 ```
-2025-11-15 18:33:29,560 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-2025-11-15 18:33:29,561 | INFO | llm_energy_intent_parser | [parse_intent] user_input=本月高炉工序能耗是多少，对比计划偏差多少 => {'intent': 'compare', 'candidates': ['本月高炉工序能耗', '本月高炉工序能耗计划']}
-
-🧠 输入: 本月高炉工序能耗是多少，对比计划偏差多少
-➡️ 解析结果: {
-  "intent": "compare",
-  "candidates": [
-    "本月高炉工序能耗",
-    "本月高炉工序能耗计划"
-  ]
+2025-11-16 15:08:57,393 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+今天的酸轧纯水使用量 => {'indicator': '酸轧纯水使用量', 'timeString': '2025-11-16', 'timeType': 'DAY'}
+2025-11-16 15:08:57,494 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:08:58,655 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "indicator": "热轧蒸汽消耗",
+  "timeString": "2025-09",
+  "timeType": "MONTH"
 }
-2025-11-15 18:33:29,658 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-15 18:33:30,028 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
-{"intent":"analysis","candidates":["本年度高炉工序能耗"]}
-2025-11-15 18:33:30,493 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-2025-11-15 18:33:30,495 | INFO | llm_energy_intent_parser | [parse_intent] user_input=本年度的高炉工序能耗趋势是什么样的 => {'intent': 'analysis', 'candidates': ['本年度高炉工序能耗']}
-
-🧠 输入: 本年度的高炉工序能耗趋势是什么样的
-➡️ 解析结果: {
-  "intent": "analysis",
-  "candidates": [
-    "本年度高炉工序能耗"
-  ]
+```
+2025-11-16 15:08:59,786 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+9月份热轧蒸汽消耗 => {'indicator': '热轧蒸汽消耗', 'timeString': '2025-09', 'timeType': 'MONTH'}
+2025-11-16 15:08:59,894 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:09:01,057 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "indicator": "酸轧纯水使用量",
+  "timeString": null,
+  "timeType": null
 }
-2025-11-15 18:33:30,594 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-15 18:33:30,904 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
-{"intent":"compare","candidates":["本月1号高炉工序能耗","本月2号高炉工序能耗"]}
-2025-11-15 18:33:31,655 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-2025-11-15 18:33:31,657 | INFO | llm_energy_intent_parser | [parse_intent] user_input=本月1、2号高炉工序能耗偏差情况 => {'intent': 'compare', 'candidates': ['本月1号高炉工序能耗', '本月2号高炉工序能耗']}
-
-🧠 输入: 本月1、2号高炉工序能耗偏差情况
-➡️ 解析结果: {
-  "intent": "compare",
-  "candidates": [
-    "本月1号高炉工序能耗",
-    "本月2号高炉工序能耗"
-  ]
+```
+2025-11-16 15:09:01,994 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+酸轧纯水使用量 => {'indicator': '酸轧纯水使用量', 'timeString': None, 'timeType': None}
+2025-11-16 15:09:02,101 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:09:03,213 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "indicator": null,
+  "timeString": "2025-11-15",
+  "timeType": "DAY"
 }
+```
+2025-11-16 15:09:04,326 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+昨天 => {'indicator': None, 'timeString': '2025-11-15', 'timeType': 'DAY'}
+2025-11-16 15:09:04,437 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:09:05,517 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "indicator": "纯水损失率",
+  "timeString": "2025 W41",
+  "timeType": "WEEK"
+}
+```
+2025-11-16 15:09:06,656 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025年第41周纯水损失率 => {'indicator': '纯水损失率', 'timeString': '2025 W41', 'timeType': 'WEEK'}
+2025-11-16 15:09:06,738 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:09:07,904 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "indicator": "酸轧纯水使用量",
+  "timeString": "2025-10-14",
+  "timeType": "DAY"
+}
+```
+2025-11-16 15:09:09,174 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+今年10月14日酸轧纯水使用量 => {'indicator': '酸轧纯水使用量', 'timeString': '2025-10-14', 'timeType': 'DAY'}
+2025-11-16 15:09:09,285 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:09:10,337 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "indicator": null,
+  "timeString": "2025 W47",
+  "timeType": "WEEK"
+}
+```
+2025-11-16 15:09:11,378 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+本周 => {'indicator': None, 'timeString': '2025 W47', 'timeType': 'WEEK'}
+2025-11-16 15:09:11,497 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:09:12,637 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "indicator": "吨钢用水量",
+  "timeString": "2025 W46",
+  "timeType": "WEEK"
+}
+```
+2025-11-16 15:09:13,834 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+上周的吨钢用水量 => {'indicator': '吨钢用水量', 'timeString': '2025 W46', 'timeType': 'WEEK'}
+2025-11-16 15:09:13,944 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:09:15,129 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "indicator": "热轧蒸汽消耗",
+  "timeString": "2025-11-15 早班",
+  "timeType": "SHIFT"
+}
+```
+2025-11-16 15:09:16,433 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+昨天早班的热轧蒸汽消耗 => {'indicator': '热轧蒸汽消耗', 'timeString': '2025-11-15 早班', 'timeType': 'SHIFT'}
+2025-11-16 15:09:16,539 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:09:17,604 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "indicator": "轧制水耗",
+  "timeString": "2025-11-17 02",
+  "timeType": "HOUR"
+}
+```
+2025-11-16 15:09:18,923 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+明天凌晨2点的轧制水耗 => {'indicator': '轧制水耗', 'timeString': '2025-11-17 02', 'timeType': 'HOUR'}
+2025-11-16 15:09:19,029 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:09:20,145 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "indicator": "吨钢用水量",
+  "timeString": "2024-12",
+  "timeType": "MONTH"
+}
+```
+2025-11-16 15:09:21,326 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+去年12月份的吨钢用水量 => {'indicator': '吨钢用水量', 'timeString': '2024-12', 'timeType': 'MONTH'}
+2025-11-16 15:09:21,406 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:09:22,536 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "indicator": "纯水损失率",
+  "timeString": "2025 Q4",
+  "timeType": "QUARTER"
+}
+```
+2025-11-16 15:09:23,698 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025年第4季度纯水损失率 => {'indicator': '纯水损失率', 'timeString': '2025 Q4', 'timeType': 'QUARTER'}
+2025-11-16 15:09:23,815 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:09:24,937 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "indicator": "热轧蒸汽消耗",
+  "timeString": "2025-10 上旬",
+  "timeType": "TENDAYS"
+}
+```
+2025-11-16 15:09:26,218 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025年10月上旬热轧蒸汽消耗 => {'indicator': '热轧蒸汽消耗', 'timeString': '2025-10 上旬', 'timeType': 'TENDAYS'}
+2025-11-16 15:09:26,337 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:09:27,504 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "indicator": "高炉工序能耗",
+  "timeString": "2025-11-16",
+  "timeType": "DAY"
+}
+```
+2025-11-16 15:09:28,796 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+今天的高炉工序能耗是多少 => {'indicator': '高炉工序能耗', 'timeString': '2025-11-16', 'timeType': 'DAY'}
+2025-11-16 15:09:28,881 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:09:30,035 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "indicator": "高炉工序能耗",
+  "timeString": "2025-11-16",
+  "timeType": "DAY"
+}
+```
+2025-11-16 15:09:31,306 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+高炉今天的工序能耗是多少 => {'indicator': '高炉工序能耗', 'timeString': '2025-11-16', 'timeType': 'DAY'}
+2025-11-16 15:09:31,412 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:09:32,514 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "indicator": "高炉工序能耗累计",
+  "timeString": "2025-11",
+  "timeType": "MONTH"
+}
+```
+2025-11-16 15:09:33,766 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+本月累计的高炉工序能耗是多少 => {'indicator': '高炉工序能耗累计', 'timeString': '2025-11', 'timeType': 'MONTH'}
+2025-11-16 15:09:33,865 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:09:35,005 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "indicator": "1号高炉工序能耗",
+  "timeString": "2025-11-15",
+  "timeType": "DAY"
+}
+```
+2025-11-16 15:09:36,362 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+1号高炉昨天的工序能耗是多少 => {'indicator': '1号高炉工序能耗', 'timeString': '2025-11-15', 'timeType': 'DAY'}
+2025-11-16 15:09:36,476 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:09:37,633 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "indicator": "高炉工序能耗",
+  "timeString": "2024-11-16",
+  "timeType": "DAY"
+}
+```
+2025-11-16 15:09:38,926 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+去年今天的高炉工序能耗是多少 => {'indicator': '高炉工序能耗', 'timeString': '2024-11-16', 'timeType': 'DAY'}
+2025-11-16 15:09:39,041 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:09:40,123 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "indicator": "1高炉工序能耗",
+  "timeString": "2021-10-23",
+  "timeType": "DAY"
+}
+```
+2025-11-16 15:09:41,434 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2021年10月23日的1高炉工序能耗是多少 => {'indicator': '1高炉工序能耗', 'timeString': '2021-10-23', 'timeType': 'DAY'}
+2025-11-16 15:09:41,545 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:09:42,681 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "indicator": "2高炉工序能耗",
+  "timeString": "2023-10-22",
+  "timeType": "DAY"
+}
+```
+2025-11-16 15:09:43,998 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2023年10月22日的2高炉工序能耗是多少 => {'indicator': '2高炉工序能耗', 'timeString': '2023-10-22', 'timeType': 'DAY'}
+2025-11-16 15:09:44,102 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:09:45,247 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "indicator": "1高炉工序能耗",
+  "timeString": "2021-10-23",
+  "timeType": "DAY"
+}
+```
+2025-11-16 15:09:46,530 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+时间：2021-10-23，1高炉工序能耗是多少 => {'indicator': '1高炉工序能耗', 'timeString': '2021-10-23', 'timeType': 'DAY'}
+2025-11-16 15:09:46,634 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:09:47,731 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "indicator": "高炉工序能耗",
+  "timeString": null,
+  "timeType": null
+}
+```
+2025-11-16 15:09:48,690 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+高炉工序能耗是多少 => {'indicator': '高炉工序能耗', 'timeString': None, 'timeType': None}
+2025-11-16 15:09:48,799 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:09:49,945 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "indicator": "1、2号高炉工序能耗",
+  "timeString": "2025-10",
+  "timeType": "MONTH"
+}
+```
+2025-11-16 15:09:51,238 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+本月1、2号高炉工序能耗是多少 => {'indicator': '1、2号高炉工序能耗', 'timeString': '2025-10', 'timeType': 'MONTH'}
+2025-11-16 15:09:51,345 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:09:52,513 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "indicator": "高炉工序能耗计划",
+  "timeString": "2025-11",
+  "timeType": "MONTH"
+}
+```
+2025-11-16 15:09:53,721 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+高炉工序能耗本月计划是多少 => {'indicator': '高炉工序能耗计划', 'timeString': '2025-11', 'timeType': 'MONTH'}
+2025-11-16 15:09:53,832 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:09:54,933 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "indicator": "高炉工序能耗计划值",
+  "timeString": "2025-11",
+  "timeType": "MONTH"
+}
+```
+2025-11-16 15:09:56,184 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+本月高炉工序能耗的计划值是多少 => {'indicator': '高炉工序能耗计划值', 'timeString': '2025-11', 'timeType': 'MONTH'}
+2025-11-16 15:09:56,294 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:09:57,480 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "indicator": "高炉电耗",
+  "timeString": "2025-11",
+  "timeType": "MONTH"
+}
+```
+2025-11-16 15:09:58,658 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+本月的高炉电耗是多少 => {'indicator': '高炉电耗', 'timeString': '2025-11', 'timeType': 'MONTH'}
+2025-11-16 15:09:58,772 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:09:59,896 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "indicator": "高炉电使用量",
+  "timeString": "2025-11",
+  "timeType": "MONTH"
+}
+```
+2025-11-16 15:10:01,058 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+本月的高炉电使用量是多少 => {'indicator': '高炉电使用量', 'timeString': '2025-11', 'timeType': 'MONTH'}
+2025-11-16 15:10:01,169 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:10:02,297 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "indicator": "高炉煤气耗",
+  "timeString": null,
+  "timeType": null
+}
+```
+2025-11-16 15:10:03,218 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+高炉的煤气耗是多少 => {'indicator': '高炉煤气耗', 'timeString': None, 'timeType': None}
+2025-11-16 15:10:03,328 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:10:04,383 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "indicator": "10号高炉工序能耗",
+  "timeString": "2025-11-16",
+  "timeType": "DAY"
+}
+```
+2025-11-16 15:10:05,746 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+10号高炉今天的工序能耗是多少 => {'indicator': '10号高炉工序能耗', 'timeString': '2025-11-16', 'timeType': 'DAY'}
+2025-11-16 15:10:05,858 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:10:06,962 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "indicator": "冷轧蒸汽消耗累计",
+  "timeString": "2025",
+  "timeType": "YEAR"
+}
+```
+2025-11-16 15:10:08,066 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+今年累计的冷轧蒸汽消耗是多少 => {'indicator': '冷轧蒸汽消耗累计', 'timeString': '2025', 'timeType': 'YEAR'}
+2025-11-16 15:10:08,145 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 15:10:09,272 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "indicator": "吨钢用水量",
+  "timeString": "2025-11-14",
+  "timeType": "DAY"
+}
+```
+2025-11-16 15:10:10,520 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+前天晚班的吨钢用水量 => {'indicator': '吨钢用水量', 'timeString': '2025-11-14', 'timeType': 'DAY'}

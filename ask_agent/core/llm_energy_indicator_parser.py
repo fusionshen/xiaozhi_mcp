@@ -130,12 +130,14 @@ async def parse_user_input(user_input: str, now: datetime = None):
 注意：
 - “indicator” 必须只包含指标名称，不包含时间相关词（如“今年”、“9月份”、“昨天”、“上周”、“第3季度”等）。
 - 指标中若包含性质修饰（如“累计”、“计划”、“目标”、“用量”、“成本”、“效率”等），必须保留。
-  例如：
-  - “本月累计的高炉工序能耗是多少” → indicator="高炉工序能耗累计"
-  - “高炉工序能耗本月计划是多少” → indicator="高炉工序能耗计划"
-  - “去年12月吨钢蒸汽成本” → indicator="吨钢蒸汽成本"
-  - “明年目标纯水损失率” → indicator="目标纯水损失率"
-  - “2022年2月3日” → indicator=null
+  例如(假定当前日期是2025年10月20日)：
+  - “本月累计的高炉工序能耗是多少” → indicator="高炉工序能耗累计" timeString="2025-10" timeType="MONTH"
+  - “高炉工序能耗本月计划是多少” → indicator="高炉工序能耗计划" timeString="2025-10" timeType="MONTH"
+  - “2022年1号高炉工序能耗计划” → indicator="1号高炉工序能耗计划" timeString="2025" timeType="YEAR"
+  - “1号高炉工序能耗计划” → indicator="1号高炉工序能耗计划" timeString=null timeType=null
+  - “去年12月吨钢蒸汽成本” → indicator="吨钢蒸汽成本" timeString="2024-12" timeType="MONTH"
+  - “明年目标纯水损失率” → indicator="目标纯水损失率" timeString="2026" timeType="YEAR"
+  - “2022年2月3日” → indicator=null indicator="目标纯水损失率" timeString="2022-02-03" timeType="DAY"
 - 班次词（早班、白班、夜班、中班、晚班）属于时间，不属于指标。
 - SHIFT 类型优先于 HOUR：不要将“早班”错误地转化为具体小时。
 - 若原文不包含时间或者无法推算出时间，不要私自赋予时间，保持null即可。
@@ -178,6 +180,8 @@ if __name__ == "__main__":
     now = datetime(2025, 10, 16, 14, 0)
 
     test_inputs = [
+        "1号高炉工序能耗计划",
+        "2022年1号高炉工序能耗计划",
         "1号高炉工序能耗"
         "今天是什么日期",
         "2023上半年",
