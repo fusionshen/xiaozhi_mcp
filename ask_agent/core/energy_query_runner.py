@@ -52,7 +52,7 @@ async def run_energy_query(user_id: str, user_input: str, parsed_number: str | N
         logger.info("✅ pipeline.process_message 执行成功")
         return {
             "reply": reply,
-            "intent_info": ContextGraph.from_state(graph_state).get_intent_info(),
+            #"intent_info": ContextGraph.from_state(graph_state).get_intent_info(),
             #"graph_state": graph_state
         }
 
