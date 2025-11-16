@@ -117,7 +117,7 @@ async def handle_single_query(user_id: str, user_input: str, graph: ContextGraph
         elif candidates:
             current_indicator["formula_candidates"] = candidates[:TOP_N]
             current_indicator["slot_status"]["formula"] = "missing"
-            lines = ["没有匹配到精确的指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称)："]
+            lines = [f"没有完全匹配的[{current_indicator["indicator"]}]指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称)："]
             for i, c in enumerate(candidates[:TOP_N], 1):
                 lines.append(f"{i}) {c['FORMULANAME']} (score {c.get('score',0):.2f})")
             reply = "\n".join(lines) 
@@ -287,7 +287,7 @@ async def handle_compare(user_id: str, user_input: str, graph: ContextGraph, cur
                 elif candidates:
                     item["formula_candidates"] = candidates[:TOP_N]
                     item["slot_status"]["formula"] = "missing"
-                    lines = ["没有匹配到精确的指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称："]
+                    lines = [f"没有完全匹配的[{item["indicator"]}]指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称："]
                     for i, c in enumerate(candidates[:TOP_N], 1):
                         lines.append(f"{i}) {c['FORMULANAME']} (score {c.get('score',0):.2f})")
                     reply = "\n".join(lines) 
@@ -303,7 +303,15 @@ async def handle_compare(user_id: str, user_input: str, graph: ContextGraph, cur
                     graph.set_intent_info(intent_info)
                     set_graph(user_id, graph)
                     return reply, graph.to_state()
-            
+            #  check time 
+            if  not item["slot_status"]["time"] == "filled":
+                reply = f"好的，要查【{item['indicator']}】，请告诉我时间。"
+                graph.add_history(user_input, reply)
+                item["note"] = reply
+                graph.set_intent_info(intent_info)
+                set_graph(user_id, graph)
+                return reply, graph.to_state()
+                
             # Try find existing node identical
             nid = graph.find_node(item.get("indicator"), item.get("timeString"))
             if nid:
@@ -382,21 +390,27 @@ async def handle_compare(user_id: str, user_input: str, graph: ContextGraph, cur
             return reply, graph.to_state()
 
         # parse the single candidate (it was placed in 'candidates' earlier; here we assume exactly 1)
-        current_indicator = {
-            "status": "active",
-            "indicator": base_indicator.get("indicator"),
-            "formula": base_indicator.get("formula"),
-            "timeString": base_indicator.get("timeString"),
-            "timeType": base_indicator.get("timeType"),
-            "slot_status": {
-                "formula": "missing",
-                "time": "missing"
-            },
-            "value": None,
-            "note": None,
-            "formula_candidates": base_indicator.get("formula_candidates"),
-        }
-        indicators.append(current_indicator)
+        current_indicator = None
+        for ind in reversed(indicators):
+            if ind.get("status") == "active":
+                current_indicator = ind
+                break
+        if not current_indicator:
+            current_indicator = {
+                "status": "active",
+                "indicator": base_indicator.get("indicator"),
+                "formula": base_indicator.get("formula"),
+                "timeString": base_indicator.get("timeString"),
+                "timeType": base_indicator.get("timeType"),
+                "slot_status": {
+                    "formula": "missing",
+                    "time": "missing"
+                },
+                "value": None,
+                "note": None,
+                "formula_candidates": base_indicator.get("formula_candidates"),
+            }
+            indicators.append(current_indicator)
         # if candidate is a time only or indicator only, parse and overwrite corresponding fields
         try:
             parsed = await parse_user_input(candidates[0])
@@ -455,7 +469,7 @@ async def handle_compare(user_id: str, user_input: str, graph: ContextGraph, cur
             elif candidates:
                 current_indicator["formula_candidates"] = candidates[:TOP_N]
                 current_indicator["slot_status"]["formula"] = "missing"
-                lines = ["没有匹配到精确的指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称："]
+                lines = [f"没有完全匹配的[{current_indicator["indicator"]}]指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称："]
                 for i, c in enumerate(candidates[:TOP_N], 1):
                     lines.append(f"{i}) {c['FORMULANAME']} (score {c.get('score',0):.2f})")
                 reply = "\n".join(lines) 
@@ -575,11 +589,15 @@ async def handle_slot_fill(user_id: str, user_input: str, graph: ContextGraph, c
     """
     user_input = str(user_input or "").strip()
     logger.info(f"🔹 handle_slot_fill user_input={user_input}")
+    # 需要提前判断
+    is_compare = (ri := (graph.get_intent_info() or {})) and "compare" in ri.get("intent_list", []) \
+            and any(ind.get("status") == "active" for ind in ri.get("indicators", []))
     # 因为查询成功会清空当前intent_info，所以在成功查询一次后，后续问“那昨天的呢？”，会从最近的node中拉取snapshot
     intent_info = graph.ensure_intent_info() or {}
     intent_info.setdefault("user_input_list", []).append(user_input)
     intent_info.setdefault("intent_list", []).append("slot_fill") 
     indicators = intent_info.setdefault("indicators", [])
+
     # ---------- 找到所有 active 指标 ----------
     active_inds = [ind for ind in indicators if ind.get("status") == "active"]
     if not active_inds:
@@ -634,7 +652,7 @@ async def handle_slot_fill(user_id: str, user_input: str, graph: ContextGraph, c
             elif candidates:
                 ind["formula_candidates"] = candidates[:TOP_N]
                 ind["slot_status"]["formula"] = "missing"
-                lines = ["没有匹配到精确的指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称："]
+                lines = [f"没有完全匹配的[{ind["indicator"]}]指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称："]
                 for i, c in enumerate(candidates[:TOP_N], 1):
                     lines.append(f"{i}) {c['FORMULANAME']} (score {c.get('score', 0):.2f})")
                 reply = "\n".join(lines)
@@ -659,7 +677,11 @@ async def handle_slot_fill(user_id: str, user_input: str, graph: ContextGraph, c
             ind["status"] = "completed"
             graph.add_node(ind)
             results.append(reply)
-
+    
+    if is_compare:
+            logger.info("🔄 solt_fill 完成并检测到 compare 上下文，继续执行 handle_compare...")
+            return await handle_compare(user_id, f"{user_input} -> system:完成 solt_fill 并检测到 compare 上下文，继续执行 handle_compare...", graph)
+    
     # ---------- 更新 graph ----------
     graph.set_intent_info(intent_info)
     set_graph(user_id, graph)
@@ -683,7 +705,10 @@ async def handle_clarify(user_id: str, user_input: str, graph: ContextGraph):
     """
     user_input = str(user_input or "").strip()
     logger.info(f"🔹 handle_clarify user_input={user_input}")
-
+    # 需要提前判断
+    is_compare = (ri := (graph.get_intent_info() or {})) and "compare" in ri.get("intent_list", []) \
+             and any(ind.get("status") == "active" for ind in ri.get("indicators", []))
+    # 实际操作
     intent_info = graph.ensure_intent_info() or {}
     intent_info.setdefault("user_input_list", []).append(user_input)
     intent_info.setdefault("intent_list", []).append("clarify")
@@ -731,12 +756,16 @@ async def handle_clarify(user_id: str, user_input: str, graph: ContextGraph):
         # 写入 graph.node
         node_id = graph.add_node(current_indicator)
 
-        # 💡 clarify 完成后不直接清空，而是先检查之前的 intent
-        prev_intents = intent_info.get("intent_list", [])
-        is_compare = "compare" in prev_intents
+        # 连续判断需要找到当前intent中active的indicator，作为当前current_info传入即可
         if is_compare:
             logger.info("🔄 clarify 完成并检测到 compare 上下文，继续执行 handle_compare...")
-            return await handle_compare(user_id, f"{user_input} -> system:完成 clarify 并检测到 compare 上下文，继续执行 handle_compare...", graph)
+            current_intents = [
+                ind.get("indicator")
+                for ind in intent_info.get("indicators")
+                if ind.get("status") == "active" and ind.get("indicator")
+            ]
+            print(f"current_intents:{current_intents}")
+            return await handle_compare(user_id, f"{user_input} -> system:完成 clarify 并检测到 compare 上下文，继续执行 handle_compare...", graph, current_intent={"candidates": current_intents})
 
         # 成功查询重置意图
         graph.set_intent_info({})  
@@ -767,7 +796,17 @@ async def main():
     set_graph(user_id, graph)
 
     # 测试一步对比
-    reply, graph_state = await handle_compare(user_id, "本月高炉工序能耗是多少，对比计划偏差多少", graph, {"candidates": ["本月高炉工序能耗", "本月高炉工序能耗计划"]})
+    reply, graph_state = await handle_compare(user_id, "2022年1号高炉工序能耗是多少，对比计划偏差多少", graph, {"candidates": ["2022年1号高炉工序能耗", "2022年1号高炉工序能耗计划"]})
+    print("Single Query Reply 2:", reply)
+    print(json.dumps(graph_state, indent=2, ensure_ascii=False))
+    
+    # 测试选择备选
+    reply, graph_state = await handle_clarify(user_id, 4, graph)
+    print("Single Query Reply 2:", reply)
+    print(json.dumps(graph_state, indent=2, ensure_ascii=False))
+
+    # 测试选择备选
+    reply, graph_state = await handle_clarify(user_id, 1, graph)
     print("Single Query Reply 2:", reply)
     print(json.dumps(graph_state, indent=2, ensure_ascii=False))
     
