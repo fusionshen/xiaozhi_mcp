@@ -1,6 +1,6 @@
     from core.llm_energy_intent_parser import EnergyIntentParser
     parser = EnergyIntentParser()
-    user_input = "本月高炉工序能耗实绩报出值、计划报出值和实绩累计值分别是多少"
+    user_input = "高炉工序能耗实绩报出值、计划报出值和实绩累计值分别是多少"
     current_info = await parser.parse_intent(user_input)
     print(current_info)
 
@@ -9,94 +9,186 @@
     print("Single Query Reply 1:", reply)
     print(json.dumps(graph_state, indent=2, ensure_ascii=False))
 
+    # 测试补齐时间
+    reply, graph_state = await handle_slot_fill(user_id, "2022年", graph, {"candidates": ["2022年"]})
+    print("Single Query Reply 2:", reply)
+    print(json.dumps(graph_state, indent=2, ensure_ascii=False))
+
 (myenv) fusionshen@fusionshen-ThinkPad-T14-Gen-1:~/Desktop/LLM/ask_agent$ python -m core.pipeline_handlers
-2025-11-16 17:29:26,830 | INFO | llm_client | ✅ Using ChatOllama from langchain-ollama
+2025-11-16 18:54:54,089 | INFO | llm_client | ✅ Using ChatOllama from langchain-ollama
 /home/fusionshen/myenv/lib/python3.12/site-packages/jieba/_compat.py:18: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
   import pkg_resources
 ✅ sentence-transformers 版本: 5.1.1
 <frozen runpy>:128: RuntimeWarning: 'core.pipeline_handlers' found in sys.modules after import of package 'core', but prior to execution of 'core.pipeline_handlers'; this may result in unpredictable behaviour
-2025-11-16 17:29:30,341 | INFO | formula-api | 🔄 正在初始化公式数据（full load）...
+2025-11-16 18:54:57,340 | INFO | formula-api | 🔄 正在初始化公式数据（full load）...
 Building prefix dict from the default dictionary ...
-2025-11-16 17:29:34,052 | DEBUG | jieba | Building prefix dict from the default dictionary ...
+2025-11-16 18:55:00,697 | DEBUG | jieba | Building prefix dict from the default dictionary ...
 Loading model from cache /tmp/jieba.cache
-2025-11-16 17:29:34,053 | DEBUG | jieba | Loading model from cache /tmp/jieba.cache
-Loading model cost 0.644 seconds.
-2025-11-16 17:29:34,697 | DEBUG | jieba | Loading model cost 0.644 seconds.
+2025-11-16 18:55:00,698 | DEBUG | jieba | Loading model from cache /tmp/jieba.cache
+Loading model cost 0.657 seconds.
+2025-11-16 18:55:01,355 | DEBUG | jieba | Loading model cost 0.657 seconds.
 Prefix dict has been built successfully.
-2025-11-16 17:29:34,697 | DEBUG | jieba | Prefix dict has been built successfully.
-2025-11-16 17:29:49,333 | INFO | formula-api | ✅ Loaded 270817 formulas. Tokenization ready.
+2025-11-16 18:55:01,355 | DEBUG | jieba | Prefix dict has been built successfully.
+2025-11-16 18:55:14,584 | INFO | formula-api | ✅ Loaded 270817 formulas. Tokenization ready.
 HAVE_ST : True
-2025-11-16 17:29:49,339 | INFO | formula-api | Auto-selected embedding device: cpu
+2025-11-16 18:55:14,594 | INFO | formula-api | Auto-selected embedding device: cpu
 OFFLINE_MODEL_PATH:/home/fusionshen/Desktop/LLM/ask_agent/models/sbert_offline_models/86741b4e3f5cb7765a600d3a3d55a0f6a6cb443d
-2025-11-16 17:29:49,340 | INFO | formula-api | 🧩 尝试加载本地模型: /home/fusionshen/Desktop/LLM/ask_agent/models/sbert_offline_models/86741b4e3f5cb7765a600d3a3d55a0f6a6cb443d
-2025-11-16 17:29:49,341 | INFO | sentence_transformers.SentenceTransformer | Load pretrained SentenceTransformer: /home/fusionshen/Desktop/LLM/ask_agent/models/sbert_offline_models/86741b4e3f5cb7765a600d3a3d55a0f6a6cb443d
-2025-11-16 17:29:50,394 | INFO | formula-api | ✅ 已成功加载离线模型。
-2025-11-16 17:29:51,479 | INFO | formula-api | ✅ Loaded embeddings from cache ((270817, 384))
-2025-11-16 17:29:51,483 | INFO | formula-api | ✅ 初始化完成，用时 21.14s
-2025-11-16 17:29:51,634 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-16 17:29:52,339 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+2025-11-16 18:55:14,595 | INFO | formula-api | 🧩 尝试加载本地模型: /home/fusionshen/Desktop/LLM/ask_agent/models/sbert_offline_models/86741b4e3f5cb7765a600d3a3d55a0f6a6cb443d
+2025-11-16 18:55:14,596 | INFO | sentence_transformers.SentenceTransformer | Load pretrained SentenceTransformer: /home/fusionshen/Desktop/LLM/ask_agent/models/sbert_offline_models/86741b4e3f5cb7765a600d3a3d55a0f6a6cb443d
+2025-11-16 18:55:15,567 | INFO | formula-api | ✅ 已成功加载离线模型。
+2025-11-16 18:55:16,358 | INFO | formula-api | ✅ Loaded embeddings from cache ((270817, 384))
+2025-11-16 18:55:16,359 | INFO | formula-api | ✅ 初始化完成，用时 19.02s
+2025-11-16 18:55:16,459 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 18:55:24,305 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
-{"intent":"list_query","candidates":["本月高炉工序能耗实绩报出值","本月高炉工序能耗计划报出值","本月高炉工序能耗实绩累计值"]}
+{"intent":"list_query","candidates":["高炉工序能耗实绩报出值","高炉工序能耗计划报出值","高炉工序能耗实绩累计值"]}
 ```
-2025-11-16 17:29:53,758 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-2025-11-16 17:29:53,764 | INFO | llm_energy_intent_parser | [parse_intent] user_input=本月高炉工序能耗实绩报出值、计划报出值和实绩累计值分别是多少 => {'intent': 'list_query', 'candidates': ['本月高炉工序能耗实绩报出值', '本月高炉工序能耗计划报出值', '本月高炉工序能耗实绩累计值']}
-{'intent': 'list_query', 'candidates': ['本月高炉工序能耗实绩报出值', '本月高炉工序能耗计划报出值', '本月高炉工序能耗实绩累计值']}
-2025-11-16 17:29:53,765 | INFO | pipeline.handlers | 📋 进入 list_query，user=test_user, input=本月高炉工序能耗实绩报出值、计划报出值和实绩累计值分别是多少
+2025-11-16 18:55:25,554 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-16 18:55:25,574 | INFO | llm_energy_intent_parser | [parse_intent] user_input=高炉工序能耗实绩报出值、计划报出值和实绩累计值分别是多少 => {'intent': 'list_query', 'candidates': ['高炉工序能耗实绩报出值', '高炉工序能耗计划报出值', '高炉工序能耗实绩累计值']}
+{'intent': 'list_query', 'candidates': ['高炉工序能耗实绩报出值', '高炉工序能耗计划报出值', '高炉工序能耗实绩累计值']}
+2025-11-16 18:55:25,574 | INFO | pipeline.handlers | 📋 进入 list_query，user=test_user, input=高炉工序能耗实绩报出值、计划报出值和实绩累计值分别是多少
 ⚠️ 无节点可恢复 intent_info
-2025-11-16 17:29:53,856 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-16 17:29:54,961 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+2025-11-16 18:55:25,575 | INFO | pipeline.handlers | 🆕 开始解析 candidates，并合并到 indicators（删除旧 active）
+2025-11-16 18:55:25,675 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 18:55:26,974 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "高炉工序能耗实绩报出值",
-  "timeString": "2025-11",
-  "timeType": "MONTH"
+  "timeString": null,
+  "timeType": null
 }
 ```
-2025-11-16 17:29:56,325 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-2025-11-16 17:29:56,408 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-16 17:29:57,566 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+2025-11-16 18:55:28,059 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-16 18:55:28,178 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 18:55:29,356 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "高炉工序能耗计划报出值",
-  "timeString": "2025-11",
-  "timeType": "MONTH"
+  "timeString": null,
+  "timeType": null
 }
 ```
-2025-11-16 17:29:58,892 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-2025-11-16 17:29:59,001 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-16 17:30:00,045 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+2025-11-16 18:55:30,428 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-16 18:55:30,530 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 18:55:31,705 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "高炉工序能耗实绩累计值",
-  "timeString": "2025-11",
-  "timeType": "MONTH"
+  "timeString": null,
+  "timeType": null
 }
 ```
-2025-11-16 17:30:01,358 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-🟢 登录返回： {'error': None, 'data': {'token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiIxNDMiLCJ0ZW5hbnRpZCI6IjEwNSIsInVuYW1lIjoi566h55CG5ZGYIiwidG5hbWUiOiLlrp3pkqLmuZvmsZ_pkqLpk4HmnInpmZDlhazlj7giLCJ0c2lkZSI6IjEiLCJncm91cGlkIjoiMCIsInNsaWRpbmciOiIwIiwicnNpbmNlIjoiMTc2MzQyOTEwMSIsIm5iZiI6MTc2MzI4NDgwMSwiZXhwIjoxNzYzNDAwNjAxLCJpc3MiOiJzaGJhb25lbmciLCJhdWQiOiJzaGJhb25lbmcifQ.DpmH5QB4116O8WOGWtqhVxbH2lWb13HJ-xxeb7YvNoc', 'expiresAt': '2025-11-18 01:29:01', 'tenantId': 105, 'tenancyName': 'zjis', 'userId': 143, 'userName': 'admin'}, 'status': 200, 'msg': '操作成功', 'duration': -1}
+2025-11-16 18:55:32,796 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-16 18:55:32,886 | INFO | context_graph | 🕘 add_history: 高炉工序能耗实绩报出值、计划报出值和实绩累计值分别是多少 -> 好的，要查【高炉工序能耗实绩报出值】，请告诉我时间。
+Single Query Reply 1: 好的，要查【高炉工序能耗实绩报出值】，请告诉我时间。
+{
+  "graph": {
+    "nodes": [],
+    "relations": [],
+    "_next_id": 1
+  },
+  "meta": {
+    "history": [
+      {
+        "ask": "高炉工序能耗实绩报出值、计划报出值和实绩累计值分别是多少",
+        "reply": "好的，要查【高炉工序能耗实绩报出值】，请告诉我时间。"
+      }
+    ],
+    "current_intent_info": {
+      "user_input_list": [
+        "高炉工序能耗实绩报出值、计划报出值和实绩累计值分别是多少"
+      ],
+      "intent_list": [
+        "list_query"
+      ],
+      "indicators": [
+        {
+          "status": "active",
+          "indicator": "高炉工序能耗实绩报出值",
+          "formula": "GXNHLT1100.IXRL",
+          "timeString": null,
+          "timeType": null,
+          "slot_status": {
+            "formula": "filled",
+            "time": "missing"
+          },
+          "value": null,
+          "note": "好的，要查【高炉工序能耗实绩报出值】，请告诉我时间。",
+          "formula_candidates": null
+        },
+        {
+          "status": "active",
+          "indicator": "高炉工序能耗计划报出值",
+          "formula": null,
+          "timeString": null,
+          "timeType": null,
+          "slot_status": {
+            "formula": "missing",
+            "time": "missing"
+          },
+          "value": null,
+          "note": null,
+          "formula_candidates": null
+        },
+        {
+          "status": "active",
+          "indicator": "高炉工序能耗实绩累计值",
+          "formula": null,
+          "timeString": null,
+          "timeType": null,
+          "slot_status": {
+            "formula": "missing",
+            "time": "missing"
+          },
+          "value": null,
+          "note": null,
+          "formula_candidates": null
+        }
+      ]
+    }
+  }
+}
+2025-11-16 18:55:32,887 | INFO | pipeline.handlers | 🔁 进入 slot_fill 模式。
+2025-11-16 18:55:32,887 | INFO | pipeline.handlers | 🔹 handle_slot_fill user_input=2022年
+{'candidates': ['2022年']}
+2025-11-16 18:55:32,966 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 18:55:34,126 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "indicator": null,
+  "timeString": "2022",
+  "timeType": "YEAR"
+}
+```
+2025-11-16 18:55:35,085 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-16 18:55:35,098 | INFO | pipeline.handlers | ✅ 解析到时间候选: {'indicator': None, 'timeString': '2022', 'timeType': 'YEAR'}
+🟢 登录返回： {'error': None, 'data': {'token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiIxNDMiLCJ0ZW5hbnRpZCI6IjEwNSIsInVuYW1lIjoi566h55CG5ZGYIiwidG5hbWUiOiLlrp3pkqLmuZvmsZ_pkqLpk4HmnInpmZDlhazlj7giLCJ0c2lkZSI6IjEiLCJncm91cGlkIjoiMCIsInNsaWRpbmciOiIwIiwicnNpbmNlIjoiMTc2MzQzNDIzNSIsIm5iZiI6MTc2MzI4OTkzNSwiZXhwIjoxNzYzNDA1NzM1LCJpc3MiOiJzaGJhb25lbmciLCJhdWQiOiJzaGJhb25lbmcifQ.s5oSC9bSwKoLc-g6M1BlCkyl77F99mJVBAcdVvCel1s', 'expiresAt': '2025-11-18 02:54:35', 'tenantId': 105, 'tenancyName': 'zjis', 'userId': 143, 'userName': 'admin'}, 'status': 200, 'msg': '操作成功', 'duration': -1}
 🟡 调用接口: http://www.shbaoenergy.com:8081/emscore/api/services/nYMC/calcData/QueryItemValuesAsync
-🧩 请求参数: {'expressionList': {'GXNHLT1100.IXRL': 'GXNHLT1100.IXRL'}, 'clock': '2025-11', 'timegranId': 'MONTH'}
-🟢 返回数据: {'error': None, 'data': {'GXNHLT1100.IXRL': None}, 'status': 200, 'msg': '操作成功', 'duration': -1}
-2025-11-16 17:30:32,749 | INFO | pipeline.handlers | ⚙️ 平台查询成功: {'GXNHLT1100.IXRL': None}
-2025-11-16 17:30:32,751 | INFO | context_graph | 🆕 ContextGraph.add_node -> id=1, indicator=高炉工序能耗实绩报出值, time=2025-11
+🧩 请求参数: {'expressionList': {'GXNHLT1100.IXRL': 'GXNHLT1100.IXRL'}, 'clock': '2022', 'timegranId': 'YEAR'}
+🟢 返回数据: {'error': None, 'data': {'GXNHLT1100.IXRL': '248.1'}, 'status': 200, 'msg': '操作成功', 'duration': -1}
+2025-11-16 18:55:35,356 | INFO | pipeline.handlers | ⚙️ 平台查询成功: {'GXNHLT1100.IXRL': '248.1'}
+2025-11-16 18:55:35,356 | INFO | context_graph | 🆕 ContextGraph.add_node -> id=1, indicator=高炉工序能耗实绩报出值, time=2022
 🟡 调用接口: http://www.shbaoenergy.com:8081/emscore/api/services/nYMC/calcData/QueryItemValuesAsync
-🧩 请求参数: {'expressionList': {'GXNHLT1100.IXPL': 'GXNHLT1100.IXPL'}, 'clock': '2025-11', 'timegranId': 'MONTH'}
-🟢 返回数据: {'error': None, 'data': {'GXNHLT1100.IXPL': None}, 'status': 200, 'msg': '操作成功', 'duration': -1}
-2025-11-16 17:30:32,968 | INFO | pipeline.handlers | ⚙️ 平台查询成功: {'GXNHLT1100.IXPL': None}
-2025-11-16 17:30:32,969 | INFO | context_graph | 🆕 ContextGraph.add_node -> id=2, indicator=高炉工序能耗计划报出值, time=2025-11
+🧩 请求参数: {'expressionList': {'GXNHLT1100.IXPL': 'GXNHLT1100.IXPL'}, 'clock': '2022', 'timegranId': 'YEAR'}
+🟢 返回数据: {'error': None, 'data': {'GXNHLT1100.IXPL': '369.58'}, 'status': 200, 'msg': '操作成功', 'duration': -1}
+2025-11-16 18:55:35,614 | INFO | pipeline.handlers | ⚙️ 平台查询成功: {'GXNHLT1100.IXPL': '369.58'}
+2025-11-16 18:55:35,615 | INFO | context_graph | 🆕 ContextGraph.add_node -> id=2, indicator=高炉工序能耗计划报出值, time=2022
 🟡 调用接口: http://www.shbaoenergy.com:8081/emscore/api/services/nYMC/calcData/QueryItemValuesAsync
-🧩 请求参数: {'expressionList': {'GXNHLT1100.IXRL.SUMVALUE': 'GXNHLT1100.IXRL.SUMVALUE'}, 'clock': '2025-11', 'timegranId': 'MONTH'}
-🟢 返回数据: {'error': None, 'data': {'GXNHLT1100.IXRL.SUMVALUE': None}, 'status': 200, 'msg': '操作成功', 'duration': -1}
-2025-11-16 17:30:33,160 | INFO | pipeline.handlers | ⚙️ 平台查询成功: {'GXNHLT1100.IXRL.SUMVALUE': None}
-2025-11-16 17:30:33,161 | INFO | context_graph | 🆕 ContextGraph.add_node -> id=3, indicator=高炉工序能耗实绩累计值, time=2025-11
-2025-11-16 17:30:33,161 | INFO | context_graph | 🔗 ContextGraph.add_relation: group (source=None target=None) meta={'via': 'pipeline.list.query', 'user_input': ['本月高炉工序能耗实绩报出值、计划报出值和实绩累计值分别是多少'], 'ids': [1, 2, 3], 'result': '✅ 高炉工序能耗实绩报出值 在 2025-11 (MONTH) 的值是 None \n✅ 高炉工序能耗计划报出值 在 2025-11 (MONTH) 的值是 None \n✅ 高炉工序能耗实绩累计值 在 2025-11 (MONTH) 的值是 None '}
-2025-11-16 17:30:33,161 | INFO | context_graph | 🕘 add_history: 本月高炉工序能耗实绩报出值、计划报出值和实绩累计值分别是多少 -> ✅ 高炉工序能耗实绩报出值 在 2025-11 (MONTH) 的值是 None 
-✅ 高炉工序能耗计划报出值 在 2025-11 (MONTH) 的值是 None 
-✅ 高炉工序能耗实绩累计值 在 2025-11 (MONTH) 的值是 None 
-2025-11-16 17:30:33,161 | INFO | pipeline.handlers | ✅ list query 完成
-Single Query Reply 1: ✅ 高炉工序能耗实绩报出值 在 2025-11 (MONTH) 的值是 None 
-✅ 高炉工序能耗计划报出值 在 2025-11 (MONTH) 的值是 None 
-✅ 高炉工序能耗实绩累计值 在 2025-11 (MONTH) 的值是 None 
+🧩 请求参数: {'expressionList': {'GXNHLT1100.IXRL.SUMVALUE': 'GXNHLT1100.IXRL.SUMVALUE'}, 'clock': '2022', 'timegranId': 'YEAR'}
+🟢 返回数据: {'error': None, 'data': {'GXNHLT1100.IXRL.SUMVALUE': '0'}, 'status': 200, 'msg': '操作成功', 'duration': -1}
+2025-11-16 18:55:35,758 | INFO | pipeline.handlers | ⚙️ 平台查询成功: {'GXNHLT1100.IXRL.SUMVALUE': '0'}
+2025-11-16 18:55:35,758 | INFO | context_graph | 🆕 ContextGraph.add_node -> id=3, indicator=高炉工序能耗实绩累计值, time=2022
+2025-11-16 18:55:35,758 | INFO | pipeline.handlers | 🔄 solt_fill 完成并检测到 list_query 上下文，继续执行 handle_list_query...
+2025-11-16 18:55:35,758 | INFO | pipeline.handlers | 📋 进入 list_query，user=test_user, input=2022年 -> system:完成 solt_fill 并检测到 list_query 上下文，继续执行 handle_list_query...
+2025-11-16 18:55:35,758 | INFO | pipeline.handlers | ℹ️ current_intent 无 candidates，因此不修改现有 indicators（slot_fill 情况）。
+2025-11-16 18:55:35,758 | INFO | context_graph | 🔗 ContextGraph.add_relation: group (source=None target=None) meta={'via': 'pipeline.list.query', 'user_input': ['高炉工序能耗实绩报出值、计划报出值和实绩累计值分别是多少', '2022年', '2022年 -> system:完成 solt_fill 并检测到 list_query 上下文，继续执行 handle_list_query...'], 'ids': [1, 2, 3], 'result': '✅ 高炉工序能耗实绩报出值 在 2022 (YEAR) 的值是 248.1 \n✅ 高炉工序能耗计划报出值 在 2022 (YEAR) 的值是 369.58 \n✅ 高炉工序能耗实绩累计值 在 2022 (YEAR) 的值是 0 '}
+2025-11-16 18:55:35,758 | INFO | context_graph | 🕘 add_history: 2022年 -> system:完成 solt_fill 并检测到 list_query 上下文，继续执行 handle_list_query... -> ✅ 高炉工序能耗实绩报出值 在 2022 (YEAR) 的值是 248.1 
+✅ 高炉工序能耗计划报出值 在 2022 (YEAR) 的值是 369.58 
+✅ 高炉工序能耗实绩累计值 在 2022 (YEAR) 的值是 0 
+2025-11-16 18:55:35,758 | INFO | pipeline.handlers | ✅ list query 完成
+Single Query Reply 2: ✅ 高炉工序能耗实绩报出值 在 2022 (YEAR) 的值是 248.1 
+✅ 高炉工序能耗计划报出值 在 2022 (YEAR) 的值是 369.58 
+✅ 高炉工序能耗实绩累计值 在 2022 (YEAR) 的值是 0 
 {
   "graph": {
     "nodes": [
@@ -106,47 +198,49 @@ Single Query Reply 1: ✅ 高炉工序能耗实绩报出值 在 2025-11 (MONTH) 
           "status": "completed",
           "indicator": "高炉工序能耗实绩报出值",
           "formula": "GXNHLT1100.IXRL",
-          "timeString": "2025-11",
-          "timeType": "MONTH",
+          "timeString": "2022",
+          "timeType": "YEAR",
           "slot_status": {
             "formula": "filled",
             "time": "filled"
           },
-          "value": null,
-          "note": "✅ 高炉工序能耗实绩报出值 在 2025-11 (MONTH) 的值是 None ",
+          "value": "248.1",
+          "note": "✅ 高炉工序能耗实绩报出值 在 2022 (YEAR) 的值是 248.1 ",
           "formula_candidates": null
         },
         "intent_info_snapshot": {
           "user_input_list": [
-            "本月高炉工序能耗实绩报出值、计划报出值和实绩累计值分别是多少"
+            "高炉工序能耗实绩报出值、计划报出值和实绩累计值分别是多少",
+            "2022年"
           ],
           "intent_list": [
-            "list_query，user"
+            "list_query",
+            "slot_fill"
           ],
           "indicators": [
             {
               "status": "completed",
               "indicator": "高炉工序能耗实绩报出值",
               "formula": "GXNHLT1100.IXRL",
-              "timeString": "2025-11",
-              "timeType": "MONTH",
+              "timeString": "2022",
+              "timeType": "YEAR",
               "slot_status": {
                 "formula": "filled",
                 "time": "filled"
               },
-              "value": null,
-              "note": "✅ 高炉工序能耗实绩报出值 在 2025-11 (MONTH) 的值是 None ",
+              "value": "248.1",
+              "note": "✅ 高炉工序能耗实绩报出值 在 2022 (YEAR) 的值是 248.1 ",
               "formula_candidates": null
             },
             {
               "status": "active",
               "indicator": "高炉工序能耗计划报出值",
               "formula": null,
-              "timeString": "2025-11",
-              "timeType": "MONTH",
+              "timeString": null,
+              "timeType": null,
               "slot_status": {
                 "formula": "missing",
-                "time": "filled"
+                "time": "missing"
               },
               "value": null,
               "note": null,
@@ -156,11 +250,11 @@ Single Query Reply 1: ✅ 高炉工序能耗实绩报出值 在 2025-11 (MONTH) 
               "status": "active",
               "indicator": "高炉工序能耗实绩累计值",
               "formula": null,
-              "timeString": "2025-11",
-              "timeType": "MONTH",
+              "timeString": null,
+              "timeType": null,
               "slot_status": {
                 "formula": "missing",
-                "time": "filled"
+                "time": "missing"
               },
               "value": null,
               "note": null,
@@ -175,61 +269,63 @@ Single Query Reply 1: ✅ 高炉工序能耗实绩报出值 在 2025-11 (MONTH) 
           "status": "completed",
           "indicator": "高炉工序能耗计划报出值",
           "formula": "GXNHLT1100.IXPL",
-          "timeString": "2025-11",
-          "timeType": "MONTH",
+          "timeString": "2022",
+          "timeType": "YEAR",
           "slot_status": {
             "formula": "filled",
             "time": "filled"
           },
-          "value": null,
-          "note": "✅ 高炉工序能耗计划报出值 在 2025-11 (MONTH) 的值是 None ",
+          "value": "369.58",
+          "note": "✅ 高炉工序能耗计划报出值 在 2022 (YEAR) 的值是 369.58 ",
           "formula_candidates": null
         },
         "intent_info_snapshot": {
           "user_input_list": [
-            "本月高炉工序能耗实绩报出值、计划报出值和实绩累计值分别是多少"
+            "高炉工序能耗实绩报出值、计划报出值和实绩累计值分别是多少",
+            "2022年"
           ],
           "intent_list": [
-            "list_query，user"
+            "list_query",
+            "slot_fill"
           ],
           "indicators": [
             {
               "status": "completed",
               "indicator": "高炉工序能耗实绩报出值",
               "formula": "GXNHLT1100.IXRL",
-              "timeString": "2025-11",
-              "timeType": "MONTH",
+              "timeString": "2022",
+              "timeType": "YEAR",
               "slot_status": {
                 "formula": "filled",
                 "time": "filled"
               },
-              "value": null,
-              "note": "✅ 高炉工序能耗实绩报出值 在 2025-11 (MONTH) 的值是 None ",
+              "value": "248.1",
+              "note": "✅ 高炉工序能耗实绩报出值 在 2022 (YEAR) 的值是 248.1 ",
               "formula_candidates": null
             },
             {
               "status": "completed",
               "indicator": "高炉工序能耗计划报出值",
               "formula": "GXNHLT1100.IXPL",
-              "timeString": "2025-11",
-              "timeType": "MONTH",
+              "timeString": "2022",
+              "timeType": "YEAR",
               "slot_status": {
                 "formula": "filled",
                 "time": "filled"
               },
-              "value": null,
-              "note": "✅ 高炉工序能耗计划报出值 在 2025-11 (MONTH) 的值是 None ",
+              "value": "369.58",
+              "note": "✅ 高炉工序能耗计划报出值 在 2022 (YEAR) 的值是 369.58 ",
               "formula_candidates": null
             },
             {
               "status": "active",
               "indicator": "高炉工序能耗实绩累计值",
               "formula": null,
-              "timeString": "2025-11",
-              "timeType": "MONTH",
+              "timeString": null,
+              "timeType": null,
               "slot_status": {
                 "formula": "missing",
-                "time": "filled"
+                "time": "missing"
               },
               "value": null,
               "note": null,
@@ -244,64 +340,66 @@ Single Query Reply 1: ✅ 高炉工序能耗实绩报出值 在 2025-11 (MONTH) 
           "status": "completed",
           "indicator": "高炉工序能耗实绩累计值",
           "formula": "GXNHLT1100.IXRL.SUMVALUE",
-          "timeString": "2025-11",
-          "timeType": "MONTH",
+          "timeString": "2022",
+          "timeType": "YEAR",
           "slot_status": {
             "formula": "filled",
             "time": "filled"
           },
-          "value": null,
-          "note": "✅ 高炉工序能耗实绩累计值 在 2025-11 (MONTH) 的值是 None ",
+          "value": "0",
+          "note": "✅ 高炉工序能耗实绩累计值 在 2022 (YEAR) 的值是 0 ",
           "formula_candidates": null
         },
         "intent_info_snapshot": {
           "user_input_list": [
-            "本月高炉工序能耗实绩报出值、计划报出值和实绩累计值分别是多少"
+            "高炉工序能耗实绩报出值、计划报出值和实绩累计值分别是多少",
+            "2022年"
           ],
           "intent_list": [
-            "list_query，user"
+            "list_query",
+            "slot_fill"
           ],
           "indicators": [
             {
               "status": "completed",
               "indicator": "高炉工序能耗实绩报出值",
               "formula": "GXNHLT1100.IXRL",
-              "timeString": "2025-11",
-              "timeType": "MONTH",
+              "timeString": "2022",
+              "timeType": "YEAR",
               "slot_status": {
                 "formula": "filled",
                 "time": "filled"
               },
-              "value": null,
-              "note": "✅ 高炉工序能耗实绩报出值 在 2025-11 (MONTH) 的值是 None ",
+              "value": "248.1",
+              "note": "✅ 高炉工序能耗实绩报出值 在 2022 (YEAR) 的值是 248.1 ",
               "formula_candidates": null
             },
             {
               "status": "completed",
               "indicator": "高炉工序能耗计划报出值",
               "formula": "GXNHLT1100.IXPL",
-              "timeString": "2025-11",
-              "timeType": "MONTH",
+              "timeString": "2022",
+              "timeType": "YEAR",
               "slot_status": {
                 "formula": "filled",
                 "time": "filled"
               },
-              "value": null,
-              "note": "✅ 高炉工序能耗计划报出值 在 2025-11 (MONTH) 的值是 None ",
+              "value": "369.58",
+              "note": "✅ 高炉工序能耗计划报出值 在 2022 (YEAR) 的值是 369.58 ",
               "formula_candidates": null
             },
             {
               "status": "completed",
               "indicator": "高炉工序能耗实绩累计值",
               "formula": "GXNHLT1100.IXRL.SUMVALUE",
-              "timeString": "2025-11",
-              "timeType": "MONTH",
+              "timeString": "2022",
+              "timeType": "YEAR",
               "slot_status": {
                 "formula": "filled",
                 "time": "filled"
               },
-              "value": null,
-              "note": "✅ 高炉工序能耗实绩累计值 在 2025-11 (MONTH) 的值是 None ",
+              "value": "0",
+              "note": "✅ 高炉工序能耗实绩累计值 在 2022 (YEAR) 的值是 0 ",
               "formula_candidates": null
             }
           ]
@@ -316,26 +414,32 @@ Single Query Reply 1: ✅ 高炉工序能耗实绩报出值 在 2025-11 (MONTH) 
         "meta": {
           "via": "pipeline.list.query",
           "user_input": [
-            "本月高炉工序能耗实绩报出值、计划报出值和实绩累计值分别是多少"
+            "高炉工序能耗实绩报出值、计划报出值和实绩累计值分别是多少",
+            "2022年",
+            "2022年 -> system:完成 solt_fill 并检测到 list_query 上下文，继续执行 handle_list_query..."
           ],
           "ids": [
             1,
             2,
             3
           ],
-          "result": "✅ 高炉工序能耗实绩报出值 在 2025-11 (MONTH) 的值是 None \n✅ 高炉工序能耗计划报出值 在 2025-11 (MONTH) 的值是 None \n✅ 高炉工序能耗实绩累计值 在 2025-11 (MONTH) 的值是 None "
+          "result": "✅ 高炉工序能耗实绩报出值 在 2022 (YEAR) 的值是 248.1 \n✅ 高炉工序能耗计划报出值 在 2022 (YEAR) 的值是 369.58 \n✅ 高炉工序能耗实绩累计值 在 2022 (YEAR) 的值是 0 "
         }
       }
     ],
     "_next_id": 4
   },
   "meta": {
-    "current_intent_info": {},
     "history": [
       {
-        "ask": "本月高炉工序能耗实绩报出值、计划报出值和实绩累计值分别是多少",
-        "reply": "✅ 高炉工序能耗实绩报出值 在 2025-11 (MONTH) 的值是 None \n✅ 高炉工序能耗计划报出值 在 2025-11 (MONTH) 的值是 None \n✅ 高炉工序能耗实绩累计值 在 2025-11 (MONTH) 的值是 None "
+        "ask": "高炉工序能耗实绩报出值、计划报出值和实绩累计值分别是多少",
+        "reply": "好的，要查【高炉工序能耗实绩报出值】，请告诉我时间。"
+      },
+      {
+        "ask": "2022年 -> system:完成 solt_fill 并检测到 list_query 上下文，继续执行 handle_list_query...",
+        "reply": "✅ 高炉工序能耗实绩报出值 在 2022 (YEAR) 的值是 248.1 \n✅ 高炉工序能耗计划报出值 在 2022 (YEAR) 的值是 369.58 \n✅ 高炉工序能耗实绩累计值 在 2022 (YEAR) 的值是 0 "
       }
-    ]
+    ],
+    "current_intent_info": {}
   }
 }

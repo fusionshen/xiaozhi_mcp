@@ -1,0 +1,937 @@
+    from core.llm_energy_intent_parser import EnergyIntentParser
+    parser = EnergyIntentParser()
+    user_input = "2022年1#、2#高炉分别是多少"
+    current_info = await parser.parse_intent(user_input)
+    print(current_info)
+
+    # 测试批量查询
+    reply, graph_state = await handle_list_query(user_id, user_input, graph, current_info)
+    print("Single Query Reply 1:", reply)
+    print(json.dumps(graph_state, indent=2, ensure_ascii=False))
+
+    # # 测试选择备选
+    reply, graph_state = await handle_clarify(user_id, 1, graph)
+    print("Single Query Reply 2:", reply)
+    print(json.dumps(graph_state, indent=2, ensure_ascii=False))
+
+    # 测试输入备选
+    reply, graph_state = await handle_single_query(user_id, "2高炉焦炭使用量实绩报出值", graph)
+    print("Single Query Reply 3:", reply)
+    print(json.dumps(graph_state, indent=2, ensure_ascii=False))
+
+(myenv) fusionshen@fusionshen-ThinkPad-T14-Gen-1:~/Desktop/LLM/ask_agent$ python -m core.pipeline_handlers
+2025-11-16 21:17:03,594 | INFO | llm_client | ✅ Using ChatOllama from langchain-ollama
+/home/fusionshen/myenv/lib/python3.12/site-packages/jieba/_compat.py:18: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+✅ sentence-transformers 版本: 5.1.1
+<frozen runpy>:128: RuntimeWarning: 'core.pipeline_handlers' found in sys.modules after import of package 'core', but prior to execution of 'core.pipeline_handlers'; this may result in unpredictable behaviour
+2025-11-16 21:17:05,527 | INFO | formula-api | 🔄 正在初始化公式数据（full load）...
+Building prefix dict from the default dictionary ...
+2025-11-16 21:17:08,743 | DEBUG | jieba | Building prefix dict from the default dictionary ...
+Loading model from cache /tmp/jieba.cache
+2025-11-16 21:17:08,744 | DEBUG | jieba | Loading model from cache /tmp/jieba.cache
+Loading model cost 0.581 seconds.
+2025-11-16 21:17:09,325 | DEBUG | jieba | Loading model cost 0.581 seconds.
+Prefix dict has been built successfully.
+2025-11-16 21:17:09,325 | DEBUG | jieba | Prefix dict has been built successfully.
+2025-11-16 21:17:22,295 | INFO | formula-api | ✅ Loaded 270817 formulas. Tokenization ready.
+HAVE_ST : True
+2025-11-16 21:17:22,295 | INFO | formula-api | Auto-selected embedding device: cpu
+OFFLINE_MODEL_PATH:/home/fusionshen/Desktop/LLM/ask_agent/models/sbert_offline_models/86741b4e3f5cb7765a600d3a3d55a0f6a6cb443d
+2025-11-16 21:17:22,296 | INFO | formula-api | 🧩 尝试加载本地模型: /home/fusionshen/Desktop/LLM/ask_agent/models/sbert_offline_models/86741b4e3f5cb7765a600d3a3d55a0f6a6cb443d
+2025-11-16 21:17:22,296 | INFO | sentence_transformers.SentenceTransformer | Load pretrained SentenceTransformer: /home/fusionshen/Desktop/LLM/ask_agent/models/sbert_offline_models/86741b4e3f5cb7765a600d3a3d55a0f6a6cb443d
+2025-11-16 21:17:23,128 | INFO | formula-api | ✅ 已成功加载离线模型。
+2025-11-16 21:17:23,340 | INFO | formula-api | ✅ Loaded embeddings from cache ((270817, 384))
+2025-11-16 21:17:23,340 | INFO | formula-api | ✅ 初始化完成，用时 17.81s
+2025-11-16 21:17:23,425 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 21:17:24,084 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{"intent":"list_query","candidates":["2022年1#高炉","2022年2#高炉"]}
+```
+2025-11-16 21:17:24,924 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-16 21:17:24,925 | INFO | llm_energy_intent_parser | [parse_intent] user_input=2022年1#、2#高炉分别是多少 => {'intent': 'list_query', 'candidates': ['2022年1#高炉', '2022年2#高炉']}
+{'intent': 'list_query', 'candidates': ['2022年1#高炉', '2022年2#高炉']}
+2025-11-16 21:17:24,926 | INFO | pipeline.handlers | 📋 进入 list_query，user=test_user, input=2022年1#、2#高炉分别是多少
+⚠️ 无节点可恢复 intent_info
+2025-11-16 21:17:24,926 | INFO | pipeline.handlers | 🆕 开始解析 candidates，并合并到 indicators（删除旧 active）
+2025-11-16 21:17:25,012 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 21:17:26,236 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "indicator": "1#高炉",
+  "timeString": "2022",
+  "timeType": "YEAR"
+}
+```
+2025-11-16 21:17:27,244 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-16 21:17:27,335 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 21:17:28,489 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "indicator": "2#高炉",
+  "timeString": "2022",
+  "timeType": "YEAR"
+}
+```
+2025-11-16 21:17:29,498 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+Batches: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 44.21it/s]
+2025-11-16 21:17:30,274 | INFO | context_graph | 🕘 add_history: 2022年1#、2#高炉分别是多少 -> 没有完全匹配的[1#高炉]指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称：
+1) 1高炉电外供量实绩报出值 (score 97.33)
+2) 1高炉电外供量实绩折标单耗值 (score 94.97)
+3) 1高炉电外供量实绩折标值 (score 94.46)
+4) 中冶环保1高炉非工业除尘电使用量计划备注实绩值 (score 89.22)
+5) 1高炉工序平衡能耗实绩报出值 (score 88.89)
+Single Query Reply 1: 没有完全匹配的[1#高炉]指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称：
+1) 1高炉电外供量实绩报出值 (score 97.33)
+2) 1高炉电外供量实绩折标单耗值 (score 94.97)
+3) 1高炉电外供量实绩折标值 (score 94.46)
+4) 中冶环保1高炉非工业除尘电使用量计划备注实绩值 (score 89.22)
+5) 1高炉工序平衡能耗实绩报出值 (score 88.89)
+{
+  "graph": {
+    "nodes": [],
+    "relations": [],
+    "_next_id": 1
+  },
+  "meta": {
+    "history": [
+      {
+        "ask": "2022年1#、2#高炉分别是多少",
+        "reply": "没有完全匹配的[1#高炉]指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称：\n1) 1高炉电外供量实绩报出值 (score 97.33)\n2) 1高炉电外供量实绩折标单耗值 (score 94.97)\n3) 1高炉电外供量实绩折标值 (score 94.46)\n4) 中冶环保1高炉非工业除尘电使用量计划备注实绩值 (score 89.22)\n5) 1高炉工序平衡能耗实绩报出值 (score 88.89)"
+      }
+    ],
+    "current_intent_info": {
+      "user_input_list": [
+        "2022年1#、2#高炉分别是多少"
+      ],
+      "intent_list": [
+        "list_query"
+      ],
+      "indicators": [
+        {
+          "status": "active",
+          "indicator": "1#高炉",
+          "formula": null,
+          "timeString": "2022",
+          "timeType": "YEAR",
+          "slot_status": {
+            "formula": "missing",
+            "time": "filled"
+          },
+          "value": null,
+          "note": null,
+          "formula_candidates": [
+            {
+              "number": 1,
+              "FORMULAID": "LT1101Z3017.EIRL",
+              "FORMULANAME": "1高炉电外供量实绩报出值",
+              "score": 97.3256,
+              "fuzzy_score": 109.08,
+              "semantic_score": 75.9868,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 2,
+              "FORMULAID": "LT1101Z3017.EIRL.UCSTDVALUE",
+              "FORMULANAME": "1高炉电外供量实绩折标单耗值",
+              "score": 94.9744,
+              "fuzzy_score": 108.0,
+              "semantic_score": 74.5654,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 3,
+              "FORMULAID": "LT1101Z3017.EIRL.STDVALUE",
+              "FORMULANAME": "1高炉电外供量实绩折标值",
+              "score": 94.464,
+              "fuzzy_score": 108.0,
+              "semantic_score": 73.7778,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 4,
+              "FORMULAID": "JHBZLT1104Z3011.GIRL.GROCERYVALUE",
+              "FORMULANAME": "中冶环保1高炉非工业除尘电使用量计划备注实绩值",
+              "score": 89.2212,
+              "fuzzy_score": 112.32,
+              "semantic_score": 57.5113,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 5,
+              "FORMULAID": "PHNHLT1101.IXRL",
+              "FORMULANAME": "1高炉工序平衡能耗实绩报出值",
+              "score": 88.8874,
+              "fuzzy_score": 109.08,
+              "semantic_score": 63.0938,
+              "match_kind": "hybrid"
+            }
+          ]
+        },
+        {
+          "status": "active",
+          "indicator": "2#高炉",
+          "formula": null,
+          "timeString": "2022",
+          "timeType": "YEAR",
+          "slot_status": {
+            "formula": "missing",
+            "time": "filled"
+          },
+          "value": null,
+          "note": null,
+          "formula_candidates": null
+        }
+      ]
+    }
+  }
+}
+2025-11-16 21:17:30,275 | INFO | pipeline.handlers | ✅ 进入 clarify 模式。
+2025-11-16 21:17:30,275 | INFO | pipeline.handlers | 🔹 handle_clarify user_input=1
+2025-11-16 21:17:30,275 | INFO | pipeline.handlers | 🔢 检测到候选选择 index=0, count=5
+2025-11-16 21:17:30,275 | INFO | pipeline.handlers | ✅ 用户选择公式: 1高炉电外供量实绩报出值 (FORMULAID=LT1101Z3017.EIRL)
+🟢 登录返回： {'error': None, 'data': {'token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiIxNDMiLCJ0ZW5hbnRpZCI6IjEwNSIsInVuYW1lIjoi566h55CG5ZGYIiwidG5hbWUiOiLlrp3pkqLmuZvmsZ_pkqLpk4HmnInpmZDlhazlj7giLCJ0c2lkZSI6IjEiLCJncm91cGlkIjoiMCIsInNsaWRpbmciOiIwIiwicnNpbmNlIjoiMTc2MzQ0Mjc1MCIsIm5iZiI6MTc2MzI5ODQ1MCwiZXhwIjoxNzYzNDE0MjUwLCJpc3MiOiJzaGJhb25lbmciLCJhdWQiOiJzaGJhb25lbmcifQ.g0smnYBb6VpougTy4JIz2Nzw-Q9svhVn-bgzhyscqhg', 'expiresAt': '2025-11-18 05:16:30', 'tenantId': 105, 'tenancyName': 'zjis', 'userId': 143, 'userName': 'admin'}, 'status': 200, 'msg': '操作成功', 'duration': -1}
+🟡 调用接口: http://www.shbaoenergy.com:8081/emscore/api/services/nYMC/calcData/QueryItemValuesAsync
+🧩 请求参数: {'expressionList': {'LT1101Z3017.EIRL': 'LT1101Z3017.EIRL'}, 'clock': '2022', 'timegranId': 'YEAR'}
+🟢 返回数据: {'error': None, 'data': {'LT1101Z3017.EIRL': '0'}, 'status': 200, 'msg': '操作成功', 'duration': -1}
+2025-11-16 21:17:30,511 | INFO | pipeline.handlers | ⚙️ 平台查询成功: {'LT1101Z3017.EIRL': '0'}
+2025-11-16 21:17:30,511 | INFO | context_graph | 🆕 ContextGraph.add_node -> id=1, indicator=1高炉电外供量实绩报出值, time=2022
+2025-11-16 21:17:30,511 | INFO | pipeline.handlers | 🔄 clarify 完成并检测到 list_query 上下文，继续执行 handle_list_query...
+2025-11-16 21:17:30,512 | INFO | pipeline.handlers | 📋 进入 list_query，user=test_user, input=1 -> system:完成 clarify 并检测到 list_query 上下文，继续执行 handle_list_query...
+2025-11-16 21:17:30,512 | INFO | pipeline.handlers | ℹ️ current_intent 无 candidates，因此不修改现有 indicators（slot_fill 情况）。
+Batches: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 58.27it/s]
+2025-11-16 21:17:31,254 | INFO | context_graph | 🕘 add_history: 1 -> system:完成 clarify 并检测到 list_query 上下文，继续执行 handle_list_query... -> 没有完全匹配的[2#高炉]指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称：
+1) 2高炉焦炭使用量实绩报出值 (score 93.91)
+2) 2高炉喷吹煤使用量实绩折标值 (score 92.78)
+3) 2高炉喷吹煤使用量实绩报出值 (score 91.65)
+4) 2高炉高压氮气分摊比例实绩报出值 (score 89.53)
+5) 2高炉中压氮气分摊比例实绩报出值 (score 89.01)
+Single Query Reply 2: 没有完全匹配的[2#高炉]指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称：
+1) 2高炉焦炭使用量实绩报出值 (score 93.91)
+2) 2高炉喷吹煤使用量实绩折标值 (score 92.78)
+3) 2高炉喷吹煤使用量实绩报出值 (score 91.65)
+4) 2高炉高压氮气分摊比例实绩报出值 (score 89.53)
+5) 2高炉中压氮气分摊比例实绩报出值 (score 89.01)
+{
+  "graph": {
+    "nodes": [
+      {
+        "id": 1,
+        "indicator_entry": {
+          "status": "completed",
+          "indicator": "1高炉电外供量实绩报出值",
+          "formula": "LT1101Z3017.EIRL",
+          "timeString": "2022",
+          "timeType": "YEAR",
+          "slot_status": {
+            "formula": "filled",
+            "time": "filled"
+          },
+          "value": "0",
+          "note": "✅ 1高炉电外供量实绩报出值 在 2022 (YEAR) 的值是 0 ",
+          "formula_candidates": [
+            {
+              "number": 1,
+              "FORMULAID": "LT1101Z3017.EIRL",
+              "FORMULANAME": "1高炉电外供量实绩报出值",
+              "score": 97.3256,
+              "fuzzy_score": 109.08,
+              "semantic_score": 75.9868,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 2,
+              "FORMULAID": "LT1101Z3017.EIRL.UCSTDVALUE",
+              "FORMULANAME": "1高炉电外供量实绩折标单耗值",
+              "score": 94.9744,
+              "fuzzy_score": 108.0,
+              "semantic_score": 74.5654,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 3,
+              "FORMULAID": "LT1101Z3017.EIRL.STDVALUE",
+              "FORMULANAME": "1高炉电外供量实绩折标值",
+              "score": 94.464,
+              "fuzzy_score": 108.0,
+              "semantic_score": 73.7778,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 4,
+              "FORMULAID": "JHBZLT1104Z3011.GIRL.GROCERYVALUE",
+              "FORMULANAME": "中冶环保1高炉非工业除尘电使用量计划备注实绩值",
+              "score": 89.2212,
+              "fuzzy_score": 112.32,
+              "semantic_score": 57.5113,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 5,
+              "FORMULAID": "PHNHLT1101.IXRL",
+              "FORMULANAME": "1高炉工序平衡能耗实绩报出值",
+              "score": 88.8874,
+              "fuzzy_score": 109.08,
+              "semantic_score": 63.0938,
+              "match_kind": "hybrid"
+            }
+          ]
+        },
+        "intent_info_snapshot": {
+          "user_input_list": [
+            "2022年1#、2#高炉分别是多少",
+            "1"
+          ],
+          "intent_list": [
+            "list_query",
+            "clarify"
+          ],
+          "indicators": [
+            {
+              "status": "completed",
+              "indicator": "1高炉电外供量实绩报出值",
+              "formula": "LT1101Z3017.EIRL",
+              "timeString": "2022",
+              "timeType": "YEAR",
+              "slot_status": {
+                "formula": "filled",
+                "time": "filled"
+              },
+              "value": "0",
+              "note": "✅ 1高炉电外供量实绩报出值 在 2022 (YEAR) 的值是 0 ",
+              "formula_candidates": [
+                {
+                  "number": 1,
+                  "FORMULAID": "LT1101Z3017.EIRL",
+                  "FORMULANAME": "1高炉电外供量实绩报出值",
+                  "score": 97.3256,
+                  "fuzzy_score": 109.08,
+                  "semantic_score": 75.9868,
+                  "match_kind": "hybrid"
+                },
+                {
+                  "number": 2,
+                  "FORMULAID": "LT1101Z3017.EIRL.UCSTDVALUE",
+                  "FORMULANAME": "1高炉电外供量实绩折标单耗值",
+                  "score": 94.9744,
+                  "fuzzy_score": 108.0,
+                  "semantic_score": 74.5654,
+                  "match_kind": "hybrid"
+                },
+                {
+                  "number": 3,
+                  "FORMULAID": "LT1101Z3017.EIRL.STDVALUE",
+                  "FORMULANAME": "1高炉电外供量实绩折标值",
+                  "score": 94.464,
+                  "fuzzy_score": 108.0,
+                  "semantic_score": 73.7778,
+                  "match_kind": "hybrid"
+                },
+                {
+                  "number": 4,
+                  "FORMULAID": "JHBZLT1104Z3011.GIRL.GROCERYVALUE",
+                  "FORMULANAME": "中冶环保1高炉非工业除尘电使用量计划备注实绩值",
+                  "score": 89.2212,
+                  "fuzzy_score": 112.32,
+                  "semantic_score": 57.5113,
+                  "match_kind": "hybrid"
+                },
+                {
+                  "number": 5,
+                  "FORMULAID": "PHNHLT1101.IXRL",
+                  "FORMULANAME": "1高炉工序平衡能耗实绩报出值",
+                  "score": 88.8874,
+                  "fuzzy_score": 109.08,
+                  "semantic_score": 63.0938,
+                  "match_kind": "hybrid"
+                }
+              ]
+            },
+            {
+              "status": "active",
+              "indicator": "2#高炉",
+              "formula": null,
+              "timeString": "2022",
+              "timeType": "YEAR",
+              "slot_status": {
+                "formula": "missing",
+                "time": "filled"
+              },
+              "value": null,
+              "note": null,
+              "formula_candidates": null
+            }
+          ]
+        }
+      }
+    ],
+    "relations": [],
+    "_next_id": 2
+  },
+  "meta": {
+    "history": [
+      {
+        "ask": "2022年1#、2#高炉分别是多少",
+        "reply": "没有完全匹配的[1#高炉]指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称：\n1) 1高炉电外供量实绩报出值 (score 97.33)\n2) 1高炉电外供量实绩折标单耗值 (score 94.97)\n3) 1高炉电外供量实绩折标值 (score 94.46)\n4) 中冶环保1高炉非工业除尘电使用量计划备注实绩值 (score 89.22)\n5) 1高炉工序平衡能耗实绩报出值 (score 88.89)"
+      },
+      {
+        "ask": "1 -> system:完成 clarify 并检测到 list_query 上下文，继续执行 handle_list_query...",
+        "reply": "没有完全匹配的[2#高炉]指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称：\n1) 2高炉焦炭使用量实绩报出值 (score 93.91)\n2) 2高炉喷吹煤使用量实绩折标值 (score 92.78)\n3) 2高炉喷吹煤使用量实绩报出值 (score 91.65)\n4) 2高炉高压氮气分摊比例实绩报出值 (score 89.53)\n5) 2高炉中压氮气分摊比例实绩报出值 (score 89.01)"
+      }
+    ],
+    "current_intent_info": {
+      "user_input_list": [
+        "2022年1#、2#高炉分别是多少",
+        "1",
+        "1 -> system:完成 clarify 并检测到 list_query 上下文，继续执行 handle_list_query..."
+      ],
+      "intent_list": [
+        "list_query",
+        "clarify",
+        "list_query"
+      ],
+      "indicators": [
+        {
+          "status": "completed",
+          "indicator": "1高炉电外供量实绩报出值",
+          "formula": "LT1101Z3017.EIRL",
+          "timeString": "2022",
+          "timeType": "YEAR",
+          "slot_status": {
+            "formula": "filled",
+            "time": "filled"
+          },
+          "value": "0",
+          "note": "✅ 1高炉电外供量实绩报出值 在 2022 (YEAR) 的值是 0 ",
+          "formula_candidates": [
+            {
+              "number": 1,
+              "FORMULAID": "LT1101Z3017.EIRL",
+              "FORMULANAME": "1高炉电外供量实绩报出值",
+              "score": 97.3256,
+              "fuzzy_score": 109.08,
+              "semantic_score": 75.9868,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 2,
+              "FORMULAID": "LT1101Z3017.EIRL.UCSTDVALUE",
+              "FORMULANAME": "1高炉电外供量实绩折标单耗值",
+              "score": 94.9744,
+              "fuzzy_score": 108.0,
+              "semantic_score": 74.5654,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 3,
+              "FORMULAID": "LT1101Z3017.EIRL.STDVALUE",
+              "FORMULANAME": "1高炉电外供量实绩折标值",
+              "score": 94.464,
+              "fuzzy_score": 108.0,
+              "semantic_score": 73.7778,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 4,
+              "FORMULAID": "JHBZLT1104Z3011.GIRL.GROCERYVALUE",
+              "FORMULANAME": "中冶环保1高炉非工业除尘电使用量计划备注实绩值",
+              "score": 89.2212,
+              "fuzzy_score": 112.32,
+              "semantic_score": 57.5113,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 5,
+              "FORMULAID": "PHNHLT1101.IXRL",
+              "FORMULANAME": "1高炉工序平衡能耗实绩报出值",
+              "score": 88.8874,
+              "fuzzy_score": 109.08,
+              "semantic_score": 63.0938,
+              "match_kind": "hybrid"
+            }
+          ]
+        },
+        {
+          "status": "active",
+          "indicator": "2#高炉",
+          "formula": null,
+          "timeString": "2022",
+          "timeType": "YEAR",
+          "slot_status": {
+            "formula": "missing",
+            "time": "filled"
+          },
+          "value": null,
+          "note": null,
+          "formula_candidates": [
+            {
+              "number": 1,
+              "FORMULAID": "LT1102Z3141.EIRL",
+              "FORMULANAME": "2高炉焦炭使用量实绩报出值",
+              "score": 93.9109,
+              "fuzzy_score": 109.08,
+              "semantic_score": 70.7693,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 2,
+              "FORMULAID": "LT1102Z3111.EIRL.STDVALUE",
+              "FORMULANAME": "2高炉喷吹煤使用量实绩折标值",
+              "score": 92.7828,
+              "fuzzy_score": 108.0,
+              "semantic_score": 71.1834,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 3,
+              "FORMULAID": "LT1102Z3111.EIRL",
+              "FORMULANAME": "2高炉喷吹煤使用量实绩报出值",
+              "score": 91.6532,
+              "fuzzy_score": 109.08,
+              "semantic_score": 67.3197,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 4,
+              "FORMULAID": "FTBLLT1102Z504.IXRL",
+              "FORMULANAME": "2高炉高压氮气分摊比例实绩报出值",
+              "score": 89.5284,
+              "fuzzy_score": 109.08,
+              "semantic_score": 64.0732,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 5,
+              "FORMULAID": "FTBLLT1102Z503.IXRL",
+              "FORMULANAME": "2高炉中压氮气分摊比例实绩报出值",
+              "score": 89.0057,
+              "fuzzy_score": 109.08,
+              "semantic_score": 63.2746,
+              "match_kind": "hybrid"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
+2025-11-16 21:17:31,255 | INFO | pipeline.handlers | ✅ 进入 single query 模式。
+2025-11-16 21:17:31,255 | INFO | pipeline.handlers | 🔹 handle_single_query user_input=2高炉焦炭使用量实绩报出值
+2025-11-16 21:17:31,368 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-16 21:17:32,524 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "indicator": "2高炉焦炭使用量实绩报出值",
+  "timeString": null,
+  "timeType": null
+}
+```
+2025-11-16 21:17:33,628 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+🟡 调用接口: http://www.shbaoenergy.com:8081/emscore/api/services/nYMC/calcData/QueryItemValuesAsync
+🧩 请求参数: {'expressionList': {'LT1102Z3141.EIRL': 'LT1102Z3141.EIRL'}, 'clock': '2022', 'timegranId': 'YEAR'}
+🟢 返回数据: {'error': None, 'data': {'LT1102Z3141.EIRL': '1432357.99'}, 'status': 200, 'msg': '操作成功', 'duration': -1}
+2025-11-16 21:17:33,813 | INFO | pipeline.handlers | ⚙️ 平台查询成功: {'LT1102Z3141.EIRL': '1432357.99'}
+2025-11-16 21:17:33,813 | INFO | context_graph | 🆕 ContextGraph.add_node -> id=2, indicator=2高炉焦炭使用量实绩报出值, time=2022
+2025-11-16 21:17:33,814 | INFO | pipeline.handlers | 🔄 single query 完成并检测到 list_query 上下文，继续执行 handle_list_query...
+2025-11-16 21:17:33,814 | INFO | pipeline.handlers | 📋 进入 list_query，user=test_user, input=2高炉焦炭使用量实绩报出值 -> system:完成 single query 并检测到 list_query 上下文，继续执行 handle_list_query...
+2025-11-16 21:17:33,814 | INFO | pipeline.handlers | ℹ️ current_intent 无 candidates，因此不修改现有 indicators（slot_fill 情况）。
+2025-11-16 21:17:33,814 | INFO | context_graph | 🔗 ContextGraph.add_relation: group (source=None target=None) meta={'via': 'pipeline.list.query', 'user_input': ['2022年1#、2#高炉分别是多少', '1', '1 -> system:完成 clarify 并检测到 list_query 上下文，继续执行 handle_list_query...', '2高炉焦炭使用量实绩报出值', '2高炉焦炭使用量实绩报出值 -> system:完成 single query 并检测到 list_query 上下文，继续执行 handle_list_query...'], 'ids': [1, 2], 'result': '✅ 1高炉电外供量实绩报出值 在 2022 (YEAR) 的值是 0 \n✅ 2高炉焦炭使用量实绩报出值 在 2022 (YEAR) 的值是 1432357.99 '}
+2025-11-16 21:17:33,814 | INFO | context_graph | 🕘 add_history: 2高炉焦炭使用量实绩报出值 -> system:完成 single query 并检测到 list_query 上下文，继续执行 handle_list_query... -> ✅ 1高炉电外供量实绩报出值 在 2022 (YEAR) 的值是 0 
+✅ 2高炉焦炭使用量实绩报出值 在 2022 (YEAR) 的值是 1432357.99 
+2025-11-16 21:17:33,814 | INFO | pipeline.handlers | ✅ list query 完成
+Single Query Reply 3: ✅ 1高炉电外供量实绩报出值 在 2022 (YEAR) 的值是 0 
+✅ 2高炉焦炭使用量实绩报出值 在 2022 (YEAR) 的值是 1432357.99 
+{
+  "graph": {
+    "nodes": [
+      {
+        "id": 1,
+        "indicator_entry": {
+          "status": "completed",
+          "indicator": "1高炉电外供量实绩报出值",
+          "formula": "LT1101Z3017.EIRL",
+          "timeString": "2022",
+          "timeType": "YEAR",
+          "slot_status": {
+            "formula": "filled",
+            "time": "filled"
+          },
+          "value": "0",
+          "note": "✅ 1高炉电外供量实绩报出值 在 2022 (YEAR) 的值是 0 ",
+          "formula_candidates": [
+            {
+              "number": 1,
+              "FORMULAID": "LT1101Z3017.EIRL",
+              "FORMULANAME": "1高炉电外供量实绩报出值",
+              "score": 97.3256,
+              "fuzzy_score": 109.08,
+              "semantic_score": 75.9868,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 2,
+              "FORMULAID": "LT1101Z3017.EIRL.UCSTDVALUE",
+              "FORMULANAME": "1高炉电外供量实绩折标单耗值",
+              "score": 94.9744,
+              "fuzzy_score": 108.0,
+              "semantic_score": 74.5654,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 3,
+              "FORMULAID": "LT1101Z3017.EIRL.STDVALUE",
+              "FORMULANAME": "1高炉电外供量实绩折标值",
+              "score": 94.464,
+              "fuzzy_score": 108.0,
+              "semantic_score": 73.7778,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 4,
+              "FORMULAID": "JHBZLT1104Z3011.GIRL.GROCERYVALUE",
+              "FORMULANAME": "中冶环保1高炉非工业除尘电使用量计划备注实绩值",
+              "score": 89.2212,
+              "fuzzy_score": 112.32,
+              "semantic_score": 57.5113,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 5,
+              "FORMULAID": "PHNHLT1101.IXRL",
+              "FORMULANAME": "1高炉工序平衡能耗实绩报出值",
+              "score": 88.8874,
+              "fuzzy_score": 109.08,
+              "semantic_score": 63.0938,
+              "match_kind": "hybrid"
+            }
+          ]
+        },
+        "intent_info_snapshot": {
+          "user_input_list": [
+            "2022年1#、2#高炉分别是多少",
+            "1"
+          ],
+          "intent_list": [
+            "list_query",
+            "clarify"
+          ],
+          "indicators": [
+            {
+              "status": "completed",
+              "indicator": "1高炉电外供量实绩报出值",
+              "formula": "LT1101Z3017.EIRL",
+              "timeString": "2022",
+              "timeType": "YEAR",
+              "slot_status": {
+                "formula": "filled",
+                "time": "filled"
+              },
+              "value": "0",
+              "note": "✅ 1高炉电外供量实绩报出值 在 2022 (YEAR) 的值是 0 ",
+              "formula_candidates": [
+                {
+                  "number": 1,
+                  "FORMULAID": "LT1101Z3017.EIRL",
+                  "FORMULANAME": "1高炉电外供量实绩报出值",
+                  "score": 97.3256,
+                  "fuzzy_score": 109.08,
+                  "semantic_score": 75.9868,
+                  "match_kind": "hybrid"
+                },
+                {
+                  "number": 2,
+                  "FORMULAID": "LT1101Z3017.EIRL.UCSTDVALUE",
+                  "FORMULANAME": "1高炉电外供量实绩折标单耗值",
+                  "score": 94.9744,
+                  "fuzzy_score": 108.0,
+                  "semantic_score": 74.5654,
+                  "match_kind": "hybrid"
+                },
+                {
+                  "number": 3,
+                  "FORMULAID": "LT1101Z3017.EIRL.STDVALUE",
+                  "FORMULANAME": "1高炉电外供量实绩折标值",
+                  "score": 94.464,
+                  "fuzzy_score": 108.0,
+                  "semantic_score": 73.7778,
+                  "match_kind": "hybrid"
+                },
+                {
+                  "number": 4,
+                  "FORMULAID": "JHBZLT1104Z3011.GIRL.GROCERYVALUE",
+                  "FORMULANAME": "中冶环保1高炉非工业除尘电使用量计划备注实绩值",
+                  "score": 89.2212,
+                  "fuzzy_score": 112.32,
+                  "semantic_score": 57.5113,
+                  "match_kind": "hybrid"
+                },
+                {
+                  "number": 5,
+                  "FORMULAID": "PHNHLT1101.IXRL",
+                  "FORMULANAME": "1高炉工序平衡能耗实绩报出值",
+                  "score": 88.8874,
+                  "fuzzy_score": 109.08,
+                  "semantic_score": 63.0938,
+                  "match_kind": "hybrid"
+                }
+              ]
+            },
+            {
+              "status": "active",
+              "indicator": "2#高炉",
+              "formula": null,
+              "timeString": "2022",
+              "timeType": "YEAR",
+              "slot_status": {
+                "formula": "missing",
+                "time": "filled"
+              },
+              "value": null,
+              "note": null,
+              "formula_candidates": null
+            }
+          ]
+        }
+      },
+      {
+        "id": 2,
+        "indicator_entry": {
+          "status": "completed",
+          "indicator": "2高炉焦炭使用量实绩报出值",
+          "formula": "LT1102Z3141.EIRL",
+          "timeString": "2022",
+          "timeType": "YEAR",
+          "slot_status": {
+            "formula": "filled",
+            "time": "filled"
+          },
+          "value": "1432357.99",
+          "note": "✅ 2高炉焦炭使用量实绩报出值 在 2022 (YEAR) 的值是 1432357.99 ",
+          "formula_candidates": [
+            {
+              "number": 1,
+              "FORMULAID": "LT1102Z3141.EIRL",
+              "FORMULANAME": "2高炉焦炭使用量实绩报出值",
+              "score": 93.9109,
+              "fuzzy_score": 109.08,
+              "semantic_score": 70.7693,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 2,
+              "FORMULAID": "LT1102Z3111.EIRL.STDVALUE",
+              "FORMULANAME": "2高炉喷吹煤使用量实绩折标值",
+              "score": 92.7828,
+              "fuzzy_score": 108.0,
+              "semantic_score": 71.1834,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 3,
+              "FORMULAID": "LT1102Z3111.EIRL",
+              "FORMULANAME": "2高炉喷吹煤使用量实绩报出值",
+              "score": 91.6532,
+              "fuzzy_score": 109.08,
+              "semantic_score": 67.3197,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 4,
+              "FORMULAID": "FTBLLT1102Z504.IXRL",
+              "FORMULANAME": "2高炉高压氮气分摊比例实绩报出值",
+              "score": 89.5284,
+              "fuzzy_score": 109.08,
+              "semantic_score": 64.0732,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 5,
+              "FORMULAID": "FTBLLT1102Z503.IXRL",
+              "FORMULANAME": "2高炉中压氮气分摊比例实绩报出值",
+              "score": 89.0057,
+              "fuzzy_score": 109.08,
+              "semantic_score": 63.2746,
+              "match_kind": "hybrid"
+            }
+          ]
+        },
+        "intent_info_snapshot": {
+          "user_input_list": [
+            "2022年1#、2#高炉分别是多少",
+            "1",
+            "1 -> system:完成 clarify 并检测到 list_query 上下文，继续执行 handle_list_query...",
+            "2高炉焦炭使用量实绩报出值"
+          ],
+          "intent_list": [
+            "list_query",
+            "clarify",
+            "list_query",
+            "single_query"
+          ],
+          "indicators": [
+            {
+              "status": "completed",
+              "indicator": "1高炉电外供量实绩报出值",
+              "formula": "LT1101Z3017.EIRL",
+              "timeString": "2022",
+              "timeType": "YEAR",
+              "slot_status": {
+                "formula": "filled",
+                "time": "filled"
+              },
+              "value": "0",
+              "note": "✅ 1高炉电外供量实绩报出值 在 2022 (YEAR) 的值是 0 ",
+              "formula_candidates": [
+                {
+                  "number": 1,
+                  "FORMULAID": "LT1101Z3017.EIRL",
+                  "FORMULANAME": "1高炉电外供量实绩报出值",
+                  "score": 97.3256,
+                  "fuzzy_score": 109.08,
+                  "semantic_score": 75.9868,
+                  "match_kind": "hybrid"
+                },
+                {
+                  "number": 2,
+                  "FORMULAID": "LT1101Z3017.EIRL.UCSTDVALUE",
+                  "FORMULANAME": "1高炉电外供量实绩折标单耗值",
+                  "score": 94.9744,
+                  "fuzzy_score": 108.0,
+                  "semantic_score": 74.5654,
+                  "match_kind": "hybrid"
+                },
+                {
+                  "number": 3,
+                  "FORMULAID": "LT1101Z3017.EIRL.STDVALUE",
+                  "FORMULANAME": "1高炉电外供量实绩折标值",
+                  "score": 94.464,
+                  "fuzzy_score": 108.0,
+                  "semantic_score": 73.7778,
+                  "match_kind": "hybrid"
+                },
+                {
+                  "number": 4,
+                  "FORMULAID": "JHBZLT1104Z3011.GIRL.GROCERYVALUE",
+                  "FORMULANAME": "中冶环保1高炉非工业除尘电使用量计划备注实绩值",
+                  "score": 89.2212,
+                  "fuzzy_score": 112.32,
+                  "semantic_score": 57.5113,
+                  "match_kind": "hybrid"
+                },
+                {
+                  "number": 5,
+                  "FORMULAID": "PHNHLT1101.IXRL",
+                  "FORMULANAME": "1高炉工序平衡能耗实绩报出值",
+                  "score": 88.8874,
+                  "fuzzy_score": 109.08,
+                  "semantic_score": 63.0938,
+                  "match_kind": "hybrid"
+                }
+              ]
+            },
+            {
+              "status": "completed",
+              "indicator": "2高炉焦炭使用量实绩报出值",
+              "formula": "LT1102Z3141.EIRL",
+              "timeString": "2022",
+              "timeType": "YEAR",
+              "slot_status": {
+                "formula": "filled",
+                "time": "filled"
+              },
+              "value": "1432357.99",
+              "note": "✅ 2高炉焦炭使用量实绩报出值 在 2022 (YEAR) 的值是 1432357.99 ",
+              "formula_candidates": [
+                {
+                  "number": 1,
+                  "FORMULAID": "LT1102Z3141.EIRL",
+                  "FORMULANAME": "2高炉焦炭使用量实绩报出值",
+                  "score": 93.9109,
+                  "fuzzy_score": 109.08,
+                  "semantic_score": 70.7693,
+                  "match_kind": "hybrid"
+                },
+                {
+                  "number": 2,
+                  "FORMULAID": "LT1102Z3111.EIRL.STDVALUE",
+                  "FORMULANAME": "2高炉喷吹煤使用量实绩折标值",
+                  "score": 92.7828,
+                  "fuzzy_score": 108.0,
+                  "semantic_score": 71.1834,
+                  "match_kind": "hybrid"
+                },
+                {
+                  "number": 3,
+                  "FORMULAID": "LT1102Z3111.EIRL",
+                  "FORMULANAME": "2高炉喷吹煤使用量实绩报出值",
+                  "score": 91.6532,
+                  "fuzzy_score": 109.08,
+                  "semantic_score": 67.3197,
+                  "match_kind": "hybrid"
+                },
+                {
+                  "number": 4,
+                  "FORMULAID": "FTBLLT1102Z504.IXRL",
+                  "FORMULANAME": "2高炉高压氮气分摊比例实绩报出值",
+                  "score": 89.5284,
+                  "fuzzy_score": 109.08,
+                  "semantic_score": 64.0732,
+                  "match_kind": "hybrid"
+                },
+                {
+                  "number": 5,
+                  "FORMULAID": "FTBLLT1102Z503.IXRL",
+                  "FORMULANAME": "2高炉中压氮气分摊比例实绩报出值",
+                  "score": 89.0057,
+                  "fuzzy_score": 109.08,
+                  "semantic_score": 63.2746,
+                  "match_kind": "hybrid"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "relations": [
+      {
+        "type": "group",
+        "source": null,
+        "target": null,
+        "meta": {
+          "via": "pipeline.list.query",
+          "user_input": [
+            "2022年1#、2#高炉分别是多少",
+            "1",
+            "1 -> system:完成 clarify 并检测到 list_query 上下文，继续执行 handle_list_query...",
+            "2高炉焦炭使用量实绩报出值",
+            "2高炉焦炭使用量实绩报出值 -> system:完成 single query 并检测到 list_query 上下文，继续执行 handle_list_query..."
+          ],
+          "ids": [
+            1,
+            2
+          ],
+          "result": "✅ 1高炉电外供量实绩报出值 在 2022 (YEAR) 的值是 0 \n✅ 2高炉焦炭使用量实绩报出值 在 2022 (YEAR) 的值是 1432357.99 "
+        }
+      }
+    ],
+    "_next_id": 3
+  },
+  "meta": {
+    "history": [
+      {
+        "ask": "2022年1#、2#高炉分别是多少",
+        "reply": "没有完全匹配的[1#高炉]指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称：\n1) 1高炉电外供量实绩报出值 (score 97.33)\n2) 1高炉电外供量实绩折标单耗值 (score 94.97)\n3) 1高炉电外供量实绩折标值 (score 94.46)\n4) 中冶环保1高炉非工业除尘电使用量计划备注实绩值 (score 89.22)\n5) 1高炉工序平衡能耗实绩报出值 (score 88.89)"
+      },
+      {
+        "ask": "1 -> system:完成 clarify 并检测到 list_query 上下文，继续执行 handle_list_query...",
+        "reply": "没有完全匹配的[2#高炉]指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称：\n1) 2高炉焦炭使用量实绩报出值 (score 93.91)\n2) 2高炉喷吹煤使用量实绩折标值 (score 92.78)\n3) 2高炉喷吹煤使用量实绩报出值 (score 91.65)\n4) 2高炉高压氮气分摊比例实绩报出值 (score 89.53)\n5) 2高炉中压氮气分摊比例实绩报出值 (score 89.01)"
+      },
+      {
+        "ask": "2高炉焦炭使用量实绩报出值 -> system:完成 single query 并检测到 list_query 上下文，继续执行 handle_list_query...",
+        "reply": "✅ 1高炉电外供量实绩报出值 在 2022 (YEAR) 的值是 0 \n✅ 2高炉焦炭使用量实绩报出值 在 2022 (YEAR) 的值是 1432357.99 "
+      }
+    ],
+    "current_intent_info": {}
+  }
+}

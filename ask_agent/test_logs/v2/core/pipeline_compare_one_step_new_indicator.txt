@@ -8,7 +8,7 @@
     print("Single Query Reply 2:", reply)
     print(json.dumps(graph_state, indent=2, ensure_ascii=False))
 
-    # 测试选择备选
+    # 测试输入备选
     reply, graph_state = await handle_single_query(user_id, "高炉工序能耗实绩报出值", graph)
     print("Single Query Reply 3:", reply)
     print(json.dumps(graph_state, indent=2, ensure_ascii=False))
