@@ -59,7 +59,7 @@ async def parse_intent(user_id: str, user_input: str) -> dict:
     formula_candidates = current_indicator.get("formula_candidates", [])
     awaiting_confirmation = bool(formula_candidates)
 
-    # 构建最近历史摘要
+    # 历史摘要
     history_summary = ""
     if history:
         recent = history[-3:]
@@ -83,36 +83,33 @@ async def parse_intent(user_id: str, user_input: str) -> dict:
 
     # 拼接 prompt
     prompt = f"""
-你是一个智能意图识别器，请根据上下文判断当前用户输入属于哪类意图。
-
+你是一个智能意图识别器，根据上下文判断用户意图。
 意图类型：
 - ENERGY_QUERY: 用户想查询能源指标数据（包括初次查询、补充时间、或正在选择候选公式）
+- ENERGY_KNOWLEDGE_QA: 解释能源概念或定义的问题
 - CHAT: 普通闲聊或非结构化提问
 - TOOL: 工具类问题（时间、日期、天气等）
-- ENERGY_KNOWLEDGE_QA: 解释能源概念或定义的问题
+用户输入: "{user_input}"
+当前指标: "{last_indicator}"
+最近对话: {history_summary if history_summary else '(无)'}
+槽位状态: {slots_summary}
+候选公式: {candidates_summary if candidates_summary else '(无)'}
 
-当前上下文：
-- 用户输入: "{user_input}"
-- 当前指标: "{last_indicator}"
-- 最近对话记录:
-{history_summary if history_summary else '(无)'}
-- 当前槽位状态:
-{slots_summary}
-- 当前候选公式:
-{candidates_summary if candidates_summary else '(无)'}
-
-识别规则（优先级从高到低）：
+规则优先级：
 1. 如果用户正在选择候选公式：
    - 输入为数字或序号指代（如“1”“第二个”） → ENERGY_QUERY。
    - 输入与能源无关 → CHAT。
 2. 如果当前处于能源查询流程，
    且用户输入包含时间表达（如“今天”“昨天”“2022年的今天”“上月”），
    则视为 ENERGY_QUERY —— 表示用户在补充查询时间，而不是单纯问时间。
-3. 如果用户输入包含能源指标、单位、能耗类词汇（如“电耗”“高炉煤气使用量”），
-   视为 ENERGY_QUERY。
-4. 如果用户提问能源定义、概念、用途 → ENERGY_KNOWLEDGE_QA。
-5. 如果输入与能源查询流程无关且是日期、时间、天气类问题 → TOOL。
-6. 其他普通问答 → CHAT。
+3. 能源概念/定义/用途类问题 → ENERGY_KNOWLEDGE_QA
+4. 能源指标/单位/消耗量 → ENERGY_QUERY
+5. 日期/时间/天气 → TOOL
+6. 其他 → CHAT
+
+⚠️ 强调：
+- 问“是什么”“包括哪些”“用途”“定义”“作用”“组成”等能源相关概念性问题，必须返回 ENERGY_KNOWLEDGE_QA
+- 问具体数值、消耗量、用量时才返回 ENERGY_QUERY
 
 返回 JSON：
 {{
@@ -126,6 +123,7 @@ async def parse_intent(user_id: str, user_input: str) -> dict:
     try:
         print(prompt)
         result = await safe_llm_parse(prompt)
+        # 合并 LLM 返回（防止 LLM 也返回）
         intent = result.get("intent", "CHAT")
         parsed_number = result.get("parsed_number")
         logger.info(f"📥 轻量意图分类结果: intent={intent}, parsed_number={parsed_number}")

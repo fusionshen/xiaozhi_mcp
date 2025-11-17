@@ -122,7 +122,7 @@ async def handle_single_query(user_id: str, user_input: str, graph: ContextGraph
         elif candidates:
             current_indicator["formula_candidates"] = candidates[:TOP_N]
             current_indicator["slot_status"]["formula"] = "missing"
-            lines = [f"没有完全匹配的[{current_indicator["indicator"]}]指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称)："]
+            lines = [f"没有完全匹配的【{current_indicator["indicator"]}】指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称)："]
             for i, c in enumerate(candidates[:TOP_N], 1):
                 lines.append(f"{i}) {c['FORMULANAME']} (score {c.get('score',0):.2f})")
             reply = "\n".join(lines) 
@@ -308,7 +308,7 @@ async def handle_compare(user_id: str, user_input: str, graph: ContextGraph, cur
                 elif candidates:
                     item["formula_candidates"] = candidates[:TOP_N]
                     item["slot_status"]["formula"] = "missing"
-                    lines = [f"没有完全匹配的[{item["indicator"]}]指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称："]
+                    lines = [f"没有完全匹配的【{item["indicator"]}】指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称："]
                     for i, c in enumerate(candidates[:TOP_N], 1):
                         lines.append(f"{i}) {c['FORMULANAME']} (score {c.get('score',0):.2f})")
                     reply = "\n".join(lines) 
@@ -477,7 +477,7 @@ async def handle_compare(user_id: str, user_input: str, graph: ContextGraph, cur
             elif candidates:
                 current_indicator["formula_candidates"] = candidates[:TOP_N]
                 current_indicator["slot_status"]["formula"] = "missing"
-                lines = [f"没有完全匹配的[{current_indicator["indicator"]}]指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称："]
+                lines = [f"没有完全匹配的【{current_indicator["indicator"]}】指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称："]
                 for i, c in enumerate(candidates[:TOP_N], 1):
                     lines.append(f"{i}) {c['FORMULANAME']} (score {c.get('score',0):.2f})")
                 reply = "\n".join(lines) 
@@ -636,7 +636,7 @@ async def handle_slot_fill(user_id: str, user_input: str, graph: ContextGraph, c
             elif candidates:
                 ind["formula_candidates"] = candidates[:TOP_N]
                 ind["slot_status"]["formula"] = "missing"
-                lines = [f"没有完全匹配的[{ind["indicator"]}]指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称："]
+                lines = [f"没有完全匹配的【{ind["indicator"]}】指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称："]
                 for i, c in enumerate(candidates[:TOP_N], 1):
                     lines.append(f"{i}) {c['FORMULANAME']} (score {c.get('score', 0):.2f})")
                 reply = "\n".join(lines)
@@ -854,7 +854,7 @@ async def handle_list_query(user_id: str, user_input: str, graph: ContextGraph, 
             elif candidates:
                 item["formula_candidates"] = candidates[:TOP_N]
                 item["slot_status"]["formula"] = "missing"
-                lines = [f"没有完全匹配的[{item["indicator"]}]指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称："]
+                lines = [f"没有完全匹配的【{item["indicator"]}】指标，请从以下候选选择编号(或者重新输入尽量精确的指标名称："]
                 for i, c in enumerate(candidates[:TOP_N], 1):
                     lines.append(f"{i}) {c['FORMULANAME']} (score {c.get('score',0):.2f})")
                 reply = "\n".join(lines) 
