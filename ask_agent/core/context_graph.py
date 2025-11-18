@@ -64,6 +64,21 @@ class ContextGraph:
 
     def get_history(self) -> List[Dict[str, str]]:
         return self.meta.get("history", [])
+    
+    # ---------------------
+    # 总体意图管理
+    # ---------------------
+    def set_main_intent(self, intent: dict | str):
+        self.meta["main_intent"] = intent
+        logger.info(f"🎯 set_main_intent: {intent}")
+
+    def get_main_intent(self) -> dict | str | None:
+        return self.meta.get("main_intent")
+
+    def clear_main_intent(self):
+        if "main_intent" in self.meta:
+            del self.meta["main_intent"]
+            logger.info("🧹 main_intent cleared.")
 
     # ---------------------
     # 节点管理

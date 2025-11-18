@@ -32,15 +32,9 @@ async def handle_single_query(user_id: str, user_input: str, graph: ContextGraph
     """
     user_input = str(user_input or "").strip()
     logger.info(f"🔹 handle_single_query user_input={user_input}")
-    # 需要提前判断，支持不选择备选，重新开始查询
-    is_compare = (ri := (graph.get_intent_info() or {})) and "compare" in ri.get("intent_list", []) \
-             and any(ind.get("status") == "active" for ind in ri.get("indicators", []))
-    is_group = (ri := (graph.get_intent_info() or {})) and "list_query" in ri.get("intent_list", []) \
-            and any(ind.get("status") == "active" for ind in ri.get("indicators", []))
-    # 实际操作
     intent_info = graph.ensure_intent_info() or {}
     intent_info.setdefault("user_input_list", []).append(user_input)
-    intent_info.setdefault("intent_list", []).append("single_query")  # 或 "clarify" 等
+    intent_info.setdefault("intent_list", []).append("single_query")
 
     indicators = intent_info.setdefault("indicators", [])
     
@@ -151,7 +145,8 @@ async def handle_single_query(user_id: str, user_input: str, graph: ContextGraph
         node_id = graph.add_node(current_indicator)
 
         # 连续判断需要找到当前intent中active的indicator，作为当前current_info传入即可
-        if is_compare:
+        main_intent = graph.get_main_intent() or None
+        if "compare" == main_intent:
             logger.info("🔄 single query 完成并检测到 compare 上下文，继续执行 handle_compare...")
             current_intents = [
                 ind.get("indicator")
@@ -161,7 +156,7 @@ async def handle_single_query(user_id: str, user_input: str, graph: ContextGraph
             print(f"current_intents:{current_intents}")
             return await handle_compare(user_id, f"{user_input} -> system:完成 single query 并检测到 compare 上下文，继续执行 handle_single_query...", graph, current_intent={"candidates": current_intents})
         
-        if is_group:
+        if "list_query" == main_intent:
             logger.info("🔄 single query 完成并检测到 list_query 上下文，继续执行 handle_list_query...")
             return await handle_list_query(user_id, f"{user_input} -> system:完成 single query 并检测到 list_query 上下文，继续执行 handle_list_query...", graph)
         
@@ -238,6 +233,7 @@ async def handle_compare(user_id: str, user_input: str, graph: ContextGraph, cur
     intent_info = graph.ensure_intent_info() or {}
     intent_info.setdefault("user_input_list", []).append(user_input)
     intent_info.setdefault("intent_list", []).append("compare")
+    graph.set_main_intent("compare")
     indicators = intent_info.setdefault("indicators", [])
 
     # Acquire candidates from current_intent if present
@@ -370,6 +366,7 @@ async def handle_compare(user_id: str, user_input: str, graph: ContextGraph, cur
         graph.add_relation("compare", source_id=sid, target_id=tid, meta={"via": "pipeline.compare", "user_input": intent_info.get("user_input_list"), "result": analysis})
         # 成功查询重置意图
         graph.set_intent_info({})
+        graph.clear_main_intent()
         graph.add_history(user_input, analysis)
         set_graph(user_id, graph)
         logger.info("✅ compare(one-step) 完成")
@@ -526,6 +523,7 @@ async def handle_compare(user_id: str, user_input: str, graph: ContextGraph, cur
         graph.add_relation("compare", source_id=sid, target_id=other_node.get("id"), meta={"via": "pipeline.compare", "user_input": intent_info.get("user_input_list"), "result": analysis})
         # 成功查询重置意图
         graph.set_intent_info({})
+        graph.clear_main_intent()
         graph.add_history(user_input, analysis)
         set_graph(user_id, graph)
         logger.info("✅ compare(two-step) 完成")
@@ -548,6 +546,7 @@ async def handle_compare(user_id: str, user_input: str, graph: ContextGraph, cur
         graph.add_relation("compare", source_id=sid, target_id=tid, meta={"via": "pipeline.compare", "user_input": intent_info.get("user_input_list"), "result": analysis})
         # 成功查询重置意图
         graph.set_intent_info({})
+        graph.clear_main_intent()
         graph.add_history(user_input, analysis)
         set_graph(user_id, graph)
         logger.info("✅ compare(three-step) 完成")
@@ -571,11 +570,6 @@ async def handle_slot_fill(user_id: str, user_input: str, graph: ContextGraph, c
     """
     user_input = str(user_input or "").strip()
     logger.info(f"🔹 handle_slot_fill user_input={user_input}")
-    # 需要提前判断
-    is_compare = (ri := (graph.get_intent_info() or {})) and "compare" in ri.get("intent_list", []) \
-            and any(ind.get("status") == "active" for ind in ri.get("indicators", []))
-    is_group = (ri := (graph.get_intent_info() or {})) and "list_query" in ri.get("intent_list", []) \
-            and any(ind.get("status") == "active" for ind in ri.get("indicators", []))
     # 因为查询成功会清空当前intent_info，所以在成功查询一次后，后续问“那昨天的呢？”，会从最近的node中拉取snapshot
     intent_info = graph.ensure_intent_info() or {}
     intent_info.setdefault("user_input_list", []).append(user_input)
@@ -662,11 +656,12 @@ async def handle_slot_fill(user_id: str, user_input: str, graph: ContextGraph, c
             graph.add_node(ind)
             results.append(reply)
     
-    if is_compare:
-            logger.info("🔄 solt_fill 完成并检测到 compare 上下文，继续执行 handle_compare...")
-            return await handle_compare(user_id, f"{user_input} -> system:完成 solt_fill 并检测到 compare 上下文，继续执行 handle_compare...", graph)
+    main_intent = graph.get_main_intent() or None
+    if "compare" == main_intent:
+        logger.info("🔄 solt_fill 完成并检测到 compare 上下文，继续执行 handle_compare...")
+        return await handle_compare(user_id, f"{user_input} -> system:完成 solt_fill 并检测到 compare 上下文，继续执行 handle_compare...", graph)
     
-    if is_group:
+    if "list_query" == main_intent:
             logger.info("🔄 solt_fill 完成并检测到 list_query 上下文，继续执行 handle_list_query...")
             return await handle_list_query(user_id, f"{user_input} -> system:完成 solt_fill 并检测到 list_query 上下文，继续执行 handle_list_query...", graph)
     
@@ -693,11 +688,6 @@ async def handle_clarify(user_id: str, user_input: str, graph: ContextGraph):
     """
     user_input = str(user_input or "").strip()
     logger.info(f"🔹 handle_clarify user_input={user_input}")
-    # 需要提前判断
-    is_compare = (ri := (graph.get_intent_info() or {})) and "compare" in ri.get("intent_list", []) \
-             and any(ind.get("status") == "active" for ind in ri.get("indicators", []))
-    is_group = (ri := (graph.get_intent_info() or {})) and "list_query" in ri.get("intent_list", []) \
-            and any(ind.get("status") == "active" for ind in ri.get("indicators", []))
     # 实际操作
     intent_info = graph.ensure_intent_info() or {}
     intent_info.setdefault("user_input_list", []).append(user_input)
@@ -721,6 +711,13 @@ async def handle_clarify(user_id: str, user_input: str, graph: ContextGraph):
     if user_input.isdigit():
         idx = int(user_input) - 1
         candidates = current_indicator["formula_candidates"]
+        if not candidates:
+            logger.warning("⚠️ 上下文中并不包含任何备选，意图解析出错: %s", user_input)
+            reply = f"上下文中并不包含任何备选，意图解析出错: {user_input}。"
+            graph.add_history(user_input, reply)
+            graph.set_intent_info(intent_info)
+            set_graph(user_id, graph)
+            return reply, graph.to_state()
         logger.info(f"🔢 检测到候选选择 index={idx}, count={len(candidates)}")
         if 0 <= idx < len(candidates):
             chosen = candidates[idx]
@@ -747,7 +744,8 @@ async def handle_clarify(user_id: str, user_input: str, graph: ContextGraph):
         node_id = graph.add_node(current_indicator)
 
         # 连续判断需要找到当前intent中active的indicator，作为当前current_info传入即可
-        if is_compare:
+        main_intent = graph.get_main_intent() or None
+        if "compare" == main_intent:
             logger.info("🔄 clarify 完成并检测到 compare 上下文，继续执行 handle_compare...")
             current_intents = [
                 ind.get("indicator")
@@ -757,7 +755,7 @@ async def handle_clarify(user_id: str, user_input: str, graph: ContextGraph):
             print(f"current_intents:{current_intents}")
             return await handle_compare(user_id, f"{user_input} -> system:完成 clarify 并检测到 compare 上下文，继续执行 handle_compare...", graph, current_intent={"candidates": current_intents})
 
-        if is_group:
+        if "list_query" == main_intent:
             logger.info("🔄 clarify 完成并检测到 list_query 上下文，继续执行 handle_list_query...")
             return await handle_list_query(user_id, f"{user_input} -> system:完成 clarify 并检测到 list_query 上下文，继续执行 handle_list_query...", graph)
         
@@ -778,10 +776,11 @@ async def handle_list_query(user_id: str, user_input: str, graph: ContextGraph, 
     user_input = str(user_input or "").strip()
     logger.info("📋 进入 list_query，user=%s, input=%s", user_id, user_input)
 
-    # Ensure we have a working intent_info (use snapshot recovery)
-    intent_info = graph.ensure_intent_info() or {}
+    # Ensure we have a working intent_info (DONT use snapshot recovery)
+    intent_info = graph.get_intent_info() or {}
     intent_info.setdefault("user_input_list", []).append(user_input)
     intent_info.setdefault("intent_list", []).append("list_query")
+    graph.set_main_intent("list_query")
     indicators = intent_info.setdefault("indicators", [])
 
     # Acquire candidates from current_intent if present
@@ -907,6 +906,7 @@ async def handle_list_query(user_id: str, user_input: str, graph: ContextGraph, 
     graph.add_relation("group", meta={"via": "pipeline.list.query", "user_input": intent_info.get("user_input_list"), "ids": sids, "result": "\n".join(results)})
     # 成功查询重置意图
     graph.set_intent_info({})
+    graph.clear_main_intent()
     graph.add_history(user_input, "\n".join(results))
     set_graph(user_id, graph)
     logger.info("✅ list query 完成")
@@ -924,7 +924,7 @@ async def main():
 
     from core.llm_energy_intent_parser import EnergyIntentParser
     parser = EnergyIntentParser()
-    user_input = "2022年1#、2#高炉分别是多少"
+    user_input = "本月1、2号高炉工序能耗是多少"
     current_info = await parser.parse_intent(user_input)
     print(current_info)
 
@@ -933,12 +933,12 @@ async def main():
     print("Single Query Reply 1:", reply)
     print(json.dumps(graph_state, indent=2, ensure_ascii=False))
 
-    user_input = "2022年1高炉电外供量实绩报出值、2高炉焦炭使用量实绩报出值分别是多少"
-    current_info = await parser.parse_intent(user_input)
-    # 测试重新精确输入
-    reply, graph_state = await handle_list_query(user_id, user_input, graph, current_info)
-    print("Single Query Reply 1:", reply)
-    print(json.dumps(graph_state, indent=2, ensure_ascii=False))
+    # user_input = "2022年1高炉电外供量实绩报出值、2高炉焦炭使用量实绩报出值分别是多少"
+    # current_info = await parser.parse_intent(user_input)
+    # # 测试重新精确输入
+    # reply, graph_state = await handle_list_query(user_id, user_input, graph, current_info)
+    # print("Single Query Reply 1:", reply)
+    # print(json.dumps(graph_state, indent=2, ensure_ascii=False))
 
     # # 测试选择备选
     # reply, graph_state = await handle_clarify(user_id, 2, graph)

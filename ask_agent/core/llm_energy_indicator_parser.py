@@ -115,7 +115,7 @@ async def parse_user_input(user_input: str, now: datetime = None):
    - timeType 保持最合适的时间粒度（如 DAY、WEEK、MONTH、YEAR）。
 
 此外，还要支持“模糊区间表达”，即未明确出现‘到’、‘至’、‘~’但语义上表示区间的时间短语。
-包括但不限于：
+包括但不限于(假设今年是2025年)：
 - “一月到三月”、“1月至3月”、“1-3月” → 当年区间 "2025-01~2025-03"
 - “去年一月到三月” → 去年区间 "2024-01~2024-03"
 - “上半年” → 当年上半年 "2025-01~2025-06"
@@ -130,26 +130,26 @@ async def parse_user_input(user_input: str, now: datetime = None):
 注意：
 - “indicator” 必须只包含指标名称，不包含时间相关词（如“今年”、“9月份”、“昨天”、“上周”、“第3季度”等）。
 - 指标中若包含性质修饰（如“累计”、“计划”、“目标”、“用量”、“成本”、“效率”等），必须保留。
-  例如(假定当前日期是2025年10月20日)：
-  - “本月累计的高炉工序能耗是多少” → indicator="高炉工序能耗累计" timeString="2025-10" timeType="MONTH"
-  - “高炉工序能耗本月计划是多少” → indicator="高炉工序能耗计划" timeString="2025-10" timeType="MONTH"
-  - “2022年1号高炉工序能耗计划” → indicator="1号高炉工序能耗计划" timeString="2025" timeType="YEAR"
-  - “1号高炉工序能耗计划” → indicator="1号高炉工序能耗计划" timeString=null timeType=null
-  - “去年12月吨钢蒸汽成本” → indicator="吨钢蒸汽成本" timeString="2024-12" timeType="MONTH"
-  - “明年目标纯水损失率” → indicator="目标纯水损失率" timeString="2026" timeType="YEAR"
-  - “2022年2月3日” → indicator=null indicator="目标纯水损失率" timeString="2022-02-03" timeType="DAY"
+  例如：
+  - “本月累计的高炉工序能耗是多少” → indicator="高炉工序能耗累计"
+  - “高炉工序能耗本月计划是多少” → indicator="高炉工序能耗计划"
+  - “2022年1号高炉工序能耗计划” → indicator="1号高炉工序能耗计划"
+  - “1#高炉工序能耗计划” → indicator="1#高炉工序能耗计划"
+  - “去年12月吨钢蒸汽成本” → indicator="吨钢蒸汽成本"
+  - “明年目标纯水损失率” → indicator="目标纯水损失率"
+  - “2022年2月3日” → indicator=null
 - 班次词（早班、白班、夜班、中班、晚班）属于时间，不属于指标。
 - SHIFT 类型优先于 HOUR：不要将“早班”错误地转化为具体小时。
 - 若原文不包含时间或者无法推算出时间，不要私自赋予时间，保持null即可。
-- 当“本月"、"1号”连在一起出现时，尽量不要将”本月1号“解析成本月第一天，而是将”1号“解析成指标开头部分。
+- 当出现“本月1号高炉”出现时，优先将“本月”识别为时间，将”1号高炉“解析成指标，而不是将“本月1号”识别成时间。
 - 只有明确确认描述的是时间区间才使用区间方式，否则一律使用时间点方式
   例如：
-  - “今年累计的” → indicator=null、timeString="2025"、timeType="YEAR"
-  - “上周的” → indicator=null、timeString="2025 W42"、timeType="WEEK"
+  - “今年累计的”(假设今年是2025年) → indicator=null、timeString="2025"、timeType="YEAR"
+  - “上周的”(假设本周是43周) → indicator=null、timeString="2025 W42"、timeType="WEEK"
 - 区间是同时识别两个时间，中间用“~”拼接作为timeString，timeType严格执行前面提到的规则
   例如：
-  - “一月到三月的吨钢蒸汽消耗” → indicator="吨钢蒸汽消耗"、timeString="2025-01~2025-03"、timeType="MONTH"
-  - “上半年高炉计划” → indicator="高炉计划"、timeString="2025-01~2025-06"、timeType="MONTH"
+  - “一月到三月的吨钢蒸汽消耗”(假设今年是2025年) → indicator="吨钢蒸汽消耗"、timeString="2025-01~2025-03"、timeType="MONTH"
+  - “上半年高炉计划”(假设今年是2025年) → indicator="高炉计划"、timeString="2025-01~2025-06"、timeType="MONTH"
   - "2023年上半年" → indicator=null、timeString="2023-01~2023-06"、timeType="MONTH"
 
 
@@ -180,6 +180,8 @@ if __name__ == "__main__":
     now = datetime(2025, 10, 16, 14, 0)
 
     test_inputs = [
+        "本月1号高炉工序能耗",
+        "本月2号高炉工序能耗",
         "1号高炉工序能耗计划",
         "2022年1号高炉工序能耗计划",
         "1号高炉工序能耗"

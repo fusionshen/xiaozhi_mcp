@@ -102,7 +102,7 @@ async def parse_intent(user_id: str, user_input: str) -> dict:
 2. 如果当前处于能源查询流程，
    且用户输入包含时间表达（如“今天”“昨天”“2022年的今天”“上月”），
    则视为 ENERGY_QUERY —— 表示用户在补充查询时间，而不是单纯问时间。
-3. 能源概念/定义/用途类问题 → ENERGY_KNOWLEDGE_QA
+3. 能源概念/定义/结构/用途类问题 → ENERGY_KNOWLEDGE_QA
 4. 能源指标/单位/消耗量 → ENERGY_QUERY
 5. 日期/时间/天气 → TOOL
 6. 其他 → CHAT
@@ -445,9 +445,9 @@ if __name__ == "__main__":
    
     async def test():
         result1 = await parse_intent("test_user", "选第一个")  # 今天 
-        result2 = await parse_intent("test_user", "1高炉工序能耗计划报出值")
+        result2 = await parse_intent("test_user", "1")
         result3 = await parse_intent("test_user", "现在几点")
-        result4 = await parse_intent("test_user", "高炉工序能耗实绩报出值")
+        result4 = await parse_intent("test_user", "1#，2#，3#高炉分别是多少")
         print("结果1:", result1)
         print("结果2:", result2)
         print("结果3:", result3)

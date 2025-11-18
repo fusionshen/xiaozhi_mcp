@@ -53,7 +53,7 @@ async def run_energy_query(user_id: str, user_input: str, parsed_number: str | N
         return {
             "reply": reply,
             #"intent_info": ContextGraph.from_state(graph_state).get_intent_info(),
-            #"graph_state": graph_state
+            "graph_state": graph_state
         }
 
     except Exception as e:
