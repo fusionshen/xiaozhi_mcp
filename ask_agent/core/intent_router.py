@@ -64,7 +64,7 @@ async def route_intent(user_id: str, user_input: str) -> Dict[str, Any]:
             return {"reply": res["answer"], "intent_info": res}
         except Exception as e:
             logger.exception("❌ 时间问答失败: %s", e)
-            return {"reply": "无法解析该时间问题。", "error": str(e)}
+            return {"reply": "当前仅支持时间工具，无法解析该问题。", "error": str(e)}
 
     # 4) CHAT: 通用聊天由 LLM 直接回复
     else:
