@@ -24,6 +24,7 @@
   ask_agent_venv\Scripts\activate
   # openwebui
   set HF_HUB_OFFLINE=1
+  open-webui serve --port=8090
   # Linux/Mac:
   # source ask_agent_venv/bin/activate
   

@@ -315,6 +315,6 @@ formula_embeddings.pkl
 chroma_db/
 FORMULAINFO_202503121558.csv
 *.pdf
-近期大模型研发任务.docx
+*.docx
 sbert_offline_models/
 openapi-servers/
