@@ -26,7 +26,10 @@ app = FastAPI(title="智能能源多意图对话引擎")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"]
+    allow_origins=["*"], 
+    allow_credentials=True, 
+    allow_methods=["*"], 
+    allow_headers=["*"]
 )
 
 # ----------------------
@@ -53,7 +56,8 @@ async def startup_event():
 @app.get("/chat")
 async def chat_get(
     user_id: str = Query(..., description="用户唯一标识，例如 test1"),
-    message: str = Query(..., description="用户输入内容")
+    message: str = Query(..., description="用户输入内容"),
+    pretty: bool = Query(False, description="是否返回美化后的回复（默认 false）")
 ):
-    result = await route_intent(user_id, message)
+    result = await route_intent(user_id, message, pretty)
     return result

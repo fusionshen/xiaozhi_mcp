@@ -44,7 +44,7 @@ class Tools:
         # URL 编码，保留中文符号
         encoded_msg = urllib.parse.quote(message, safe="")
 
-        url = f"http://localhost:9001/chat?user_id={user_id}&message={encoded_msg}"
+        url = f"http://localhost:9001/chat?user_id={user_id}&message={encoded_msg}&pretty=true"
 
         try:
             resp = requests.get(url, timeout=300)

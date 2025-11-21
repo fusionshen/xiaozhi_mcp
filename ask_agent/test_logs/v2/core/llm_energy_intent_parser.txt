@@ -1,0 +1,412 @@
+(myenv) fusionshen@fusionshen-ThinkPad-T14-Gen-1:~/Desktop/LLM/ask_agent$ python -m core.llm_energy_intent_parser
+2025-11-21 18:00:24,876 | INFO | llm_client | ✅ Using ChatOllama from langchain-ollama
+/home/fusionshen/myenv/lib/python3.12/site-packages/jieba/_compat.py:18: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+✅ sentence-transformers 版本: 5.1.1
+<frozen runpy>:128: RuntimeWarning: 'core.llm_energy_intent_parser' found in sys.modules after import of package 'core', but prior to execution of 'core.llm_energy_intent_parser'; this may result in unpredictable behaviour
+2025-11-21 18:00:26,888 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-21 18:00:27,616 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{"intent":"list_query","candidates":["本月1高炉工序能耗","本月2高炉工序能耗","本月3高炉工序能耗"]}
+```
+2025-11-21 18:00:28,715 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-21 18:00:28,716 | INFO | llm_energy_intent_parser | [parse_intent] user_input=本月1，2，3高炉工序能耗分别是多少 => {'intent': 'list_query', 'candidates': ['本月1高炉工序能耗', '本月2高炉工序能耗', '本月3高炉工序能耗']}
+
+🧠 输入: 本月1，2，3高炉工序能耗分别是多少
+➡️ 解析结果: {
+  "intent": "list_query",
+  "candidates": [
+    "本月1高炉工序能耗",
+    "本月2高炉工序能耗",
+    "本月3高炉工序能耗"
+  ]
+}
+2025-11-21 18:00:28,813 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-21 18:00:29,199 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{"intent":"compare","candidates":["高炉工序能耗","高炉工序能耗计划"]}
+```
+2025-11-21 18:00:29,868 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-21 18:00:29,870 | INFO | llm_energy_intent_parser | [parse_intent] user_input=高炉工序能耗是多少，对比计划偏差多少 => {'intent': 'compare', 'candidates': ['高炉工序能耗', '高炉工序能耗计划']}
+
+🧠 输入: 高炉工序能耗是多少，对比计划偏差多少
+➡️ 解析结果: {
+  "intent": "compare",
+  "candidates": [
+    "高炉工序能耗",
+    "高炉工序能耗计划"
+  ]
+}
+2025-11-21 18:00:29,967 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-21 18:00:30,257 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{"intent":"compare","candidates":["本月高炉工序能耗","本月高炉工序能耗计划"]}
+```
+2025-11-21 18:00:31,062 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-21 18:00:31,063 | INFO | llm_energy_intent_parser | [parse_intent] user_input=本月高炉工序能耗是多少，对比计划偏差多少 => {'intent': 'compare', 'candidates': ['本月高炉工序能耗', '本月高炉工序能耗计划']}
+
+🧠 输入: 本月高炉工序能耗是多少，对比计划偏差多少
+➡️ 解析结果: {
+  "intent": "compare",
+  "candidates": [
+    "本月高炉工序能耗",
+    "本月高炉工序能耗计划"
+  ]
+}
+2025-11-21 18:00:31,135 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-21 18:00:31,456 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+{"intent":"slot_fill","candidates":["今天"]}
+2025-11-21 18:00:31,751 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-21 18:00:31,752 | INFO | llm_energy_intent_parser | [parse_intent] user_input=今天 => {'intent': 'slot_fill', 'candidates': ['今天']}
+
+🧠 输入: 今天
+➡️ 解析结果: {
+  "intent": "slot_fill",
+  "candidates": [
+    "今天"
+  ]
+}
+2025-11-21 18:00:31,848 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-21 18:00:32,172 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{"intent":"single_query","candidates":["今天高炉工序能耗"]}
+```
+2025-11-21 18:00:32,740 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-21 18:00:32,740 | INFO | llm_energy_intent_parser | [parse_intent] user_input=高炉今天的工序能耗是多少 => {'intent': 'single_query', 'candidates': ['今天高炉工序能耗']}
+
+🧠 输入: 高炉今天的工序能耗是多少
+➡️ 解析结果: {
+  "intent": "single_query",
+  "candidates": [
+    "今天高炉工序能耗"
+  ]
+}
+2025-11-21 18:00:32,838 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-21 18:00:33,196 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{"intent":"single_query","candidates":["本月高炉工序能耗累计"]}
+```
+2025-11-21 18:00:33,763 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-21 18:00:33,764 | INFO | llm_energy_intent_parser | [parse_intent] user_input=本月累计的高炉工序能耗是多少 => {'intent': 'single_query', 'candidates': ['本月高炉工序能耗累计']}
+
+🧠 输入: 本月累计的高炉工序能耗是多少
+➡️ 解析结果: {
+  "intent": "single_query",
+  "candidates": [
+    "本月高炉工序能耗累计"
+  ]
+}
+2025-11-21 18:00:33,859 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-21 18:00:34,221 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{"intent":"single_query","candidates":["昨天1号高炉工序能耗"]}
+```
+2025-11-21 18:00:34,797 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-21 18:00:34,797 | INFO | llm_energy_intent_parser | [parse_intent] user_input=1号高炉昨天的工序能耗是多少 => {'intent': 'single_query', 'candidates': ['昨天1号高炉工序能耗']}
+
+🧠 输入: 1号高炉昨天的工序能耗是多少
+➡️ 解析结果: {
+  "intent": "single_query",
+  "candidates": [
+    "昨天1号高炉工序能耗"
+  ]
+}
+2025-11-21 18:00:34,895 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-21 18:00:35,241 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{"intent":"single_query","candidates":["去年今天高炉工序能耗"]}
+```
+2025-11-21 18:00:35,820 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-21 18:00:35,821 | INFO | llm_energy_intent_parser | [parse_intent] user_input=去年今天的高炉工序能耗是多少 => {'intent': 'single_query', 'candidates': ['去年今天高炉工序能耗']}
+
+🧠 输入: 去年今天的高炉工序能耗是多少
+➡️ 解析结果: {
+  "intent": "single_query",
+  "candidates": [
+    "去年今天高炉工序能耗"
+  ]
+}
+2025-11-21 18:00:35,919 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-21 18:00:36,258 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{"intent":"single_query","candidates":["2021年10月23日1高炉工序能耗"]}
+```
+2025-11-21 18:00:37,114 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-21 18:00:37,115 | INFO | llm_energy_intent_parser | [parse_intent] user_input=2021年10月23日的1高炉工序能耗是多少 => {'intent': 'single_query', 'candidates': ['2021年10月23日1高炉工序能耗']}
+
+🧠 输入: 2021年10月23日的1高炉工序能耗是多少
+➡️ 解析结果: {
+  "intent": "single_query",
+  "candidates": [
+    "2021年10月23日1高炉工序能耗"
+  ]
+}
+2025-11-21 18:00:37,207 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-21 18:00:37,599 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+{"intent":"single_query","candidates":["2021年10月23日1高炉工序能耗"]}
+2025-11-21 18:00:38,239 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-21 18:00:38,240 | INFO | llm_energy_intent_parser | [parse_intent] user_input=时间：2021-10-23，1高炉工序能耗是多少 => {'intent': 'single_query', 'candidates': ['2021年10月23日1高炉工序能耗']}
+
+🧠 输入: 时间：2021-10-23，1高炉工序能耗是多少
+➡️ 解析结果: {
+  "intent": "single_query",
+  "candidates": [
+    "2021年10月23日1高炉工序能耗"
+  ]
+}
+2025-11-21 18:00:38,346 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-21 18:00:38,596 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{"intent":"single_query","candidates":["高炉工序能耗"]}
+```
+2025-11-21 18:00:39,129 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-21 18:00:39,130 | INFO | llm_energy_intent_parser | [parse_intent] user_input=高炉工序能耗是多少 => {'intent': 'single_query', 'candidates': ['高炉工序能耗']}
+
+🧠 输入: 高炉工序能耗是多少
+➡️ 解析结果: {
+  "intent": "single_query",
+  "candidates": [
+    "高炉工序能耗"
+  ]
+}
+2025-11-21 18:00:39,226 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-21 18:00:39,649 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{"intent":"list_query","candidates":["本月1号高炉工序能耗","本月2号高炉工序能耗"]}
+```
+2025-11-21 18:00:40,536 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-21 18:00:40,536 | INFO | llm_energy_intent_parser | [parse_intent] user_input=本月1、2号高炉工序能耗是多少 => {'intent': 'list_query', 'candidates': ['本月1号高炉工序能耗', '本月2号高炉工序能耗']}
+
+🧠 输入: 本月1、2号高炉工序能耗是多少
+➡️ 解析结果: {
+  "intent": "list_query",
+  "candidates": [
+    "本月1号高炉工序能耗",
+    "本月2号高炉工序能耗"
+  ]
+}
+2025-11-21 18:00:40,636 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-21 18:00:40,990 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{"intent":"single_query","candidates":["本月高炉工序能耗计划"]}
+```
+2025-11-21 18:00:41,530 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-21 18:00:41,531 | INFO | llm_energy_intent_parser | [parse_intent] user_input=高炉工序能耗本月计划是多少 => {'intent': 'single_query', 'candidates': ['本月高炉工序能耗计划']}
+
+🧠 输入: 高炉工序能耗本月计划是多少
+➡️ 解析结果: {
+  "intent": "single_query",
+  "candidates": [
+    "本月高炉工序能耗计划"
+  ]
+}
+2025-11-21 18:00:41,629 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-21 18:00:42,011 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{"intent":"single_query","candidates":["本月高炉工序能耗计划"]}
+```
+2025-11-21 18:00:42,540 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-21 18:00:42,541 | INFO | llm_energy_intent_parser | [parse_intent] user_input=本月高炉工序能耗的计划值是多少 => {'intent': 'single_query', 'candidates': ['本月高炉工序能耗计划']}
+
+🧠 输入: 本月高炉工序能耗的计划值是多少
+➡️ 解析结果: {
+  "intent": "single_query",
+  "candidates": [
+    "本月高炉工序能耗计划"
+  ]
+}
+2025-11-21 18:00:42,639 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-21 18:00:43,041 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{"intent":"single_query","candidates":["今天高炉工序能耗"]}
+```
+2025-11-21 18:00:43,504 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-21 18:00:43,505 | INFO | llm_energy_intent_parser | [parse_intent] user_input=今天的高炉工序能耗是多少 => {'intent': 'single_query', 'candidates': ['今天高炉工序能耗']}
+
+🧠 输入: 今天的高炉工序能耗是多少
+➡️ 解析结果: {
+  "intent": "single_query",
+  "candidates": [
+    "今天高炉工序能耗"
+  ]
+}
+2025-11-21 18:00:43,585 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-21 18:00:43,950 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+{"intent":"compare","candidates":["上月"]}
+2025-11-21 18:00:44,209 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-21 18:00:44,210 | INFO | llm_energy_intent_parser | [parse_intent] user_input=对比上月有什么变化 => {'intent': 'compare', 'candidates': ['上月']}
+
+🧠 输入: 对比上月有什么变化
+➡️ 解析结果: {
+  "intent": "compare",
+  "candidates": [
+    "上月"
+  ]
+}
+2025-11-21 18:00:44,309 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-21 18:00:44,711 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{"intent":"single_query","candidates":["本月1高炉工序能耗"]}
+```
+2025-11-21 18:00:45,284 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-21 18:00:45,286 | INFO | llm_energy_intent_parser | [parse_intent] user_input=本月的1高炉工序能耗是多少？ => {'intent': 'single_query', 'candidates': ['本月1高炉工序能耗']}
+
+🧠 输入: 本月的1高炉工序能耗是多少？
+➡️ 解析结果: {
+  "intent": "single_query",
+  "candidates": [
+    "本月1高炉工序能耗"
+  ]
+}
+2025-11-21 18:00:45,387 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-21 18:00:45,740 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{"intent":"compare","candidates":["2高炉"]}
+```
+2025-11-21 18:00:46,150 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-21 18:00:46,151 | INFO | llm_energy_intent_parser | [parse_intent] user_input=对比2高炉有什么变化 => {'intent': 'compare', 'candidates': ['2高炉']}
+
+🧠 输入: 对比2高炉有什么变化
+➡️ 解析结果: {
+  "intent": "compare",
+  "candidates": [
+    "2高炉"
+  ]
+}
+2025-11-21 18:00:46,241 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-21 18:00:46,611 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{"intent":"single_query","candidates":["本月高炉电耗"]}
+```
+2025-11-21 18:00:47,157 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-21 18:00:47,158 | INFO | llm_energy_intent_parser | [parse_intent] user_input=本月的高炉电耗是多少 => {'intent': 'single_query', 'candidates': ['本月高炉电耗']}
+
+🧠 输入: 本月的高炉电耗是多少
+➡️ 解析结果: {
+  "intent": "single_query",
+  "candidates": [
+    "本月高炉电耗"
+  ]
+}
+2025-11-21 18:00:47,258 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-21 18:00:47,635 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{"intent":"single_query","candidates":["本月高炉电使用量"]}
+```
+2025-11-21 18:00:48,097 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-21 18:00:48,099 | INFO | llm_energy_intent_parser | [parse_intent] user_input=本月的高炉电使用量是多少 => {'intent': 'single_query', 'candidates': ['本月高炉电使用量']}
+
+🧠 输入: 本月的高炉电使用量是多少
+➡️ 解析结果: {
+  "intent": "single_query",
+  "candidates": [
+    "本月高炉电使用量"
+  ]
+}
+2025-11-21 18:00:48,197 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-21 18:00:48,527 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{"intent":"single_query","candidates":["高炉煤气耗"]}
+```
+2025-11-21 18:00:49,029 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-21 18:00:49,030 | INFO | llm_energy_intent_parser | [parse_intent] user_input=高炉的煤气耗是多少 => {'intent': 'single_query', 'candidates': ['高炉煤气耗']}
+
+🧠 输入: 高炉的煤气耗是多少
+➡️ 解析结果: {
+  "intent": "single_query",
+  "candidates": [
+    "高炉煤气耗"
+  ]
+}
+2025-11-21 18:00:49,130 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-21 18:00:49,422 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{"intent":"single_query","candidates":["今天10号高炉工序能耗"]}
+```
+2025-11-21 18:00:50,087 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-21 18:00:50,088 | INFO | llm_energy_intent_parser | [parse_intent] user_input=10号高炉今天的工序能耗是多少 => {'intent': 'single_query', 'candidates': ['今天10号高炉工序能耗']}
+
+🧠 输入: 10号高炉今天的工序能耗是多少
+➡️ 解析结果: {
+  "intent": "single_query",
+  "candidates": [
+    "今天10号高炉工序能耗"
+  ]
+}
+2025-11-21 18:00:50,182 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-21 18:00:50,605 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{"intent":"single_query","candidates":["本月高炉工序能耗"]}
+```
+2025-11-21 18:00:51,105 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-21 18:00:51,106 | INFO | llm_energy_intent_parser | [parse_intent] user_input=本月的高炉工序能耗是多少？ => {'intent': 'single_query', 'candidates': ['本月高炉工序能耗']}
+
+🧠 输入: 本月的高炉工序能耗是多少？
+➡️ 解析结果: {
+  "intent": "single_query",
+  "candidates": [
+    "本月高炉工序能耗"
+  ]
+}
+2025-11-21 18:00:51,174 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-21 18:00:51,449 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{"intent":"list_query","candidates":["1#高炉","2#高炉","3#高炉"]}
+```
+2025-11-21 18:00:52,217 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-21 18:00:52,219 | INFO | llm_energy_intent_parser | [parse_intent] user_input=1#，2#，3#高炉分别是多少 => {'intent': 'list_query', 'candidates': ['1#高炉', '2#高炉', '3#高炉']}
+
+🧠 输入: 1#，2#，3#高炉分别是多少
+➡️ 解析结果: {
+  "intent": "list_query",
+  "candidates": [
+    "1#高炉",
+    "2#高炉",
+    "3#高炉"
+  ]
+}
+2025-11-21 18:00:52,297 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-21 18:00:52,592 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{"intent":"compare","candidates":["本月高炉工序能耗","本月高炉工序能耗计划"]}
+```
+2025-11-21 18:00:53,405 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-21 18:00:53,405 | INFO | llm_energy_intent_parser | [parse_intent] user_input=本月高炉工序能耗是多少，对比计划偏差多少 => {'intent': 'compare', 'candidates': ['本月高炉工序能耗', '本月高炉工序能耗计划']}
+
+🧠 输入: 本月高炉工序能耗是多少，对比计划偏差多少
+➡️ 解析结果: {
+  "intent": "compare",
+  "candidates": [
+    "本月高炉工序能耗",
+    "本月高炉工序能耗计划"
+  ]
+}
+2025-11-21 18:00:53,493 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-21 18:00:53,797 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+{"intent":"analysis","candidates":["本年度高炉工序能耗"]}
+2025-11-21 18:00:54,251 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-21 18:00:54,252 | INFO | llm_energy_intent_parser | [parse_intent] user_input=本年度的高炉工序能耗趋势是什么样的 => {'intent': 'analysis', 'candidates': ['本年度高炉工序能耗']}
+
+🧠 输入: 本年度的高炉工序能耗趋势是什么样的
+➡️ 解析结果: {
+  "intent": "analysis",
+  "candidates": [
+    "本年度高炉工序能耗"
+  ]
+}
+2025-11-21 18:00:54,353 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-21 18:00:54,611 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{"intent":"compare","candidates":["本月1号高炉工序能耗","本月2号高炉工序能耗"]}
+```
+2025-11-21 18:00:55,531 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-21 18:00:55,531 | INFO | llm_energy_intent_parser | [parse_intent] user_input=本月1、2号高炉工序能耗偏差情况 => {'intent': 'compare', 'candidates': ['本月1号高炉工序能耗', '本月2号高炉工序能耗']}
+
+🧠 输入: 本月1、2号高炉工序能耗偏差情况
+➡️ 解析结果: {
+  "intent": "compare",
+  "candidates": [
+    "本月1号高炉工序能耗",
+    "本月2号高炉工序能耗"
+  ]
+}

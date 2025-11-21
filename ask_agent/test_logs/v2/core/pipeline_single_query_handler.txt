@@ -1,47 +1,273 @@
+    # 测试单指标查询
+    reply, graph_state = await handle_single_query(user_id, "1号高炉工序能耗", graph)
+    print("Single Query Reply:", reply)
+    print(json.dumps(graph_state, indent=2, ensure_ascii=False))
+
+    # 测试选择备选
+    reply, graph_state = await handle_clarify(user_id, 1, graph)
+    print("Single Query Reply 2:", reply)
+    print(json.dumps(graph_state, indent=2, ensure_ascii=False))
+
+    # # 测试补齐时间
+    reply, graph_state = await handle_slot_fill(user_id, "今天", graph, {"candidates": ["今天"]})
+    print("Single Query Reply 3:", reply)
+    print(json.dumps(graph_state, indent=2, ensure_ascii=False))
+
 (myenv) fusionshen@fusionshen-ThinkPad-T14-Gen-1:~/Desktop/LLM/ask_agent$ python -m core.pipeline_handlers
-2025-11-12 13:14:47,805 | INFO | llm_client | ✅ Using ChatOllama from langchain-ollama
+2025-11-20 17:43:47,250 | INFO | llm_client | ✅ Using ChatOllama from langchain-ollama
 /home/fusionshen/myenv/lib/python3.12/site-packages/jieba/_compat.py:18: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
   import pkg_resources
 ✅ sentence-transformers 版本: 5.1.1
 <frozen runpy>:128: RuntimeWarning: 'core.pipeline_handlers' found in sys.modules after import of package 'core', but prior to execution of 'core.pipeline_handlers'; this may result in unpredictable behaviour
-2025-11-12 13:14:50,436 | INFO | formula-api | 🔄 正在初始化公式数据（full load）...
+2025-11-20 17:43:49,343 | INFO | formula-api | 🔄 正在初始化公式数据（full load）...
 Building prefix dict from the default dictionary ...
-2025-11-12 13:14:53,724 | DEBUG | jieba | Building prefix dict from the default dictionary ...
+2025-11-20 17:43:52,586 | DEBUG | jieba | Building prefix dict from the default dictionary ...
 Loading model from cache /tmp/jieba.cache
-2025-11-12 13:14:53,724 | DEBUG | jieba | Loading model from cache /tmp/jieba.cache
-Loading model cost 0.595 seconds.
-2025-11-12 13:14:54,319 | DEBUG | jieba | Loading model cost 0.595 seconds.
+2025-11-20 17:43:52,586 | DEBUG | jieba | Loading model from cache /tmp/jieba.cache
+Loading model cost 0.587 seconds.
+2025-11-20 17:43:53,174 | DEBUG | jieba | Loading model cost 0.587 seconds.
 Prefix dict has been built successfully.
-2025-11-12 13:14:54,319 | DEBUG | jieba | Prefix dict has been built successfully.
-2025-11-12 13:15:07,533 | INFO | formula-api | ✅ Loaded 270817 formulas. Tokenization ready.
+2025-11-20 17:43:53,174 | DEBUG | jieba | Prefix dict has been built successfully.
+2025-11-20 17:44:06,125 | INFO | formula-api | ✅ Loaded 270817 formulas. Tokenization ready.
 HAVE_ST : True
-2025-11-12 13:15:07,533 | INFO | formula-api | Auto-selected embedding device: cpu
+2025-11-20 17:44:06,125 | INFO | formula-api | Auto-selected embedding device: cpu
 OFFLINE_MODEL_PATH:/home/fusionshen/Desktop/LLM/ask_agent/models/sbert_offline_models/86741b4e3f5cb7765a600d3a3d55a0f6a6cb443d
-2025-11-12 13:15:07,533 | INFO | formula-api | 🧩 尝试加载本地模型: /home/fusionshen/Desktop/LLM/ask_agent/models/sbert_offline_models/86741b4e3f5cb7765a600d3a3d55a0f6a6cb443d
-2025-11-12 13:15:07,534 | INFO | sentence_transformers.SentenceTransformer | Load pretrained SentenceTransformer: /home/fusionshen/Desktop/LLM/ask_agent/models/sbert_offline_models/86741b4e3f5cb7765a600d3a3d55a0f6a6cb443d
-2025-11-12 13:15:08,444 | INFO | formula-api | ✅ 已成功加载离线模型。
-2025-11-12 13:15:09,129 | INFO | formula-api | ✅ Loaded embeddings from cache ((270817, 384))
-2025-11-12 13:15:09,130 | INFO | formula-api | ✅ 初始化完成，用时 18.69s
-2025-11-12 13:15:09,130 | INFO | pipeline.handlers | 🔹 handle_single_query user_input=今天高炉工序能耗是多少
-2025-11-12 13:15:09,202 | INFO | httpx | HTTP Request: GET http://192.168.92.13:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-12 13:15:17,343 | INFO | httpx | HTTP Request: POST http://192.168.92.13:11434/api/chat "HTTP/1.1 200 OK"
+2025-11-20 17:44:06,125 | INFO | formula-api | 🧩 尝试加载本地模型: /home/fusionshen/Desktop/LLM/ask_agent/models/sbert_offline_models/86741b4e3f5cb7765a600d3a3d55a0f6a6cb443d
+2025-11-20 17:44:06,126 | INFO | sentence_transformers.SentenceTransformer | Load pretrained SentenceTransformer: /home/fusionshen/Desktop/LLM/ask_agent/models/sbert_offline_models/86741b4e3f5cb7765a600d3a3d55a0f6a6cb443d
+2025-11-20 17:44:06,966 | INFO | formula-api | ✅ 已成功加载离线模型。
+2025-11-20 17:44:07,193 | INFO | formula-api | ✅ Loaded embeddings from cache ((270817, 384))
+2025-11-20 17:44:07,193 | INFO | formula-api | ✅ 初始化完成，用时 17.85s
+2025-11-20 17:44:07,193 | INFO | pipeline.handlers | 🔵 [single] enter | user_input=1号高炉工序能耗
+⚠️ 无节点可恢复 intent_info
+2025-11-20 17:44:07,193 | INFO | pipeline.handlers | ⚠️ 无历史节点可用，创建默认 indicator。
+2025-11-20 17:44:07,193 | INFO | pipeline.handlers | 🔹 active indicator = None
+2025-11-20 17:44:07,263 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-20 17:44:08,415 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
-  "indicator": "高炉工序能耗",
-  "timeString": "2025-11-12",
+  "indicator": "1号高炉工序能耗",
+  "timeString": null,
+  "timeType": null
+}
+```
+2025-11-20 17:44:09,405 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+Batches: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 41.87it/s]
+2025-11-20 17:44:10,274 | INFO | context_graph | 🕘 add_history: 1号高炉工序能耗 -> 没有完全匹配的【1号高炉工序能耗】，请选择编号（或重新输入更精确的名称）：
+1) 1高炉工序能耗计划报出值 (score 91.78)
+2) 1高炉工序能耗计划累计值 (score 88.66)
+3) 1高炉工序平衡能耗计划报出值 (score 88.46)
+4) 1高炉工序能耗实绩报出值 (score 87.77)
+5) 高炉工序能耗实绩报出值 (score 87.20)
+Single Query Reply: 没有完全匹配的【1号高炉工序能耗】，请选择编号（或重新输入更精确的名称）：
+1) 1高炉工序能耗计划报出值 (score 91.78)
+2) 1高炉工序能耗计划累计值 (score 88.66)
+3) 1高炉工序平衡能耗计划报出值 (score 88.46)
+4) 1高炉工序能耗实绩报出值 (score 87.77)
+5) 高炉工序能耗实绩报出值 (score 87.20)
+{
+  "graph": {
+    "nodes": [],
+    "relations": [],
+    "_next_id": 1
+  },
+  "meta": {
+    "history": [
+      {
+        "ask": "1号高炉工序能耗",
+        "reply": "没有完全匹配的【1号高炉工序能耗】，请选择编号（或重新输入更精确的名称）：\n1) 1高炉工序能耗计划报出值 (score 91.78)\n2) 1高炉工序能耗计划累计值 (score 88.66)\n3) 1高炉工序平衡能耗计划报出值 (score 88.46)\n4) 1高炉工序能耗实绩报出值 (score 87.77)\n5) 高炉工序能耗实绩报出值 (score 87.20)"
+      }
+    ],
+    "current_intent_info": {
+      "user_input_list": [
+        "1号高炉工序能耗"
+      ],
+      "intent_list": [
+        "single_query"
+      ],
+      "indicators": [
+        {
+          "status": "active",
+          "indicator": "1号高炉工序能耗",
+          "formula": null,
+          "timeString": null,
+          "timeType": null,
+          "slot_status": {
+            "formula": "missing",
+            "time": "missing"
+          },
+          "value": null,
+          "note": null,
+          "formula_candidates": [
+            {
+              "number": 1,
+              "FORMULAID": "GXNHLT1101.IXPL",
+              "FORMULANAME": "1高炉工序能耗计划报出值",
+              "score": 91.7787,
+              "fuzzy_score": 95.4909,
+              "semantic_score": 81.9644,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 2,
+              "FORMULAID": "GXNHLT1101.IXPL.SUMVALUE",
+              "FORMULANAME": "1高炉工序能耗计划累计值",
+              "score": 88.6605,
+              "fuzzy_score": 92.6545,
+              "semantic_score": 83.2141,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 3,
+              "FORMULAID": "PHNHLT1101.IXPL",
+              "FORMULANAME": "1高炉工序平衡能耗计划报出值",
+              "score": 88.4603,
+              "fuzzy_score": 95.4909,
+              "semantic_score": 76.6991,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 4,
+              "FORMULAID": "GXNHLT1101.IXRL",
+              "FORMULANAME": "1高炉工序能耗实绩报出值",
+              "score": 87.768,
+              "fuzzy_score": 99.1636,
+              "semantic_score": 67.9943,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 5,
+              "FORMULAID": "GXNHLT1100.IXRL",
+              "FORMULANAME": "高炉工序能耗实绩报出值",
+              "score": 87.2049,
+              "fuzzy_score": 87.264,
+              "semantic_score": 75.0671,
+              "match_kind": "hybrid"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
+2025-11-20 17:44:10,274 | INFO | pipeline.handlers | ✅ 进入 clarify 模式。
+2025-11-20 17:44:10,274 | INFO | pipeline.handlers | 🔹 handle_clarify user_input=1
+2025-11-20 17:44:10,274 | INFO | pipeline.handlers | 🔢 检测到候选选择 index=0, count=5
+2025-11-20 17:44:10,274 | INFO | pipeline.handlers | ✅ 用户选择公式: 1高炉工序能耗计划报出值 (FORMULAID=GXNHLT1101.IXPL)
+2025-11-20 17:44:10,274 | INFO | context_graph | 🕘 add_history: 1 -> 好的，要查【1高炉工序能耗计划报出值】，请告诉我时间。
+Single Query Reply 2: 好的，要查【1高炉工序能耗计划报出值】，请告诉我时间。
+{
+  "graph": {
+    "nodes": [],
+    "relations": [],
+    "_next_id": 1
+  },
+  "meta": {
+    "history": [
+      {
+        "ask": "1号高炉工序能耗",
+        "reply": "没有完全匹配的【1号高炉工序能耗】，请选择编号（或重新输入更精确的名称）：\n1) 1高炉工序能耗计划报出值 (score 91.78)\n2) 1高炉工序能耗计划累计值 (score 88.66)\n3) 1高炉工序平衡能耗计划报出值 (score 88.46)\n4) 1高炉工序能耗实绩报出值 (score 87.77)\n5) 高炉工序能耗实绩报出值 (score 87.20)"
+      },
+      {
+        "ask": "1",
+        "reply": "好的，要查【1高炉工序能耗计划报出值】，请告诉我时间。"
+      }
+    ],
+    "current_intent_info": {
+      "user_input_list": [
+        "1号高炉工序能耗",
+        "1"
+      ],
+      "intent_list": [
+        "single_query",
+        "clarify"
+      ],
+      "indicators": [
+        {
+          "status": "active",
+          "indicator": "1高炉工序能耗计划报出值",
+          "formula": "GXNHLT1101.IXPL",
+          "timeString": null,
+          "timeType": null,
+          "slot_status": {
+            "formula": "filled",
+            "time": "missing"
+          },
+          "value": null,
+          "note": "好的，要查【1高炉工序能耗计划报出值】，请告诉我时间。",
+          "formula_candidates": [
+            {
+              "number": 1,
+              "FORMULAID": "GXNHLT1101.IXPL",
+              "FORMULANAME": "1高炉工序能耗计划报出值",
+              "score": 91.7787,
+              "fuzzy_score": 95.4909,
+              "semantic_score": 81.9644,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 2,
+              "FORMULAID": "GXNHLT1101.IXPL.SUMVALUE",
+              "FORMULANAME": "1高炉工序能耗计划累计值",
+              "score": 88.6605,
+              "fuzzy_score": 92.6545,
+              "semantic_score": 83.2141,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 3,
+              "FORMULAID": "PHNHLT1101.IXPL",
+              "FORMULANAME": "1高炉工序平衡能耗计划报出值",
+              "score": 88.4603,
+              "fuzzy_score": 95.4909,
+              "semantic_score": 76.6991,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 4,
+              "FORMULAID": "GXNHLT1101.IXRL",
+              "FORMULANAME": "1高炉工序能耗实绩报出值",
+              "score": 87.768,
+              "fuzzy_score": 99.1636,
+              "semantic_score": 67.9943,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 5,
+              "FORMULAID": "GXNHLT1100.IXRL",
+              "FORMULANAME": "高炉工序能耗实绩报出值",
+              "score": 87.2049,
+              "fuzzy_score": 87.264,
+              "semantic_score": 75.0671,
+              "match_kind": "hybrid"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
+2025-11-20 17:44:10,274 | INFO | pipeline.handlers | 🔁 进入 slot_fill 模式。
+2025-11-20 17:44:10,274 | INFO | pipeline.handlers | 🔹 handle_slot_fill user_input=今天
+2025-11-20 17:44:10,343 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-11-20 17:44:11,487 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "indicator": null,
+  "timeString": "2025-11-20",
   "timeType": "DAY"
 }
 ```
-2025-11-12 13:15:18,620 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-Batches: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 19.94it/s]
-🟢 登录返回： {'error': None, 'data': {'token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiIxNDMiLCJ0ZW5hbnRpZCI6IjEwNSIsInVuYW1lIjoi566h55CG5ZGYIiwidG5hbWUiOiLlrp3pkqLmuZvmsZ_pkqLpk4HmnInpmZDlhazlj7giLCJ0c2lkZSI6IjEiLCJncm91cGlkIjoiMCIsInNsaWRpbmciOiIwIiwicnNpbmNlIjoiMTc2MzA2ODIxOSIsIm5iZiI6MTc2MjkyMzkxOSwiZXhwIjoxNzYzMDM5NzE5LCJpc3MiOiJzaGJhb25lbmciLCJhdWQiOiJzaGJhb25lbmcifQ.Ki013-TNcj-Jp1Wq-GY0kO4gF2v8isOVgg7yEi4p_Ck', 'expiresAt': '2025-11-13 21:14:19', 'tenantId': 105, 'tenancyName': 'zjis', 'userId': 143, 'userName': 'admin'}, 'status': 200, 'msg': '操作成功', 'duration': -1}
+2025-11-20 17:44:12,537 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
+2025-11-20 17:44:12,538 | INFO | pipeline.handlers | ✅ 解析到时间候选: {'indicator': None, 'timeString': '2025-11-20', 'timeType': 'DAY'}
+🟢 登录返回： {'error': None, 'data': {'token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiIxNDMiLCJ0ZW5hbnRpZCI6IjEwNSIsInVuYW1lIjoi566h55CG5ZGYIiwidG5hbWUiOiLlrp3pkqLmuZvmsZ_pkqLpk4HmnInpmZDlhazlj7giLCJ0c2lkZSI6IjEiLCJncm91cGlkIjoiMCIsInNsaWRpbmciOiIwIiwicnNpbmNlIjoiMTc2Mzc3NTU1MiIsIm5iZiI6MTc2MzYzMTI1MiwiZXhwIjoxNzYzNzQ3MDUyLCJpc3MiOiJzaGJhb25lbmciLCJhdWQiOiJzaGJhb25lbmcifQ.eQT3SKFiyzoARuLCReD1CrQhdh_b2sIMb93Jn9fmCK4', 'expiresAt': '2025-11-22 01:43:12', 'tenantId': 105, 'tenancyName': 'zjis', 'userId': 143, 'userName': 'admin'}, 'status': 200, 'msg': '操作成功', 'duration': -1}
 🟡 调用接口: http://www.shbaoenergy.com:8081/emscore/api/services/nYMC/calcData/QueryItemValuesAsync
-🧩 请求参数: {'expressionList': {'GXNHLT1100.IXRL': 'GXNHLT1100.IXRL'}, 'clock': '2025-11-12', 'timegranId': 'DAY'}
-🟢 返回数据: {'error': None, 'data': {'GXNHLT1100.IXRL': None}, 'status': 200, 'msg': '操作成功', 'duration': -1}
-2025-11-12 13:15:19,733 | INFO | pipeline.handlers | ⚙️ 平台查询成功: {'GXNHLT1100.IXRL': None}
-2025-11-12 13:15:19,733 | INFO | context_graph | 🆕 ContextGraph.add_node -> id=1, indicator=高炉工序能耗实绩报出值, time=2025-11-12
-2025-11-12 13:15:19,733 | INFO | context_graph | 🕘 add_history: 今天高炉工序能耗是多少 -> ✅ 高炉工序能耗实绩报出值 在 2025-11-12 (DAY) 的值是 None 
-Single Query Reply: ✅ 高炉工序能耗实绩报出值 在 2025-11-12 (DAY) 的值是 None 
+🧩 请求参数: {'expressionList': {'GXNHLT1101.IXPL': 'GXNHLT1101.IXPL'}, 'clock': '2025-11-20', 'timegranId': 'DAY'}
+🟢 返回数据: {'error': None, 'data': {'GXNHLT1101.IXPL': None}, 'status': 200, 'msg': '操作成功', 'duration': -1}
+2025-11-20 17:44:23,776 | INFO | pipeline.handlers | ⚙️ 平台查询成功: {'GXNHLT1101.IXPL': None}
+2025-11-20 17:44:23,776 | INFO | context_graph | 🆕 ContextGraph.add_node -> id=1, indicator=1高炉工序能耗计划报出值, time=2025-11-20
+2025-11-20 17:44:23,776 | INFO | context_graph | 🕘 add_history: 今天 -> ✅ 1高炉工序能耗计划报出值 在 2025-11-20 (DAY) 的值是 None 
+2025-11-20 17:44:23,776 | INFO | pipeline.handlers | 📊 slot_fill 汇总结果: ✅ 1高炉工序能耗计划报出值 在 2025-11-20 (DAY) 的值是 None 
+Single Query Reply 3: ✅ 1高炉工序能耗计划报出值 在 2025-11-20 (DAY) 的值是 None 
 {
   "graph": {
     "nodes": [
@@ -49,35 +275,135 @@ Single Query Reply: ✅ 高炉工序能耗实绩报出值 在 2025-11-12 (DAY) �
         "id": 1,
         "indicator_entry": {
           "status": "completed",
-          "indicator": "高炉工序能耗实绩报出值",
-          "formula": "GXNHLT1100.IXRL",
-          "timeString": "2025-11-12",
+          "indicator": "1高炉工序能耗计划报出值",
+          "formula": "GXNHLT1101.IXPL",
+          "timeString": "2025-11-20",
           "timeType": "DAY",
           "slot_status": {
             "formula": "filled",
             "time": "filled"
           },
           "value": null,
-          "note": "✅ 高炉工序能耗实绩报出值 在 2025-11-12 (DAY) 的值是 None ",
-          "formula_candidates": null
+          "note": "✅ 1高炉工序能耗计划报出值 在 2025-11-20 (DAY) 的值是 None ",
+          "formula_candidates": [
+            {
+              "number": 1,
+              "FORMULAID": "GXNHLT1101.IXPL",
+              "FORMULANAME": "1高炉工序能耗计划报出值",
+              "score": 91.7787,
+              "fuzzy_score": 95.4909,
+              "semantic_score": 81.9644,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 2,
+              "FORMULAID": "GXNHLT1101.IXPL.SUMVALUE",
+              "FORMULANAME": "1高炉工序能耗计划累计值",
+              "score": 88.6605,
+              "fuzzy_score": 92.6545,
+              "semantic_score": 83.2141,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 3,
+              "FORMULAID": "PHNHLT1101.IXPL",
+              "FORMULANAME": "1高炉工序平衡能耗计划报出值",
+              "score": 88.4603,
+              "fuzzy_score": 95.4909,
+              "semantic_score": 76.6991,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 4,
+              "FORMULAID": "GXNHLT1101.IXRL",
+              "FORMULANAME": "1高炉工序能耗实绩报出值",
+              "score": 87.768,
+              "fuzzy_score": 99.1636,
+              "semantic_score": 67.9943,
+              "match_kind": "hybrid"
+            },
+            {
+              "number": 5,
+              "FORMULAID": "GXNHLT1100.IXRL",
+              "FORMULANAME": "高炉工序能耗实绩报出值",
+              "score": 87.2049,
+              "fuzzy_score": 87.264,
+              "semantic_score": 75.0671,
+              "match_kind": "hybrid"
+            }
+          ]
         },
         "intent_info_snapshot": {
-          "user_input": "今天高炉工序能耗是多少",
-          "intent": "single_query",
+          "user_input_list": [
+            "1号高炉工序能耗",
+            "1",
+            "今天"
+          ],
+          "intent_list": [
+            "single_query",
+            "clarify",
+            "slot_fill"
+          ],
           "indicators": [
             {
               "status": "completed",
-              "indicator": "高炉工序能耗实绩报出值",
-              "formula": "GXNHLT1100.IXRL",
-              "timeString": "2025-11-12",
+              "indicator": "1高炉工序能耗计划报出值",
+              "formula": "GXNHLT1101.IXPL",
+              "timeString": "2025-11-20",
               "timeType": "DAY",
               "slot_status": {
                 "formula": "filled",
                 "time": "filled"
               },
               "value": null,
-              "note": "✅ 高炉工序能耗实绩报出值 在 2025-11-12 (DAY) 的值是 None ",
-              "formula_candidates": null
+              "note": "✅ 1高炉工序能耗计划报出值 在 2025-11-20 (DAY) 的值是 None ",
+              "formula_candidates": [
+                {
+                  "number": 1,
+                  "FORMULAID": "GXNHLT1101.IXPL",
+                  "FORMULANAME": "1高炉工序能耗计划报出值",
+                  "score": 91.7787,
+                  "fuzzy_score": 95.4909,
+                  "semantic_score": 81.9644,
+                  "match_kind": "hybrid"
+                },
+                {
+                  "number": 2,
+                  "FORMULAID": "GXNHLT1101.IXPL.SUMVALUE",
+                  "FORMULANAME": "1高炉工序能耗计划累计值",
+                  "score": 88.6605,
+                  "fuzzy_score": 92.6545,
+                  "semantic_score": 83.2141,
+                  "match_kind": "hybrid"
+                },
+                {
+                  "number": 3,
+                  "FORMULAID": "PHNHLT1101.IXPL",
+                  "FORMULANAME": "1高炉工序平衡能耗计划报出值",
+                  "score": 88.4603,
+                  "fuzzy_score": 95.4909,
+                  "semantic_score": 76.6991,
+                  "match_kind": "hybrid"
+                },
+                {
+                  "number": 4,
+                  "FORMULAID": "GXNHLT1101.IXRL",
+                  "FORMULANAME": "1高炉工序能耗实绩报出值",
+                  "score": 87.768,
+                  "fuzzy_score": 99.1636,
+                  "semantic_score": 67.9943,
+                  "match_kind": "hybrid"
+                },
+                {
+                  "number": 5,
+                  "FORMULAID": "GXNHLT1100.IXRL",
+                  "FORMULANAME": "高炉工序能耗实绩报出值",
+                  "score": 87.2049,
+                  "fuzzy_score": 87.264,
+                  "semantic_score": 75.0671,
+                  "match_kind": "hybrid"
+                }
+              ]
             }
           ]
         }
@@ -87,126 +413,20 @@ Single Query Reply: ✅ 高炉工序能耗实绩报出值 在 2025-11-12 (DAY) �
     "_next_id": 2
   },
   "meta": {
-    "current_intent_info": {},
     "history": [
       {
-        "ask": "今天高炉工序能耗是多少",
-        "reply": "✅ 高炉工序能耗实绩报出值 在 2025-11-12 (DAY) 的值是 None "
-      }
-    ]
-  }
-}
-2025-11-12 13:15:19,733 | INFO | pipeline.handlers | 🔹 handle_single_query user_input=昨天高炉工序能耗是多少
-2025-11-12 13:15:19,817 | INFO | httpx | HTTP Request: GET http://192.168.92.13:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-12 13:15:20,915 | INFO | httpx | HTTP Request: POST http://192.168.92.13:11434/api/chat "HTTP/1.1 200 OK"
-```json
-{
-  "indicator": "高炉工序能耗",
-  "timeString": "2025-11-11",
-  "timeType": "DAY"
-}
-```
-2025-11-12 13:15:22,174 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-Batches: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 46.97it/s]
-🟡 调用接口: http://www.shbaoenergy.com:8081/emscore/api/services/nYMC/calcData/QueryItemValuesAsync
-🧩 请求参数: {'expressionList': {'GXNHLT1100.IXRL': 'GXNHLT1100.IXRL'}, 'clock': '2025-11-11', 'timegranId': 'DAY'}
-🟢 返回数据: {'error': None, 'data': {'GXNHLT1100.IXRL': None}, 'status': 200, 'msg': '操作成功', 'duration': -1}
-2025-11-12 13:15:23,109 | INFO | pipeline.handlers | ⚙️ 平台查询成功: {'GXNHLT1100.IXRL': None}
-2025-11-12 13:15:23,109 | INFO | context_graph | 🆕 ContextGraph.add_node -> id=2, indicator=高炉工序能耗实绩报出值, time=2025-11-11
-2025-11-12 13:15:23,109 | INFO | context_graph | 🕘 add_history: 昨天高炉工序能耗是多少 -> ✅ 高炉工序能耗实绩报出值 在 2025-11-11 (DAY) 的值是 None 
-Single Query Reply 2: ✅ 高炉工序能耗实绩报出值 在 2025-11-11 (DAY) 的值是 None 
-{
-  "graph": {
-    "nodes": [
-      {
-        "id": 1,
-        "indicator_entry": {
-          "status": "completed",
-          "indicator": "高炉工序能耗实绩报出值",
-          "formula": "GXNHLT1100.IXRL",
-          "timeString": "2025-11-12",
-          "timeType": "DAY",
-          "slot_status": {
-            "formula": "filled",
-            "time": "filled"
-          },
-          "value": null,
-          "note": "✅ 高炉工序能耗实绩报出值 在 2025-11-12 (DAY) 的值是 None ",
-          "formula_candidates": null
-        },
-        "intent_info_snapshot": {
-          "user_input": "今天高炉工序能耗是多少",
-          "intent": "single_query",
-          "indicators": [
-            {
-              "status": "completed",
-              "indicator": "高炉工序能耗实绩报出值",
-              "formula": "GXNHLT1100.IXRL",
-              "timeString": "2025-11-12",
-              "timeType": "DAY",
-              "slot_status": {
-                "formula": "filled",
-                "time": "filled"
-              },
-              "value": null,
-              "note": "✅ 高炉工序能耗实绩报出值 在 2025-11-12 (DAY) 的值是 None ",
-              "formula_candidates": null
-            }
-          ]
-        }
+        "ask": "1号高炉工序能耗",
+        "reply": "没有完全匹配的【1号高炉工序能耗】，请选择编号（或重新输入更精确的名称）：\n1) 1高炉工序能耗计划报出值 (score 91.78)\n2) 1高炉工序能耗计划累计值 (score 88.66)\n3) 1高炉工序平衡能耗计划报出值 (score 88.46)\n4) 1高炉工序能耗实绩报出值 (score 87.77)\n5) 高炉工序能耗实绩报出值 (score 87.20)"
       },
       {
-        "id": 2,
-        "indicator_entry": {
-          "status": "completed",
-          "indicator": "高炉工序能耗实绩报出值",
-          "formula": "GXNHLT1100.IXRL",
-          "timeString": "2025-11-11",
-          "timeType": "DAY",
-          "slot_status": {
-            "formula": "filled",
-            "time": "filled"
-          },
-          "value": null,
-          "note": "✅ 高炉工序能耗实绩报出值 在 2025-11-11 (DAY) 的值是 None ",
-          "formula_candidates": null
-        },
-        "intent_info_snapshot": {
-          "user_input": "昨天高炉工序能耗是多少",
-          "intent": "single_query",
-          "indicators": [
-            {
-              "status": "completed",
-              "indicator": "高炉工序能耗实绩报出值",
-              "formula": "GXNHLT1100.IXRL",
-              "timeString": "2025-11-11",
-              "timeType": "DAY",
-              "slot_status": {
-                "formula": "filled",
-                "time": "filled"
-              },
-              "value": null,
-              "note": "✅ 高炉工序能耗实绩报出值 在 2025-11-11 (DAY) 的值是 None ",
-              "formula_candidates": null
-            }
-          ]
-        }
+        "ask": "1",
+        "reply": "好的，要查【1高炉工序能耗计划报出值】，请告诉我时间。"
+      },
+      {
+        "ask": "今天",
+        "reply": "✅ 1高炉工序能耗计划报出值 在 2025-11-20 (DAY) 的值是 None "
       }
     ],
-    "relations": [],
-    "_next_id": 3
-  },
-  "meta": {
-    "current_intent_info": {},
-    "history": [
-      {
-        "ask": "今天高炉工序能耗是多少",
-        "reply": "✅ 高炉工序能耗实绩报出值 在 2025-11-12 (DAY) 的值是 None "
-      },
-      {
-        "ask": "昨天高炉工序能耗是多少",
-        "reply": "✅ 高炉工序能耗实绩报出值 在 2025-11-11 (DAY) 的值是 None "
-      }
-    ]
+    "current_intent_info": {}
   }
 }

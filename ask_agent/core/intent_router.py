@@ -15,7 +15,11 @@ if not logger.handlers:
         format="%(asctime)s | %(levelname)s | %(name)s | %(message)s"
     )
 
-async def route_intent(user_id: str, user_input: str) -> Dict[str, Any]:
+async def route_intent(
+        user_id: str, 
+        user_input: str, 
+        pretty: bool = False
+) -> Dict[str, Any]:
     """
     意图路由器（V2）：
     1) 先使用轻量意图分类器判断 intent（避免重复解析）
@@ -41,7 +45,7 @@ async def route_intent(user_id: str, user_input: str) -> Dict[str, Any]:
     # 1) ENERGY_QUERY: 使用 EnergyIntentParser（含 context graph）
     if intent == "ENERGY_QUERY":
         logger.info("⚙️ 检测到 ENERGY_QUERY，进入能源问数流程")
-        return await run_energy_query(user_id, user_input, parsed_number)
+        return await run_energy_query(user_id, user_input, parsed_number, pretty)
 
     # 2) ENERGY_KNOWLEDGE_QA: 知识问答
     elif intent == "ENERGY_KNOWLEDGE_QA":

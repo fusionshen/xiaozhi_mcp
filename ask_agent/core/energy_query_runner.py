@@ -12,7 +12,12 @@ if not logger.handlers:
         format="%(asctime)s | %(levelname)s | %(name)s | %(message)s"
     )
 
-async def run_energy_query(user_id: str, user_input: str, parsed_number: str | None):
+async def run_energy_query(
+        user_id: str, 
+        user_input: str, 
+        parsed_number: str | None, 
+        pretty: bool = False
+):
     """
     能源查询主入口：
     - EnergyIntentParser 解析意图（无状态）
@@ -48,10 +53,10 @@ async def run_energy_query(user_id: str, user_input: str, parsed_number: str | N
 
     # 4️⃣ 执行主 pipeline
     try:
-        reply, graph_state = await process_message(user_id, user_input, current_intent=current_intent)
+        reply, human_reply, graph_state = await process_message(user_id, user_input, current_intent=current_intent)
         logger.info("✅ pipeline.process_message 执行成功")
         return {
-            "reply": reply,
+            "reply": human_reply if pretty else reply,
             #"intent_info": ContextGraph.from_state(graph_state).get_intent_info(),
             "graph_state": graph_state
         }
