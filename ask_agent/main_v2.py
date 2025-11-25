@@ -10,7 +10,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from core.intent_router import route_intent
 from tools import formula_api
-from agent_state import get_state, update_state, cleanup_expired_sessions
+from agent_state import cleanup_expired_sessions
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+import uvicorn
+import config 
 
 
 # ----------------------
@@ -31,7 +35,15 @@ app.add_middleware(
     allow_methods=["*"], 
     allow_headers=["*"]
 )
-
+# mount images folder so /images/<filename> 能直接被前端访问
+images_dir = os.path.join(os.path.dirname(__file__), "data", "images")
+# 如果 main.py 不在项目根，请根据实际路径调整 images_dir
+if not os.path.exists(images_dir):
+    os.makedirs(images_dir, exist_ok=True)
+# ----------------------
+# 静态目录必须在这里 mount！
+# ----------------------
+app.mount("/images", StaticFiles(directory=images_dir), name="images")
 # ----------------------
 # 启动事件
 # ----------------------
@@ -61,3 +73,19 @@ async def chat_get(
 ):
     result = await route_intent(user_id, message, pretty)
     return result
+
+# 检查接口（非必须，StaticFiles 已能直接提供文件）
+@app.get("/image/{filename}")
+async def get_image(filename: str):
+    """
+    可选的直接文件访问接口，返回 FileResponse。
+    前端也可直接访问 /images/{filename}。
+    """
+    path = os.path.join(images_dir, filename)
+    if not os.path.exists(path):
+        return JSONResponse({"error": "not found"}, status_code=404)
+    return FileResponse(path, media_type="image/png")
+
+if __name__ == "__main__":
+    # 用配置文件里的 host/port 启动 uvicorn
+    uvicorn.run(app, host=config.HOST, port=config.PORT, reload=True)

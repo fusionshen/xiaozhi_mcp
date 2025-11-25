@@ -1,3 +1,4 @@
+# core/reply_templates.py
 def human_time(timeString: str, timeType: str):
     """
     将解析器输出的 timeString + timeType 转换为
@@ -24,7 +25,6 @@ def human_time(timeString: str, timeType: str):
 
     # ---------- 单点时间 ----------
     return _fmt_single_time(timeString, timeType)
-
 
 def _fmt_single_time(ts: str, timeType: str):
     """内部函数：处理单一时间点"""
@@ -299,3 +299,176 @@ def reply_success_list(entries_results: list):
     table_md = "\n".join(rows)
     return f"### ✅ 批量查询结果\n\n{table_md}\n\n如需继续查询其他指标，随时告诉我～"
 
+def compare_summary(left_entry: dict, right_entry: dict, image_name: str | None = None) -> str:
+    """
+    对比并返回 Markdown（表格 + 文本 + 若有则插入 /images/{filename}.png）。
+    - left_entry/right_entry:
+        {
+            "indicator": "...",
+            "timeString": "...",
+            "timeType": "...",
+            "value": 单值/dict(list)/list
+        }
+    """
+
+    # -------------------------------
+    # 解析 value（兼容 单值 / dict / list）
+    # -------------------------------
+    def _get_value_list(entry):
+        val = entry.get("value")
+
+        if val is None or val == "":
+            return None
+
+        # ---- dict 格式：{timestamp: value} ----
+        if isinstance(val, dict):
+            try:
+                items = sorted(val.items(), key=lambda x: str(x[0]))
+            except Exception:
+                items = list(val.items())
+            out = []
+            for t, v in items:
+                try:
+                    out.append((t, float(v)))
+                except:
+                    out.append((t, v))
+            return out
+
+        # ---- list 格式（平台常用时间序列） ----
+        if isinstance(val, list):
+            out = []
+            for r in val:
+                t = r.get("clock") or r.get("time") or r.get("timestamp")
+                v = (
+                    r.get("itemValue")
+                    or r.get("value")
+                    or r.get("v")
+                )
+                if t is None or v is None:
+                    continue
+                try:
+                    out.append((t, float(v)))
+                except:
+                    out.append((t, v))
+            return out if out else None
+
+        # ---- 单值 ----
+        try:
+            return [("单值", float(val))]
+        except:
+            return [("单值", val)]
+
+    left_vals = _get_value_list(left_entry)
+    right_vals = _get_value_list(right_entry)
+
+    # -------------------------------
+    # 生成对比表格
+    # -------------------------------
+    table_rows = [
+        "| 时间 | 左指标 | 右指标 | 差值 | 对比 |",
+        "|------|--------|--------|------|------|"
+    ]
+
+    # 合并时间戳（注意保持顺序）
+    timestamps = sorted(
+        set([t for t, _ in (left_vals or [])] + [t for t, _ in (right_vals or [])]),
+        key=lambda x: str(x)
+    )
+
+    diffs = []
+
+    for t in timestamps:
+        lv = next((v for ts, v in (left_vals or []) if ts == t), None)
+        rv = next((v for ts, v in (right_vals or []) if ts == t), None)
+
+        if lv is None or rv is None:
+            diff_str = "-"
+            direction = "⚠️ 缺少数据"
+        else:
+            try:
+                diff = lv - rv
+                diffs.append((t, diff))
+                diff_str = f"{diff:+.4f}"
+                if diff > 0:
+                    direction = "↑ 左指标更高"
+                elif diff < 0:
+                    direction = "↓ 左指标更低"
+                else:
+                    direction = "— 持平"
+            except:
+                diff_str = "-"
+                direction = "⚠️ 无法计算"
+
+        table_rows.append(
+            f"| {t} | {lv if lv is not None else '-'} | {rv if rv is not None else '-'} | {diff_str} | {direction} |"
+        )
+
+    table_md = "\n".join(table_rows)
+
+    # -------------------------------
+    # 生成总结文本
+    # -------------------------------
+    t_str = human_time(left_entry.get("timeString"), left_entry.get("timeType"))
+    left_name = left_entry.get("indicator", "左指标")
+    right_name = right_entry.get("indicator", "右指标")
+
+    summary_lines = [
+        f"对比 **{left_name}** 与 **{right_name}**，时间：{t_str}。"
+    ]
+
+    # 是否是区间（如果包含 ~ 则认为是区间）
+    is_range = "~" in (left_entry.get("timeString") or "")
+
+    chart_md = ""
+
+    if diffs and is_range:
+        # ---------------- 生成总结 + 图 ----------------
+        values = [d for _, d in diffs]
+        avg_diff = sum(values) / len(values)
+        max_diff, min_diff = max(values), min(values)
+        max_time = next(t for t, d in diffs if d == max_diff)
+        min_time = next(t for t, d in diffs if d == min_diff)
+
+        summary_lines.append(
+            f"平均差值：{avg_diff:+.4f}；"
+            f"最大差值 {max_diff:+.4f} 出现在 {max_time}；"
+            f"最小差值 {min_diff:+.4f} 出现在 {min_time}。"
+        )
+
+        try:
+            # 生成折线图
+            # 注意这里改为绝对 URL
+            from core import utils
+            img_url = utils.save_diff_chart(image_name, diffs)
+            chart_md = (
+                "\n\n#### 📈 差值趋势图\n\n"
+                f"![]({img_url})"
+            )
+
+        except Exception as e:
+            summary_lines.append(f"⚠️ 折线图生成失败：{e}")
+
+    elif diffs:
+        # 单值或单点
+        _, diff = diffs[0]
+        if diff > 0:
+            summary_lines.append(f"左指标高于右指标，差值为 {diff:+.4f}。")
+        elif diff < 0:
+            summary_lines.append(f"左指标低于右指标，差值为 {diff:+.4f}。")
+        else:
+            summary_lines.append("两指标持平。")
+    else:
+        summary_lines.append("⚠️ 数据不足，无法计算差值。")
+
+    summary_md = "\n".join(summary_lines)
+
+    # -------------------------------
+    # 最终 Markdown
+    # -------------------------------
+    return (
+        f"### 📊 指标对比结果\n\n"
+        f"{table_md}\n\n"
+        f"### 📝 对比总结\n\n"
+        f"{summary_md}"
+        f"{chart_md}"
+    )
