@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from matplotlib import rcParams
 import matplotlib.font_manager as fm
 import config
+import numpy as np
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
@@ -41,7 +42,6 @@ rcParams['ytick.labelsize'] = 10
 rcParams['lines.linewidth'] = 2
 rcParams['lines.markersize'] = 6
 # ======================================================
-
 
 def ensure_images_dir():
     if not os.path.exists(IMAGES_DIR):
@@ -81,11 +81,52 @@ def save_diff_chart(image_name: str | None, diffs: list[tuple]) -> str:
                 pass
         raise
 
+    return format_file_path(filename)
+
+def format_file_path(filename: str):
     # --------- 关键修复：0.0.0.0 自动检测 IP ---------
     host = get_local_ip() if config.HOST in ["0.0.0.0", "", None] else config.HOST
     port = config.PORT or 9001
     base = f"http://{host}:{port}"
     return f"{base}/images/{filename}"
+
+def save_multi_series_chart(image_name: str, series_dict: dict[str, list[tuple]], title: str = "") -> str:
+    """
+    保存多指标时间序列折线图到一张图，统一时间轴，缺失点显示为空
+    - filename: 图片文件名，例如 '多指标.png'
+    - series_dict: {"指标名": [(timestamp, value), ...], ...}
+    - title: 图表标题
+    返回相对路径 Markdown 可直接引用
+    """
+    ensure_images_dir()
+    if not series_dict:
+        raise ValueError("series_dict 为空，无法生成图表")
+    
+    if not image_name:
+        image_name = str(uuid.uuid4())
+    filename = f"{image_name}.png"
+
+    file_path = os.path.join(IMAGES_DIR, filename)
+    # 统一时间轴
+    all_timestamps = sorted({t for series in series_dict.values() for t, _ in series}, key=str)
+    plt.figure(figsize=(10, 5))
+
+    for name, series_data in series_dict.items():
+        ts_to_val = {t: v if isinstance(v, (int, float)) else np.nan for t, v in series_data}
+        y = [ts_to_val.get(t, np.nan) for t in all_timestamps]
+        plt.plot(all_timestamps, y, marker='o', linestyle='-', label=name)
+
+    plt.xticks(rotation=30, ha='right')
+    plt.title(title)
+    plt.xlabel("时间")
+    plt.ylabel("数值")
+    plt.grid(True, linestyle='--', alpha=0.5)
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(file_path, dpi=150)
+    plt.close()
+
+    return format_file_path(filename)
 
 
 def get_local_ip():

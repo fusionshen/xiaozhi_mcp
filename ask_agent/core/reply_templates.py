@@ -224,6 +224,18 @@ def reply_invalid_formula_index(max_n: int):
         f"请再输入一次对应的序号，我会帮您选定正确的指标公式～"
     )
 
+def reply_compare_no_left_data():
+    return "⚠️ 无可用的参考指标，请先进行至少一次查询以便进行对比。"
+
+def reply_compare_no_data():
+    return "⚠️ 当前没有足够的数据进行对比，请先查询至少两条指标结果。"
+
+def reply_compare_too_many_candidates():
+    return "⚠️ 当前只支持两项对比，请提供两个要对比的指标，或改问趋势/分析。"
+
+def reply_compare_single_missing_time(indicator):
+    return f"好的，要对比 **{indicator}**，请告诉我具体的时间，我才能为您完成对比 😊"
+
 def simple_reply(indicator_entry):
     """
     根据 indicator_entry 和 result 生成简洁版 reply
@@ -246,57 +258,68 @@ def simple_reply(indicator_entry):
 
     return f"✅ {indicator} 在 {time_str} ({time_type}) 的查询结果: {result}"
 
-def reply_success_list(entries_results: list):
+def reply_success_list(entries_results: list, image_name: str | None = None):
     """
-    批量查询的人性化 Markdown 输出（通用版）
-    - entries_results: 每项为 {"indicator_entry": dict, "result": dict/list/None}
+    批量查询的人性化 Markdown 输出（支持多指标绘制同一张趋势图）
+    """
+    from core import utils
 
-    返回 Markdown 字符串
-    """
     if not entries_results:
         return "没有成功的查询结果。"
 
-    # 单条数据仍然走单指标展示
     if len(entries_results) == 1:
-        entry = entries_results[0]
-        return reply_success_single(entry)
+        return reply_success_single(entries_results[0])
 
-    # 多条数据 → 构建对比表格
     headers = ["指标", "公式", "时间", "数值"]
     rows = ["| " + " | ".join(headers) + " |", "|------|------|------|------|"]
 
+    # 用于同图绘制多指标
+    multi_series_data = {}
+
     for entry in entries_results:
         result = entry.get("value")
-
         indicator_name = entry.get("indicator", "未知指标")
         formula = entry.get("formula", "未知公式")
         t = human_time(entry.get("timeString"), entry.get("timeType"))
 
-        # -------------------- 处理数值 --------------------
         if result is None:
             value_str = "暂无数据"
         elif isinstance(result, dict):
-            # 单值 dict
             val = result.get("value") or next(iter(result.values()), None)
             unit = result.get("unit", "")
             value_str = f"{val} {unit}".strip() if val is not None else "暂无数据"
         elif isinstance(result, list) and result:
-            # 时间序列 → 拼接成多行字符串（在 Markdown 表格内换行用 <br>）
             lines = []
+            series_data = []
             for r in result:
                 timestamp = r.get("clock") or r.get("time") or r.get("timestamp")
                 v = r.get("itemValue") or r.get("value") or r.get("v") or "暂无数据"
                 lines.append(f"{timestamp}: {v}")
+                if v != "暂无数据":
+                    try:
+                        series_data.append((timestamp, float(v)))
+                    except:
+                        series_data.append((timestamp, v))
             value_str = "<br>".join(lines)
+            if series_data and any(isinstance(v, (int, float)) for _, v in series_data):
+                multi_series_data[indicator_name] = series_data
         else:
-            # 直接单值
             value_str = str(result)
 
         row = [indicator_name, formula, t, value_str]
         rows.append("| " + " | ".join(row) + " |")
 
     table_md = "\n".join(rows)
-    return f"### ✅ 批量查询结果\n\n{table_md}\n\n如需继续查询其他指标，随时告诉我～"
+
+    chart_md = ""
+    if multi_series_data:
+        try:
+            img_url = utils.save_multi_series_chart(image_name, multi_series_data, title="多指标趋势")
+            chart_md = f"\n\n#### 📈 多指标趋势图\n\n![]({img_url})"
+        except Exception as e:
+            chart_md = f"\n\n⚠️ 趋势图生成失败：{e}"
+
+    return f"### ✅ 批量查询结果\n\n{table_md}\n\n{chart_md}\n\n如需继续查询其他指标，随时告诉我～"
 
 def compare_summary(left_entry: dict, right_entry: dict, image_name: str | None = None) -> str:
     """

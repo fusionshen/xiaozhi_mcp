@@ -592,12 +592,9 @@ async def handle_list_query(
 
     # 1) 从每个 entry 取 note（保证非 None 并去除两端空白）
     # 2) 拼接成一个最终字符串（每个指标之间用两个换行或分隔线更易读）
-    machine_reply = "\n".join(item.get("indicator_entry", {}).get("note", "").strip() for item in entries_results if item.get("indicator_entry", {}).get("note")) or "没有成功的查询结果。"
-
+    machine_reply = "\n".join(item.get("note", "").strip() for item in entries_results if item.get("note")) or "没有成功的查询结果。"
     # 写 group 关系
-    sids = [graph.find_node(item["indicator_entry"]["indicator"],
-                             item["indicator_entry"]["timeString"]) 
-             for item in entries_results ]
+    sids = [graph.find_node(item["indicator"],item["timeString"]) for item in entries_results ]
     
     # write relation and history
     graph.add_relation("group", 
@@ -671,8 +668,8 @@ async def handle_compare(user_id: str, user_input: str, graph: ContextGraph, cur
 
         # if user gave more than 2, warn them
         if len(candidates) > 2:
-            reply = "当前只支持两项对比，请只提供两个要对比的目标，或改问趋势/分析。"
-            return _finish(user_id, graph, user_input, intent_info, reply, reply)
+            reply = "当前只支持两项对比，请提供两个要对比的指标，或改问趋势/分析。"
+            return _finish(user_id, graph, user_input, intent_info, reply, reply_templates.reply_compare_too_many_candidates())
 
         node_pairs = []  # tuples of (node_id, indicator_entry, platform_result)
         for item in parsed_items:
@@ -689,7 +686,7 @@ async def handle_compare(user_id: str, user_input: str, graph: ContextGraph, cur
             if item.get("slot_status", {}).get("time") != "filled":
                 ask = f"好的，要对比【{item.get('indicator')}】，请告诉我时间。"
                 item["note"] = ask
-                return _finish(user_id, graph, user_input, intent_info, ask, reply_templates.reply_ask_time(item.get("indicator")))
+                return _finish(user_id, graph, user_input, intent_info, ask, reply_templates.reply_compare_single_missing_time(item.get("indicator")))
 
             # try retrieve existing node
             nid = graph.find_node(item.get("indicator"), item.get("timeString"))
@@ -717,7 +714,7 @@ async def handle_compare(user_id: str, user_input: str, graph: ContextGraph, cur
 
         # must have two entries
         if len(node_pairs) != 2:
-            return _finish(user_id, graph, user_input, intent_info, "对比失败，未能获得两条有效数据。", "对比失败，未能获得两条有效数据。")
+            return _finish(user_id, graph, user_input, intent_info, "对比失败，未能获得两条有效数据。", reply_templates.reply_compare_no_data())
 
         left_entry = node_pairs[0][1]
         right_entry = node_pairs[1][1]
@@ -748,8 +745,8 @@ async def handle_compare(user_id: str, user_input: str, graph: ContextGraph, cur
             base_indicator = graph.nodes[-1].get("indicator_entry")
 
         if not base_indicator:
-            reply = "⚠️ 无可用的参考指标，请先进行至少一次查询以便进行对比。"
-            return _finish(user_id, graph, user_input, intent_info, reply, reply)
+            reply = "无可用的参考指标，请先进行至少一次查询以便进行对比。"
+            return _finish(user_id, graph, user_input, intent_info, reply, reply_templates.reply_compare_no_left_data())
 
         # get or create active current indicator (copy base)
         current_indicator = None
@@ -805,7 +802,7 @@ async def handle_compare(user_id: str, user_input: str, graph: ContextGraph, cur
         # ensure time
         if current_indicator.get("slot_status", {}).get("time") != "filled":
             current_indicator["note"] = f"好的，要对比【{current_indicator.get('indicator')}】，请告诉我时间。"
-            return _finish(user_id, graph, user_input, intent_info, current_indicator["note"], reply_templates.reply_ask_time(current_indicator.get("indicator")))
+            return _finish(user_id, graph, user_input, intent_info, current_indicator["note"], reply_templates.reply_compare_single_missing_time(current_indicator.get("indicator")))
 
         # try find a matching node
         nid = graph.find_node(current_indicator.get("indicator"), current_indicator.get("timeString"))
@@ -857,7 +854,7 @@ async def handle_compare(user_id: str, user_input: str, graph: ContextGraph, cur
 
         # not enough history
         reply = "当前没有足够的历史查询结果用于对比，请先进行查询以生成两条数据。"
-        return _finish(user_id, graph, user_input, intent_info, reply, reply)
+        return _finish(user_id, graph, user_input, intent_info, reply, reply_templates.reply_compare_no_data())
 
     # ------------------------- 分支路由 -------------------------
     try:
