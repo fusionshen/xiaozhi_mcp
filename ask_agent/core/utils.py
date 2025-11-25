@@ -3,24 +3,54 @@ import socket
 import os
 import uuid
 import matplotlib
-# 如果在无显示（headless）环境，确保使用 Agg 后端
-matplotlib.use("Agg")
+matplotlib.use("Agg")  # headless 环境
 import matplotlib.pyplot as plt
+from matplotlib import rcParams
+import matplotlib.font_manager as fm
 import config
 
-# 项目根目录的 data/images 路径（相对 main.py 启动目录）
-IMAGES_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "images")
+BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+DATA_DIR = os.path.join(BASE_DIR, "data")
+IMAGES_DIR = os.path.join(DATA_DIR, "images")
+FONTS_DIR = os.path.join(DATA_DIR, "fonts")
+
+# ================== 中文字体处理 ==================
+simhei_path = os.path.join(FONTS_DIR, "SimHei.ttf")
+
+if not os.path.exists(simhei_path):
+    raise FileNotFoundError(f"字体文件不存在: {simhei_path}")
+
+# 1. 注册字体
+fm.fontManager.addfont(simhei_path)
+
+# 2. 获取字体名称（跨版本兼容）
+simhei_name = fm.FontProperties(fname=simhei_path).get_name()
+
+# 3. 强制 matplotlib 使用 SimHei
+rcParams["font.family"] = simhei_name
+rcParams["font.sans-serif"] = [simhei_name]
+
+# 4. 正确显示负号
+rcParams["axes.unicode_minus"] = False
+
+# 默认样式
+rcParams['font.size'] = 12
+rcParams['legend.fontsize'] = 10
+rcParams['xtick.labelsize'] = 10
+rcParams['ytick.labelsize'] = 10
+rcParams['lines.linewidth'] = 2
+rcParams['lines.markersize'] = 6
+# ======================================================
+
 
 def ensure_images_dir():
     if not os.path.exists(IMAGES_DIR):
         os.makedirs(IMAGES_DIR, exist_ok=True)
 
+
 def save_diff_chart(image_name: str | None, diffs: list[tuple]) -> str:
     """
-    将差值序列 diffs 写为 PNG 文件到 data/images/{image_name}.png。
-    - diffs: [(timestamp, diff), ...]
-    - image_name: 若 None 则自动生成 uuid4 名称（不含扩展名）
-    返回：图片文件名（无目录），例如 "b7f8a1e3-....png"
+    生成差值曲线图并返回可访问 URL
     """
     ensure_images_dir()
     if not image_name:
@@ -28,10 +58,10 @@ def save_diff_chart(image_name: str | None, diffs: list[tuple]) -> str:
     filename = f"{image_name}.png"
     out_path = os.path.join(IMAGES_DIR, filename)
 
-    # 构建图表
     try:
         ts_labels = [t for t, _ in diffs]
         y_values = [d for _, d in diffs]
+
         plt.figure(figsize=(8, 4))
         plt.plot(ts_labels, y_values, marker='o', linestyle='-')
         plt.axhline(0, color='gray', linestyle='--')
@@ -42,25 +72,28 @@ def save_diff_chart(image_name: str | None, diffs: list[tuple]) -> str:
         plt.tight_layout()
         plt.savefig(out_path, format="png")
         plt.close()
+
     except Exception:
-        # 确保文件不存在或删除残留
         if os.path.exists(out_path):
             try:
                 os.remove(out_path)
-            except Exception:
+            except:
                 pass
         raise
-    
-    # 自动探测 IP + 固定端口
-    host = get_local_ip() if config.HOST == "0.0.0.0" else config.HOST
+
+    # --------- 关键修复：0.0.0.0 自动检测 IP ---------
+    host = get_local_ip() if config.HOST in ["0.0.0.0", "", None] else config.HOST
     port = config.PORT or 9001
     base = f"http://{host}:{port}"
-    return f"{base}/images/{filename}"  # e.g. 'uuid.png'
+    return f"{base}/images/{filename}"
+
 
 def get_local_ip():
+    """
+    自动探测本机可用 IP（非 127.0.0.1）
+    """
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
-        # 连接一个不存在的地址即可用来探测网卡 IP
         s.connect(("10.255.255.255", 1))
         ip = s.getsockname()[0]
     except:
@@ -69,9 +102,10 @@ def get_local_ip():
         s.close()
     return ip
 
+
 def now_str() -> str:
-    """返回当前时间字符串"""
     return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
 
 def format_reply(graph, results):
     """
@@ -90,3 +124,20 @@ def format_reply(graph, results):
         t = graph.times[-1]
         lines.append(f"⏰ 时间：{t['timeString']} ({t['timeType']})")
     return "\n".join(lines)
+
+
+if __name__ == "__main__":
+    """
+    测试 save_diff_chart 是否能正常输出中文图表
+    """
+    print("开始测试 save_diff_chart ...")
+
+    diffs = []
+    now = datetime.datetime.now()
+    for i in range(10):
+        ts = (now + datetime.timedelta(minutes=i)).strftime("%H:%M:%S")
+        diffs.append((ts, i - 5))
+
+    url = save_diff_chart("test_diff_chart", diffs)
+    print("测试完成！图片 URL：", url)
+    print("图片文件是否存在：", os.path.exists(os.path.join(IMAGES_DIR, "test_diff_chart.png")))

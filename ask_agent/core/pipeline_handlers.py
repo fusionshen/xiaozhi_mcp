@@ -80,9 +80,9 @@ async def handle_single_query(user_id: str, user_input: str, graph: ContextGraph
     # step 4 : 若公式 & 时间齐全 → 执行平台查询
     # ----------------------------
     if current["slot_status"]["formula"] == "filled" and current["slot_status"]["time"] == "filled":
-        val, result = await _execute_query(current)
-        reply = reply_templates.simple_reply(current, result)
+        val = await _execute_query(current)
         current["value"] = val
+        reply = reply_templates.simple_reply(current)
         current["note"] = reply
         current["status"] = "completed"
         # 必须在addNode前写入节点
@@ -114,7 +114,7 @@ async def handle_single_query(user_id: str, user_input: str, graph: ContextGraph
                 graph
             )
         # 正常结束
-        human_reply = reply_templates.reply_success_single(current, result)
+        human_reply = reply_templates.reply_success_single(current)
         return _finish(user_id, graph, user_input, {}, reply, human_reply)
     # ----------------------------
     # step 4.2 ：缺时间，继续询问
@@ -127,6 +127,8 @@ async def handle_single_query(user_id: str, user_input: str, graph: ContextGraph
 def _finish(user_id: str,graph: ContextGraph, user_input, intent_info, reply, human_reply: str = None):
     graph.add_history(user_input, reply)
     graph.set_intent_info(intent_info)
+    if intent_info == {}:
+        graph.clear_main_intent()
     set_graph(user_id, graph)
     return reply, human_reply, graph.to_state()
 
@@ -220,9 +222,9 @@ async def _execute_query(indicator_entry):
     if isinstance(result, dict):
         val = result.get("value") or next(iter(result.values()), None)
     elif isinstance(result, list) and result:
-        val = result[0].get("itemValue") or result[0].get("value") or result[0].get("v")
+        val = result
 
-    return val, result
+    return val
 
 # ------------------------- Slot 填充 基本属于时间-------------------------
 async def handle_slot_fill(
@@ -328,22 +330,16 @@ async def handle_slot_fill(
 
         # --- 3.3 执行平台查询 ---
         if ind["slot_status"]["time"] == "filled":
-            val, result = await _execute_query(ind)
-            raw_reply = reply_templates.simple_reply(ind, result)
+            val = await _execute_query(ind)
             ind["value"] = val
+            raw_reply = reply_templates.simple_reply(ind)
             ind["note"] = raw_reply
             ind["status"] = "completed"
             graph.add_node(ind)
-            entries_results.append({
-                "indicator_entry": ind,
-                "result": result  # 注意：这里保留 full human reply 结构
-            })
+            entries_results.append(ind)
         else:
             ind["note"] = f"❗ 指标【{ind.get('indicator')}】缺少时间信息"
-            entries_results.append({
-                "indicator_entry": ind,
-                "result": reply_templates.reply_ask_time(ind.get("indicator"))  
-            })
+            entries_results.append(ind)
     # ----------------------------
     # step 4: 意图跳转 compare / list_query
     # ----------------------------
@@ -369,7 +365,7 @@ async def handle_slot_fill(
     # 必须在清空意图前更新图谱
     graph.set_intent_info(intent_info)
     set_graph(user_id, graph)
-    machine_reply = "\n".join(item.get("indicator_entry", {}).get("note", "").strip() for item in entries_results if item.get("indicator_entry", {}).get("note")) or "没有成功的查询结果。"
+    machine_reply = "\n".join(item.get("note", "").strip() for item in entries_results if item.get("note")) or "没有成功的查询结果。"
     logger.info(f"📊 slot_fill 汇总结果: {machine_reply}")
     # 成功查询后重置 intent（保持习惯）
     return _finish(user_id, graph, user_input, {}, machine_reply, reply_templates.reply_success_list(entries_results))
@@ -418,10 +414,10 @@ async def handle_clarify(
         return _finish(user_id, graph, user_input, intent_info, reply, human_reply)
     
     # ==== 6. 公式 + 时间都有，执行查询 ====
-    val, result = await _execute_query(current)
+    val = await _execute_query(current)
     # 写入结果
     current["value"] = val
-    reply = reply_templates.simple_reply(current, result)
+    reply = reply_templates.simple_reply(current)
     current["note"] = reply
     current["status"] = "completed"
     # 保存 intent_info
@@ -446,7 +442,7 @@ async def handle_clarify(
         return await handle_list_query(user_id, f"{user_input} -> system:完成 clarify 并检测到 list_query 上下文，继续执行 handle_list_query...", graph)
         
     # ==== 8. 单查询完成，重置 intent ====
-    human_reply = reply_templates.reply_success_single(current, result)
+    human_reply = reply_templates.reply_success_single(current)
     return _finish(user_id, graph, user_input, {}, reply, human_reply)
 
 def _handle_formula_choice(current, user_input: str):
@@ -576,25 +572,19 @@ async def handle_list_query(
             entry["note"] = ie.get("note")
             entry["status"] = "completed"
 
-            entries_results.append({
-                "indicator_entry": entry,
-                "result": ie.get("value")  # 这里简化：你也可以保留原结构
-            })
+            entries_results.append(entry)
             continue
 
         # 3.5 平台查询
-        val, result = await _execute_query(entry)
+        val = await _execute_query(entry)
         entry["value"] = val
-        entry["note"] = reply_templates.simple_reply(entry, result)
+        entry["note"] = reply_templates.simple_reply(entry)
         entry["status"] = "completed"
 
         graph.set_intent_info(intent_info)
         graph.add_node(entry)
 
-        entries_results.append({
-            "indicator_entry": entry,
-            "result": result  # 注意：这里保留 full human reply 结构
-        })
+        entries_results.append(entry)
     # -------------------------------------------------------
     # ④ 所有指标完成 → 写关系、输出回复
     # -------------------------------------------------------
@@ -620,7 +610,7 @@ async def handle_list_query(
                     )
     logger.info("✅ list query 完成")
     # 成功查询重置意图
-    return _finish(user_id, graph, user_input, intent_info, machine_reply, reply_templates.reply_success_list(entries_results))
+    return _finish(user_id, graph, user_input, {}, machine_reply, reply_templates.reply_success_list(entries_results))
 
 # ------------------------- 对比、偏差 -------------------------
 async def handle_compare(user_id: str, user_input: str, graph: ContextGraph, current_intent: dict | None = None):
@@ -714,9 +704,9 @@ async def handle_compare(user_id: str, user_input: str, graph: ContextGraph, cur
                 continue
 
             # execute platform query
-            val, result = await _execute_query(item)
+            val = await _execute_query(item)
             item["value"] = val
-            item["note"] = reply_templates.simple_reply(item, result)
+            item["note"] = reply_templates.simple_reply(item)
             item["status"] = "completed"
              # 必须在addNode前
             graph.set_intent_info(intent_info)
@@ -835,9 +825,9 @@ async def handle_compare(user_id: str, user_input: str, graph: ContextGraph, cur
             return await _record_and_finish_after_compare(sid, tid, base_node_obj, ie)
         else:
             # execute query
-            val, result = await _execute_query(current_indicator)
+            val = await _execute_query(current_indicator)
             current_indicator["value"] = val
-            current_indicator["note"] = reply_templates.simple_reply(current_indicator, result)
+            current_indicator["note"] = reply_templates.simple_reply(current_indicator)
             current_indicator["status"] = "completed"
             # 必须在addNode前
             graph.set_intent_info(intent_info)
