@@ -47,7 +47,7 @@ async def run_energy_query(
             logger.exception("❌ EnergyIntentParser.parse_intent 失败: %s", e)
             return {"reply": "解析能源意图失败，请稍后重试。", "error": "parse_intent_failed"}
     else:
-        current_intent = {"intent":"clarify","candidates": None}
+        current_intent = {"intent":"clarify","candidates": [str(parsed_number)]}
     # 不能写入 graph 中，因为可能存在clarify和slot_fill的中间态，需要把当前意图传入后续进行判断
     # graph.set_intent_info(intent_info)
 

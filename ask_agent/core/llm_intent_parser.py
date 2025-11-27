@@ -64,7 +64,7 @@ async def parse_intent(user_id: str, user_input: str) -> dict:
     if history:
         recent = history[-3:]
         history_summary = "\n".join([
-            f"- {h.get('ask')} -> {h.get('reply')[:200]}..." for h in recent
+            f"- {h.get('ask')} -> {h.get('reply')}..." for h in recent
         ])
 
     # 槽位状态摘要

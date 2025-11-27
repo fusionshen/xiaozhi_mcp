@@ -8,7 +8,6 @@ import numpy as np
 import jieba
 import torch
 import time
-import asyncio
 
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,7 +15,7 @@ from fastapi.responses import JSONResponse
 from rapidfuzz import process, fuzz
 
 from config import (
-    EMBEDDING_CACHE_NAME, FORMULA_CSV_NAME, TEXT_SCORE_WEIGHT_MAP, ENABLE_TEXT_SCORE_WEIGHT
+    EMBEDDING_CACHE_NAME, FORMULA_CSV_NAME, COMBINE_WEIGHT_LIST, DEFAULT_COMBINE_BOOST, ENABLE_TEXT_SCORE_WEIGHT
 )
 
 try:
@@ -109,14 +108,45 @@ def select_embedding_device() -> str:
     return device
 
 
-def apply_text_weights(formula_name: str, base_score: float) -> float:
+# ===========================
+# 1️⃣ apply_combine_weights
+# ===========================
+def apply_combine_weights(formula_name: str, base_score: float, user_input: str = "") -> float:
+    """
+    基于 JSON 配置的组合权重加分（分梯度逻辑）
+    """
     if not ENABLE_TEXT_SCORE_WEIGHT or base_score <= 0:
-        return base_score
-    weighted_score = base_score
-    for key, w in TEXT_SCORE_WEIGHT_MAP.items():
-        if key in formula_name:
-            weighted_score *= (1 + w)
-    return weighted_score
+        return float(base_score)
+    
+    weighted = float(base_score)
+    formula_text = str(formula_name or "")
+    user_text = str(user_input or "")
+
+    # 找出 user_input 中包含的第一项
+    user_first_terms = [c["terms"][0] for c in COMBINE_WEIGHT_LIST if c["terms"][0] in user_text]
+
+    for combo in COMBINE_WEIGHT_LIST:
+        terms = combo.get("terms", [])
+        weight = float(combo.get("weight", 0.0))
+        if not terms:
+            continue
+        first, second = terms[0], terms[1] if len(terms) > 1 else ""
+
+        formula_contains_first = first in formula_text
+        formula_contains_second = second in formula_text
+
+        # 1️⃣ 用户未输入任何第一项 → formula_name 匹配组合 terms 加两次权重
+        if not user_first_terms:
+            if formula_contains_first and formula_contains_second:
+                weighted *= (1.0 + weight) ** 2
+        # 2️⃣ 用户输入包含某个第一项 → 只加一次相关组合权重
+        elif first in user_first_terms:
+            if formula_contains_first and formula_contains_second:
+                weighted *= (1.0 + weight)
+        # 3️⃣ 用户输入已经完整包含组合 → 不加额外权重
+        elif all(term in user_text for term in terms):
+            pass
+    return weighted
 
 
 # ===========================================================
@@ -208,47 +238,51 @@ def _compute_and_cache_embeddings():
     return embeddings
 
 
-# ===========================================================
-# 搜索函数（未改动）
-# ===========================================================
+# ===========================
+# 2️⃣ fuzzy_search
+# ===========================
 def fuzzy_search(user_input: str, topn: int = 5):
     key_clean = normalize_text(user_input)
     key_tokens = tokens_by_jieba(key_clean)
     if not key_tokens:
         return []
 
-    results = process.extract(key_tokens, _formulanames_tokens, scorer=fuzz.token_set_ratio, limit=topn * 3)
+    results = process.extract(key_tokens, _formulanames_tokens, scorer=fuzz.token_set_ratio, limit=topn*3)
     candidates = []
     for rank, (match_text, score, match_index) in enumerate(results, start=1):
         row = df.iloc[match_index]
         clean_name = str(row["FORMULANAME"]).strip().strip('"').strip("'")
-        final_score = apply_text_weights(clean_name, float(score))
+        base_score = float(score) / 100.0  # 归一化
+        final_score = apply_combine_weights(clean_name, base_score, user_input)
         candidates.append({
             "number": rank,
             "FORMULAID": row["FORMULAID"],
-            "FORMULANAME": row["FORMULANAME"],
+            "FORMULANAME": clean_name,
             "score": round(final_score, 4),
             "match_kind": "fuzzy_token_set"
         })
     return sorted(candidates, key=lambda x: x["score"], reverse=True)[:topn]
 
 
+# ===========================
+# 3️⃣ semantic_search
+# ===========================
 def semantic_search(user_input: str, topn: int = 5):
-    model = _embedding_model
-    if model is None:
-        raise RuntimeError("Semantic model not available.")
-    vec = model.encode([user_input], convert_to_numpy=True).astype(np.float32)
+    if _embedding_model is None or _embeddings is None:
+        return []
+
+    vec = _embedding_model.encode([user_input], convert_to_numpy=True).astype(np.float32)
     vec = vec / (np.linalg.norm(vec, axis=1, keepdims=True) + 1e-12)
-    sims = np.dot(_embeddings, vec[0])
-    top_idx = np.argsort(-sims)[:topn * 3]
+    sims = np.dot(_embeddings, vec[0])  # cosine similarity [-1,1]
+
     candidates = []
-    for rank, idx in enumerate(top_idx, start=1):
-        row = df.iloc[int(idx)]
+    for idx in np.argsort(-sims)[:topn*3]:
+        row = df.iloc[idx]
         clean_name = str(row["FORMULANAME"]).strip().strip('"').strip("'")
-        base_score = float(sims[idx]) * 100.0
-        final_score = apply_text_weights(clean_name, base_score)
+        base_score = (float(sims[idx]) + 1.0) / 2.0  # [-1,1] -> [0,1]
+        final_score = apply_combine_weights(clean_name, base_score, user_input)
         candidates.append({
-            "number": rank,
+            "number": len(candidates)+1,
             "FORMULAID": row["FORMULAID"],
             "FORMULANAME": clean_name,
             "score": round(final_score, 4),
@@ -257,46 +291,44 @@ def semantic_search(user_input: str, topn: int = 5):
     return sorted(candidates, key=lambda x: x["score"], reverse=True)[:topn]
 
 
+
+# ===========================
+# 4️⃣ hybrid_search
+# ===========================
 def hybrid_search(user_input: str, topn: int = 5, fuzzy_weight: float = 0.4, semantic_weight: float = 0.6):
-    fuzzy_candidates = fuzzy_search(user_input, topn=topn * 3)
+    fuzzy_candidates = fuzzy_search(user_input, topn=topn*3)
     if not HAVE_ST or _embeddings is None:
         return fuzzy_candidates[:topn]
 
-    model = _embedding_model
-    vec = model.encode([user_input], convert_to_numpy=True).astype(np.float32)
+    vec = _embedding_model.encode([user_input], convert_to_numpy=True).astype(np.float32)
     vec = vec / (np.linalg.norm(vec, axis=1, keepdims=True) + 1e-12)
-    sims = np.dot(_embeddings, vec[0]) * 100.0
+    sims = np.dot(_embeddings, vec[0])  # [-1,1]
 
     merged = []
     for c in fuzzy_candidates:
-        fid = c["FORMULAID"]
-        matched_rows = df.index[df["FORMULAID"] == fid].tolist()
-        if not matched_rows:
-            continue
-        idx = int(matched_rows[0])
-        semantic_score = float(sims[idx])
-        fuzzy_score = float(c["score"])
-        if fuzzy_score > 95:
-            fuzzy_weight, semantic_weight = 0.4, 0.6
+        idx = int(df.index[df["FORMULAID"] == c["FORMULAID"]][0])
+        semantic_score = (float(sims[idx]) + 1.0) / 2.0  # [-1,1] -> [0,1]
+        fuzzy_score = float(c["score"])  # 已归一化
+        combined_score = fuzzy_weight * fuzzy_score + semantic_weight * semantic_score
         clean_name = str(df.iloc[idx]["FORMULANAME"]).strip().strip('"').strip("'")
-        final_score = fuzzy_weight * fuzzy_score + semantic_weight * semantic_score
-        final_score = apply_text_weights(clean_name, final_score)
+        final_score = apply_combine_weights(clean_name, combined_score, user_input)
         merged.append((final_score, fuzzy_score, semantic_score, idx))
 
     merged.sort(key=lambda x: x[0], reverse=True)
+
     candidates = []
     for rank, (final_score, fuzzy_score, semantic_score, idx) in enumerate(merged[:topn], start=1):
         row = df.iloc[idx]
-        clean_name = str(row["FORMULANAME"]).strip().strip('"').strip("'")
         candidates.append({
             "number": rank,
             "FORMULAID": row["FORMULAID"],
-            "FORMULANAME": clean_name,
+            "FORMULANAME": str(row["FORMULANAME"]).strip().strip('"').strip("'"),
             "score": round(float(final_score), 4),
             "fuzzy_score": round(float(fuzzy_score), 4),
             "semantic_score": round(float(semantic_score), 4),
             "match_kind": "hybrid"
         })
+
     return candidates
 
 
@@ -309,32 +341,48 @@ def formula_query(
     topn: int = Query(5, ge=1, le=50, description="Number of candidates to return"),
     method: str = Query("hybrid", description="Search method: fuzzy | semantic | hybrid")
 ):
-       return JSONResponse(content=formula_query_dict(user_input, topn, method))
+    return JSONResponse(content=formula_query_dict(user_input, topn, method))
 
 
-# 新增一个函数，main.py 调用
+# ===========================================================
+# formula_query_dict 改写版
+# ===========================================================
 def formula_query_dict(user_input: str, topn: int = 5, method: str = "hybrid") -> dict:
-    """返回 dict 而不是 JSONResponse"""
-    user_input = user_input.strip().strip('"').strip("'")
+    """
+    返回候选公式的 dict，规则：
+    1️⃣ 精确匹配优先（FORMULANAME 完全等于输入或 normalize_text 后相等）
+    2️⃣ 若无精确匹配，根据 method 调用 fuzzy / semantic / hybrid
+    3️⃣ 分数归一化 [0,1]，应用组合权重
+    4️⃣ 返回 topn 结果
+    """
+    user_input = str(user_input or "").strip().strip('"').strip("'")
     if not user_input:
-        return {"done": False, "message": "Empty input."}
+        return {"done": False, "message": "Empty input.", "candidates": []}
 
-    # 精确匹配
+    # ===== 1️⃣ 精确匹配 =====
     exact = df[df["FORMULANAME"] == user_input]
     if exact.empty:
+        # 尝试 normalize_text 后匹配
         clean_input = normalize_text(user_input)
         matches_idx = [i for i, v in enumerate(_formulanames_clean) if v == clean_input]
         if matches_idx:
             exact = pd.DataFrame([df.iloc[matches_idx[0]]])
+
     if not exact.empty:
         exact_matches = exact[["FORMULAID", "FORMULANAME"]].to_dict(orient="records")
         for item in exact_matches:
-            item["FORMULANAME"] = str(item["FORMULANAME"]).strip().strip('"').strip("'")
-        return {"done": True, "message": f"Exact match found: {exact_matches[0]['FORMULANAME']}", "exact_matches": exact_matches}
+            item["FORMULANAME"] = str(item["FORMULANAME"]).strip()
+        return {
+            "done": True,
+            "message": f"Exact match found: {exact_matches[0]['FORMULANAME']}",
+            "exact_matches": exact_matches,
+            "candidates": exact_matches
+        }
 
-    # 模糊 / 语义 / 混合
+    # ===== 2️⃣ 模糊 / 语义 / 混合搜索 =====
+    method_str = str(method).lower()
+    candidates = []
     try:
-        method_str = str(method).lower()  # ✅ 确保是 str
         if method_str == "fuzzy":
             candidates = fuzzy_search(user_input, topn=topn)
         elif method_str == "semantic":
@@ -342,7 +390,7 @@ def formula_query_dict(user_input: str, topn: int = 5, method: str = "hybrid") -
         elif method_str == "hybrid":
             candidates = hybrid_search(user_input, topn=topn)
         else:
-            return {"done": False, "message": f"Unknown method: {method_str}"}
+            return {"done": False, "message": f"Unknown method: {method_str}", "candidates": []}
     except Exception as e:
         logger.exception("❌ Search error")
         return {"done": False, "message": f"Search error: {e}", "candidates": []}
@@ -350,14 +398,21 @@ def formula_query_dict(user_input: str, topn: int = 5, method: str = "hybrid") -
     if not candidates:
         return {"done": False, "message": "No matches found.", "candidates": []}
 
-    return {"done": False, "candidates": candidates}
+    # ===== 3️⃣ 排序 + 分数归一化 =====
+    # 分数已经在 fuzzy / semantic / hybrid 中归一化 + 应用组合权重
+    candidates_sorted = sorted(candidates, key=lambda x: x["score"], reverse=True)[:topn]
+
+    return {
+        "done": False,
+        "message": f"{len(candidates_sorted)} candidates returned.",
+        "candidates": candidates_sorted
+    }
 
 
 @app.on_event("startup")
 def load_csv_and_prepare():
     """FastAPI 启动时自动调用"""
     initialize()
-
 
 # ===========================================================
 # 独立运行支持（python formula_api.py）

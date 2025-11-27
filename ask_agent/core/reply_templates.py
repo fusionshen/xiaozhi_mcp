@@ -103,11 +103,30 @@ def reply_candidates(indicator, candidates, TOP_N=5):
 """
 
     rows = [
-        "| 序号 | 指标名称 | 匹配信息 |",
-        "|------|-----------|----------|",
+        "| 序号 | 指标名称 | 公式 | 匹配信息 |",
+        "|------|-----------|-----------|----------|",
     ]
-    for i, c in enumerate(candidates[:TOP_N], 1):
-        rows.append(f"| {i} | {c['FORMULANAME']} | 匹配度 {c.get('score',0):.1f} |")
+    for _, c in enumerate(candidates[:TOP_N], 1):
+        rows.append(f"| {c['number']} | {c['FORMULANAME']} | {c['FORMULAID']} | 匹配度 {c.get('score',0):.4f} |")
+
+    table = "\n".join(rows)
+    return f"{header}{table}\n\n---\n\n请直接回复编号，例如： **1**，或者输入更精确的指标名称进行更优匹配 😊"
+
+def reply_formula_name_ambiguous(indicator, fuzzy_matches):
+    header = f"""通过 **「{indicator}」** 进一步筛选，下面是最接近的几个。  
+您可以从下面列表中选择对应的编号👇
+
+---
+
+### 🔍 筛选后可选指标列表
+"""
+
+    rows = [
+        "| 序号 | 指标名称 | 公式 | 匹配信息 |",
+        "|------|-----------|-----------|----------|",
+    ]
+    for _, c in enumerate(fuzzy_matches, 1):
+        rows.append(f"| {c['number']} | {c['FORMULANAME']} | {c['FORMULAID']} | 匹配度 {c.get('score',0):.4f} |")
 
     table = "\n".join(rows)
     return f"{header}{table}\n\n---\n\n请直接回复编号，例如： **1**，或者输入更精确的指标名称进行更优匹配 😊"
@@ -381,8 +400,10 @@ def compare_summary(left_entry: dict, right_entry: dict, image_name: str | None 
     # -------------------------------
     # 生成对比表格（每个时间节点数据 + 差值）
     # -------------------------------
+    left_name = left_entry.get("indicator", "左指标")
+    right_name = right_entry.get("indicator", "右指标")
     table_rows = [
-        "| 时间 | 左指标 | 右指标 | 差值 | 对比 |",
+        f"| 时间 | 左指标-{left_name} | 右指标-{right_name} | 差值 | 对比 |",
         "|------|--------|--------|------|------|"
     ]
 
@@ -425,8 +446,7 @@ def compare_summary(left_entry: dict, right_entry: dict, image_name: str | None 
         return str(time_str) if time_str else "-"
 
     t_str = human_time(left_entry.get("timeString"), left_entry.get("timeType"))
-    left_name = left_entry.get("indicator", "左指标")
-    right_name = right_entry.get("indicator", "右指标")
+
 
     summary_lines = [f"对比 **{left_name}** 与 **{right_name}**，时间：{t_str}。"]
 

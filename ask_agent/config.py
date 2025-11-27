@@ -29,7 +29,13 @@ TEXT_SCORE_WEIGHT_FILE = os.getenv("TEXT_SCORE_WEIGHT_FILE")
 ENABLE_TEXT_SCORE_WEIGHT = os.getenv("ENABLE_TEXT_SCORE_WEIGHT") in ["True", "true", "1"]
 
 with open(TEXT_SCORE_WEIGHT_FILE, "r", encoding="utf-8") as f:
-    TEXT_SCORE_WEIGHT_MAP = json.load(f)
+    raw_cfg = json.load(f)
+
+# 组合权重：list → 方便遍历
+COMBINE_WEIGHT_LIST = raw_cfg.get("combines", [])
+
+# 默认提升
+DEFAULT_COMBINE_BOOST = raw_cfg.get("default_boost", 0.0)
 
 # === 服务监听配置 ===
 HOST = os.getenv("HOST", "127.0.0.1")

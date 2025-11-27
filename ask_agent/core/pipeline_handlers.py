@@ -80,10 +80,9 @@ async def handle_single_query(user_id: str, user_input: str, graph: ContextGraph
     # step 4 : 若公式 & 时间齐全 → 执行平台查询
     # ----------------------------
     if current["slot_status"]["formula"] == "filled" and current["slot_status"]["time"] == "filled":
-        val = await _execute_query(current)
-        current["value"] = val
-        reply = reply_templates.simple_reply(current)
-        current["note"] = reply
+        reply, human_reply, done = await _execute_query(current)
+        if not done:
+            return _finish(user_id, graph, user_input, intent_info, reply, human_reply)
         current["status"] = "completed"
         # 必须在addNode前写入节点
         graph.set_intent_info(intent_info)
@@ -113,8 +112,6 @@ async def handle_single_query(user_id: str, user_input: str, graph: ContextGraph
                 f"{user_input} -> system:完成 single query 并检测到 list_query 上下文，继续执行 handle_list_query...",
                 graph
             )
-        # 正常结束
-        human_reply = reply_templates.reply_success_single(current)
         return _finish(user_id, graph, user_input, {}, reply, human_reply)
     # ----------------------------
     # step 4.2 ：缺时间，继续询问
@@ -152,6 +149,7 @@ async def _resolve_formula(current):
     # 高分候选（score > 100）
     if cand and cand[0].get("score", 0) > 100:
         top = cand[0]
+        logger.info(f"🧠 自动选择高分候选公式: {top["FORMULANAME"]} (score={top['score']}) (用户输入:{current["indicator"]})")
         current["formula"] = top["FORMULAID"]
         current["indicator"] = top["FORMULANAME"]
         current["slot_status"]["formula"] = "filled"
@@ -216,15 +214,19 @@ async def _execute_query(indicator_entry):
         logger.info(f"⚙️ 平台查询成功: {result}")
     except Exception as e:
         logger.exception("❌ platform_api 查询失败: %s", e)
-        return None, f"查询失败: {e}", reply_templates.reply_api_error()
+        return f"查询失败: {e}", reply_templates.reply_api_error(), False 
 
     val = None
     if isinstance(result, dict):
         val = result.get("value") or next(iter(result.values()), None)
     elif isinstance(result, list) and result:
         val = result
-
-    return val
+        
+    indicator_entry["value"] = val
+    reply = reply_templates.simple_reply(indicator_entry)
+    indicator_entry["note"] = reply
+    human_reply = reply_templates.reply_success_single(indicator_entry)
+    return reply, human_reply, True
 
 # ------------------------- Slot 填充 基本属于时间-------------------------
 async def handle_slot_fill(
@@ -327,19 +329,17 @@ async def handle_slot_fill(
                 formula_reply,
                 human_reply_formula
             )
-
         # --- 3.3 执行平台查询 ---
         if ind["slot_status"]["time"] == "filled":
-            val = await _execute_query(ind)
-            ind["value"] = val
-            raw_reply = reply_templates.simple_reply(ind)
-            ind["note"] = raw_reply
+            reply, human_reply, done = await _execute_query(ind)
+            if not done:
+                return _finish(user_id, graph, user_input, intent_info, reply, human_reply)
             ind["status"] = "completed"
             graph.add_node(ind)
             entries_results.append(ind)
         else:
             ind["note"] = f"❗ 指标【{ind.get('indicator')}】缺少时间信息"
-            entries_results.append(ind)
+            return _finish(user_id, graph, user_input, intent_info, ind["note"], reply_templates.reply_ask_indicator(ind.get('indicator')))
     # ----------------------------
     # step 4: 意图跳转 compare / list_query
     # ----------------------------
@@ -392,19 +392,17 @@ async def handle_clarify(
     intent_info.setdefault("intent_list", []).append("clarify")
     # ==== 2. 加载 indicator（优先 active；无则恢复；再无则 default） ====
     current = _load_or_init_indicator(intent_info, graph)
-
-    # ==== 3. 如果是数字，则尝试选择候选公式 ====
-    if user_input.isdigit():
-        reply, human_reply, done = _handle_formula_choice(current, user_input)
-        if not done:
-            # 说明还需要用户继续选择
-            return _finish(user_id, graph, user_input, intent_info, reply, human_reply)
+    # ==== 3. 如果是数字，则尝试选择候选公式，如果使用大模型判断，假如在有备选列表情况下，用户完整输入某个指标名称，user_input不是数字，也会是clarify ====
+    reply, human_reply, done = _handle_formula_choice(current, user_input)
+    if not done:
+        # 说明还需要用户继续选择
+        return _finish(user_id, graph, user_input, intent_info, reply, human_reply)
     # ==== 4. 若公式未确定，调用 _resolve_formula ====
     if current["slot_status"]["formula"] != "filled":
-        sys_reply, human_reply = await _resolve_formula(current)
-        if sys_reply:
+        reply, human_reply = await _resolve_formula(current)
+        if reply:
             # “请选择…” 或 “未找到公式” 之类的提示
-            return _finish(user_id, graph, user_input, intent_info, sys_reply, human_reply)
+            return _finish(user_id, graph, user_input, intent_info, reply, human_reply)
 
     # ==== 5. 若时间未填写 ====
     if current["slot_status"]["time"] != "filled":
@@ -414,11 +412,9 @@ async def handle_clarify(
         return _finish(user_id, graph, user_input, intent_info, reply, human_reply)
     
     # ==== 6. 公式 + 时间都有，执行查询 ====
-    val = await _execute_query(current)
-    # 写入结果
-    current["value"] = val
-    reply = reply_templates.simple_reply(current)
-    current["note"] = reply
+    reply, human_reply, done = await _execute_query(current)
+    if not done:
+        return _finish(user_id, graph, user_input, intent_info, reply, human_reply)
     current["status"] = "completed"
     # 保存 intent_info
     graph.set_intent_info(intent_info)
@@ -442,7 +438,6 @@ async def handle_clarify(
         return await handle_list_query(user_id, f"{user_input} -> system:完成 clarify 并检测到 list_query 上下文，继续执行 handle_list_query...", graph)
         
     # ==== 8. 单查询完成，重置 intent ====
-    human_reply = reply_templates.reply_success_single(current)
     return _finish(user_id, graph, user_input, {}, reply, human_reply)
 
 def _handle_formula_choice(current, user_input: str):
@@ -451,23 +446,78 @@ def _handle_formula_choice(current, user_input: str):
     done=True 表示已经选择完成，可以继续下一步
     done=False 表示还需用户继续选择
     """
-    if not user_input.isdigit():
+    cands = current.get("formula_candidates") or []
+    if not cands:
+        return (
+            "上下文中没有可选公式，请重新输入指标。",
+            reply_templates.reply_no_formula_in_context(),
+            False
+        )
+    # ---------------------------
+    # 1) 数字编号选择
+    # ---------------------------
+    if user_input.isdigit():
+        # 数字选择：匹配 candidate["number"] == user_input
+        matched = None
+        for item in cands:
+            # 支持 "1" == 1 的情况
+            if str(item.get("number")) == user_input:
+                matched = item
+                break
+
+        if not matched:
+            return (
+                f"未找到编号为 {user_input} 的指标，请输入已有编号。",
+                reply_templates.reply_invalid_formula_index(len(cands)),
+                False
+            )
+        chosen = matched
+        current["formula"] = chosen["FORMULAID"]
+        current["indicator"] = chosen["FORMULANAME"]
+        current["slot_status"]["formula"] = "filled"
+        return None, None, True
+    
+    # ---------------------------
+    # 2) 名称选择（完整或模糊）
+    # ---------------------------
+    # 先尝试精确匹配（忽略大小写）
+    exact_matches = [
+        item for item in cands
+        if item["FORMULANAME"].lower() == user_input.lower()
+    ]
+
+    if len(exact_matches) == 1:
+        chosen = exact_matches[0]
+        current["formula"] = chosen["FORMULAID"]
+        current["indicator"] = chosen["FORMULANAME"]
+        current["slot_status"]["formula"] = "filled"
         return None, None, True
 
-    idx = int(user_input) - 1
-    cands = current.get("formula_candidates") or []
+    # 模糊匹配
+    fuzzy_matches = [
+        item for item in cands
+        if user_input.lower() in item["FORMULANAME"].lower()
+    ]
 
-    if not cands:
-        return "上下文中没有可选公式，请重新输入指标。", reply_templates.reply_no_formula_in_context(), False
+    if len(fuzzy_matches) == 1:
+        chosen = fuzzy_matches[0]
+        current["formula"] = chosen["FORMULAID"]
+        current["indicator"] = chosen["FORMULANAME"]
+        current["slot_status"]["formula"] = "filled"
+        return None, None, True
 
-    if not (0 <= idx < len(cands)):
-        return f"请输入编号 1~{len(cands)} 选择公式。", reply_templates.reply_invalid_formula_index(len(cands)), False
+    if len(fuzzy_matches) > 1:
+        # 返回列表让用户选择
+        names = [f"{item['number']}. {item['FORMULANAME']}" for i, item in enumerate(fuzzy_matches)]
+        reply = (
+            f"找到多个公式名称包含「{user_input}」，请通过编号选择：\n" +
+            "\n".join(names)
+        )
+        return reply, reply_templates.reply_formula_name_ambiguous(user_input, fuzzy_matches), False
 
-    chosen = cands[idx]
-    current["formula"] = chosen["FORMULAID"]
-    current["indicator"] = chosen["FORMULANAME"]
-    current["slot_status"]["formula"] = "filled"
-    return None, None, True
+    # 都没匹配，替换当前指标，后续重新查询，实际情况应该会llm判定为single_query，不会进这个方法
+    current["indicator"] = user_input
+    return None, None, True    
 
 # ------------------------- 批量查询 -------------------------
 async def handle_list_query(
@@ -571,19 +621,16 @@ async def handle_list_query(
             entry["value"] = ie.get("value")
             entry["note"] = ie.get("note")
             entry["status"] = "completed"
-
             entries_results.append(entry)
             continue
 
         # 3.5 平台查询
-        val = await _execute_query(entry)
-        entry["value"] = val
-        entry["note"] = reply_templates.simple_reply(entry)
+        reply, human_reply, done = await _execute_query(entry)
+        if not done:
+            return _finish(user_id, graph, user_input, intent_info, reply, human_reply)
         entry["status"] = "completed"
-
         graph.set_intent_info(intent_info)
         graph.add_node(entry)
-
         entries_results.append(entry)
     # -------------------------------------------------------
     # ④ 所有指标完成 → 写关系、输出回复
@@ -610,7 +657,12 @@ async def handle_list_query(
     return _finish(user_id, graph, user_input, {}, machine_reply, reply_templates.reply_success_list(entries_results))
 
 # ------------------------- 对比、偏差 -------------------------
-async def handle_compare(user_id: str, user_input: str, graph: ContextGraph, current_intent: dict | None = None):
+async def handle_compare(
+        user_id: str, 
+        user_input: str, 
+        graph: ContextGraph, 
+        current_intent: dict | None = None
+):
     """
     compare 主入口（重构版）
     - 支持 one-step / two-step / three-step
@@ -671,6 +723,9 @@ async def handle_compare(user_id: str, user_input: str, graph: ContextGraph, cur
             reply = "当前只支持两项对比，请提供两个要对比的指标，或改问趋势/分析。"
             return _finish(user_id, graph, user_input, intent_info, reply, reply_templates.reply_compare_too_many_candidates())
 
+        # replace intent indicators
+        intent_info["indicators"] = parsed_items
+
         node_pairs = []  # tuples of (node_id, indicator_entry, platform_result)
         for item in parsed_items:
             if not item.get("indicator"):
@@ -701,9 +756,9 @@ async def handle_compare(user_id: str, user_input: str, graph: ContextGraph, cur
                 continue
 
             # execute platform query
-            val = await _execute_query(item)
-            item["value"] = val
-            item["note"] = reply_templates.simple_reply(item)
+            reply, human_reply, done = await _execute_query(item)
+            if not done:
+                return _finish(user_id, graph, user_input, intent_info, reply, human_reply)
             item["status"] = "completed"
              # 必须在addNode前
             graph.set_intent_info(intent_info)
@@ -822,9 +877,9 @@ async def handle_compare(user_id: str, user_input: str, graph: ContextGraph, cur
             return await _record_and_finish_after_compare(sid, tid, base_node_obj, ie)
         else:
             # execute query
-            val = await _execute_query(current_indicator)
-            current_indicator["value"] = val
-            current_indicator["note"] = reply_templates.simple_reply(current_indicator)
+            reply, human_reply, done = await _execute_query(current_indicator)
+            if not done:
+                return _finish(user_id, graph, user_input, intent_info, reply, human_reply)
             current_indicator["status"] = "completed"
             # 必须在addNode前
             graph.set_intent_info(intent_info)
@@ -885,10 +940,26 @@ async def main():
     graph = get_graph(user_id) or ContextGraph()
     set_graph(user_id, graph)
 
-    # 测试单指标查询
-    reply, _, graph_state = await handle_single_query(user_id, "2022年上半年高炉工序能耗是多少", graph)
-    print("Single Query Reply:", reply)
+    from core.llm_energy_intent_parser import EnergyIntentParser
+    parser = EnergyIntentParser()
+    user_input = "本月1、2号高炉工序能耗是多少"
+    current_info = await parser.parse_intent(user_input)
+    print(current_info)
+
+    # 测试批量查询
+    _, reply, graph_state = await handle_list_query(user_id, user_input, graph, current_info)
+    print("Single Query Reply 1:", reply)
     print(json.dumps(graph_state, indent=2, ensure_ascii=False))
+
+    # 测试输入备选
+    _, reply, graph_state = await handle_single_query(user_id, "高炉工序能耗本月计划是多少", graph)
+    print("Single Query Reply 3:", reply)
+    print(json.dumps(graph_state, indent=2, ensure_ascii=False))
+
+    # 测试一步对比
+    # reply, _, graph_state = await handle_compare(user_id, user_input, graph, current_info)
+    # print("Single Query Reply:", reply)
+    # print(json.dumps(graph_state, indent=2, ensure_ascii=False))
 
     # # 测试选择备选
     # reply, graph_state = await handle_clarify(user_id, 1, graph)
