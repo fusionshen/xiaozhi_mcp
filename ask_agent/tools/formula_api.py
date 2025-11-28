@@ -113,39 +113,34 @@ def select_embedding_device() -> str:
 # ===========================
 def apply_combine_weights(formula_name: str, base_score: float, user_input: str = "") -> float:
     """
-    基于 JSON 配置的组合权重加分（分梯度逻辑）
+    根据 COMBINE_WEIGHT_LIST 动态提升分数：
+    - 如果 formula_name 包含某组合的所有 terms
+    - 且用户输入没有完全包含该组合
+    - 按 weight 提升 base_score
     """
-    if not ENABLE_TEXT_SCORE_WEIGHT or base_score <= 0:
-        return float(base_score)
-    
     weighted = float(base_score)
     formula_text = str(formula_name or "")
     user_text = str(user_input or "")
 
-    # 找出 user_input 中包含的第一项
-    user_first_terms = [c["terms"][0] for c in COMBINE_WEIGHT_LIST if c["terms"][0] in user_text]
+    if not ENABLE_TEXT_SCORE_WEIGHT or base_score <= 0:
+        return weighted
 
-    for combo in COMBINE_WEIGHT_LIST:
+    # 按 weight 降序遍历组合，保证高权重优先
+    combos = sorted(COMBINE_WEIGHT_LIST, key=lambda c: c.get("weight", 0), reverse=True)
+
+    for combo in combos:
         terms = combo.get("terms", [])
         weight = float(combo.get("weight", 0.0))
         if not terms:
             continue
-        first, second = terms[0], terms[1] if len(terms) > 1 else ""
 
-        formula_contains_first = first in formula_text
-        formula_contains_second = second in formula_text
-
-        # 1️⃣ 用户未输入任何第一项 → formula_name 匹配组合 terms 加两次权重
-        if not user_first_terms:
-            if formula_contains_first and formula_contains_second:
-                weighted *= (1.0 + weight) ** 2
-        # 2️⃣ 用户输入包含某个第一项 → 只加一次相关组合权重
-        elif first in user_first_terms:
-            if formula_contains_first and formula_contains_second:
+        # formula_name 是否包含该组合所有 term
+        if all(term in formula_text for term in terms):
+            # 用户输入是否已包含该组合
+            if not all(term in user_text for term in terms):
+                # 加权提升
                 weighted *= (1.0 + weight)
-        # 3️⃣ 用户输入已经完整包含组合 → 不加额外权重
-        elif all(term in user_text for term in terms):
-            pass
+
     return weighted
 
 
@@ -331,6 +326,38 @@ def hybrid_search(user_input: str, topn: int = 5, fuzzy_weight: float = 0.4, sem
 
     return candidates
 
+def hierarchical_exact_match(user_input: str, df, combine_weight_list):
+    user_input = user_input.strip()
+
+    # 按 weight 降序，保证 weight 高的优先
+    combos = sorted(combine_weight_list, key=lambda c: c["weight"], reverse=True)
+
+    for item in combos:
+        terms = item["terms"]  # 可动态多级，例如 ["实绩","报出值","地区A"]
+
+        # 找用户输入命中 terms 的最长前缀长度
+        prefix_len = 0
+        for i, term in enumerate(terms):
+            if term in user_input:
+                prefix_len += 1
+            else:
+                break
+
+        # 剩余层级需要拼接
+        suffix = "".join(terms[prefix_len:])
+        candidate = user_input + suffix if suffix else user_input
+
+        # 避免重复拼接，直接查找精确匹配
+        exact = df[df["FORMULANAME"] == candidate]
+        if not exact.empty:
+            row = exact.iloc[0]
+            return {
+                "FORMULAID": row["FORMULAID"],
+                "FORMULANAME": row["FORMULANAME"],
+            }
+
+    return None
+
 
 # ===========================================================
 # API 接口
@@ -358,6 +385,16 @@ def formula_query_dict(user_input: str, topn: int = 5, method: str = "hybrid") -
     user_input = str(user_input or "").strip().strip('"').strip("'")
     if not user_input:
         return {"done": False, "message": "Empty input.", "candidates": []}
+
+    # 0️⃣ 层级精确查找
+    hier = hierarchical_exact_match(user_input, df, COMBINE_WEIGHT_LIST)
+    if hier:
+        logger.info(f"✅ Hierarchical exact match: {hier['FORMULANAME']}")
+        return {
+            "done": True,
+            "message": f"Hierarchical exact match: {hier['FORMULANAME']}",
+            "exact_matches": [hier]
+        }
 
     # ===== 1️⃣ 精确匹配 =====
     exact = df[df["FORMULANAME"] == user_input]
@@ -407,6 +444,7 @@ def formula_query_dict(user_input: str, topn: int = 5, method: str = "hybrid") -
         "message": f"{len(candidates_sorted)} candidates returned.",
         "candidates": candidates_sorted
     }
+    
 
 
 @app.on_event("startup")

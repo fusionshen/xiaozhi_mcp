@@ -127,11 +127,12 @@ def _finish(user_id: str,graph: ContextGraph, user_input, intent_info, reply, hu
     if intent_info == {}:
         graph.clear_main_intent()
     set_graph(user_id, graph)
+    print(json.dumps(graph.to_state(), indent=2, ensure_ascii=False))
     return reply, human_reply, graph.to_state()
 
 async def _resolve_formula(current):
-    # formula 已确定
-    if current["slot_status"]["formula"] == "filled":
+    # 仅仅用formula 已确定，不能判断，因为如果因为网络问题导致最后一步平台接口失败，重新询问一遍会导致指标名称被覆盖，这个时候必须再查一遍
+    if current["status"] == "completed":
         return None, None
 
     resp = await asyncio.to_thread(formula_api.formula_query_dict, current["indicator"])

@@ -319,4 +319,4 @@ yarl==1.22.0
 youtube-transcript-api==1.2.2
 zipp==3.23.0
 zstandard==0.25.0
-open-webui==0.6.38
+open-webui==0.6.40
