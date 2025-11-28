@@ -10,11 +10,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from core.intent_router import route_intent
 from tools import formula_api
-from agent_state import cleanup_expired_sessions
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import uvicorn
-import config 
+import config
+from core.pipeline_context import load_all_graphs, persist_all_graphs_task
+
 
 
 # ----------------------
@@ -62,7 +63,9 @@ async def startup_event():
     except Exception as e:
         logger.exception("❌ 初始化 formula_api 失败: %s", e)
 
-    asyncio.create_task(cleanup_expired_sessions())
+    # asyncio.run(load_all_graphs())
+    # 可选：启动后台定时持久化
+    asyncio.create_task(persist_all_graphs_task(300))
     logger.info("🧹 已启动 session 定期清理任务。")
 
 @app.get("/chat")

@@ -3,6 +3,7 @@ import json
 import asyncio
 import logging
 import inspect
+import re
 from core.context_graph import ContextGraph, default_indicators
 from core.llm_energy_indicator_parser import parse_user_input
 from tools import formula_api, platform_api
@@ -178,9 +179,16 @@ async def _resolve_formula(current, graph: ContextGraph):
     current["slot_status"]["formula"] = "missing"
     return f"未找到匹配公式，请重新输入指标。", reply_templates.reply_no_formula()
 
-def _load_or_init_indicator(intent_info, graph: ContextGraph):
+# ----------------------
+# 修改 _load_or_init_indicator，增加 allow_append 参数
+# ----------------------
+def _load_or_init_indicator(intent_info, graph: ContextGraph, allow_append: bool = True) -> dict:
+    """
+    与原实现类似，但允许 caller 指示是否将新创建的 active indicator append 到 intent_info["indicators"]。
+    如果 allow_append=False，则返回临时 current（不修改 intent_info）。
+    """
     indicators = intent_info.setdefault("indicators", [])
-    # 找 active
+    # 找 active（优先返回未填 formula 的 active）
     active = next((i for i in indicators if i.get("status") == "active"), None)
     if active:
         return active
@@ -201,7 +209,8 @@ def _load_or_init_indicator(intent_info, graph: ContextGraph):
             "note": None,
             "formula_candidates": entry.get("formula_candidates"),
         }
-        indicators.append(new_one)
+        if allow_append:
+            indicators.append(new_one)
         return new_one
     # 创建默认 indicator
     logger.info("⚠️ 无历史节点可用，创建默认 indicator。")
@@ -378,11 +387,31 @@ async def handle_slot_fill(
     # 成功查询后重置 intent（保持习惯）
     return _finish(user_id, graph, user_input, {}, machine_reply, reply_templates.reply_success_list(entries_results))
 
+# ==== 2. 判断是否为重选场景 ====
+def _is_reselect_intent(intent_info: dict, current_intent: dict | None, user_input: str) -> bool:
+    """
+    判断是否为“重选”场景：
+    - intent_list 最后两项均为 clarify（连续两次 clarify）
+    - 且 current_intent 含 candidates（来自轻量解析/LLM）
+    - 或者用户输入包含“重选”/“重新选择”/包含数字但不是单纯数字选择（如 '重选 2'）
+    """
+    il = intent_info.get("intent_list", [])
+    if len(il) >= 2 and il[-2:] == ["clarify", "clarify"]:
+        return True
+    # 另外判断 user_input 本身（比如 "重选 2" / "重新选第2项"）
+    if re.search(r"重选|重新|再选|换个|选第|选", user_input):
+        return True
+    # 若 current_intent 明确带 candidates，也视为可能重选
+    if current_intent and current_intent.get("candidates"):
+        return True
+    return False
+
 # ------------------------- clarify 选择备选项 -------------------------
 async def handle_clarify(
         user_id: str, 
         user_input: str, 
-        graph: ContextGraph
+        graph: ContextGraph,
+        current_intent: dict | None = None
 ):
     """
     基础能源查询：
@@ -398,8 +427,11 @@ async def handle_clarify(
     intent_info = graph.ensure_intent_info() or {}
     intent_info.setdefault("user_input_list", []).append(user_input)
     intent_info.setdefault("intent_list", []).append("clarify")
-    # ==== 2. 加载 indicator（优先 active；无则恢复；再无则 default） ====
-    current = _load_or_init_indicator(intent_info, graph)
+    # ==== 2. 判断是否为重选场景 ====
+    is_reselect = _is_reselect_intent(intent_info, current_intent, user_input)
+    # ==== 3. 加载 indicator（若是重选，不直接 append 新 active） ====
+    # 如果是重选，我们不希望 _load_or_init_indicator 把 "重选 2" 等临时 active 写入 intent_info.indicators
+    current = _load_or_init_indicator(intent_info, graph, allow_append=not is_reselect)
     # ==== 3. 如果是数字，则尝试选择候选公式，如果使用大模型判断，假如在有备选列表情况下，用户完整输入某个指标名称，user_input不是数字，也会是clarify ====
     reply, human_reply, done = _handle_formula_choice(current, user_input, graph)
     if not done:
@@ -448,12 +480,28 @@ async def handle_clarify(
     # ==== 8. 单查询完成，重置 intent ====
     return _finish(user_id, graph, user_input, {}, reply, human_reply)
 
-def _handle_formula_choice(current, user_input: str, graph: ContextGraph):
+def _handle_formula_choice(
+    current: dict,
+    user_input: str,
+    graph: ContextGraph,
+    is_reselect: bool = False,
+    current_intent: dict | None = None
+):
     """
-    返回 (reply, done)
-    done=True 表示已经选择完成，可以继续下一步
-    done=False 表示还需用户继续选择
+    返回 (reply, human_reply, done)
+    - done=True  表示公式选择完成
+    - done=False 表示需要继续 clarify
+
+    【核心逻辑变化】
+    -------------------------------------------
+    clarify 重选时：
+    1. 找到 current["indicator"] 对应旧的 preference（用 FORMULANAME 匹配）
+    2. 根据 current_intent["candidates"][0] 找到用户真正选中的候选项
+    3. 更新 preference
+    4. 更新 current（不更新 node）
+    -------------------------------------------
     """
+
     cands = current.get("formula_candidates") or []
     if not cands:
         return (
@@ -461,9 +509,56 @@ def _handle_formula_choice(current, user_input: str, graph: ContextGraph):
             reply_templates.reply_no_formula_in_context(),
             False
         )
-    # ---------------------------
-    # 1) 数字编号选择
-    # ---------------------------
+
+    # =======================================
+    # clarify 重选逻辑（用户输入的是编号）
+    # =======================================
+    if is_reselect and user_input.isdigit():
+        number = int(user_input)
+
+        # ---- 1. 找到编号相同的候选项 ----
+        matched = None
+        for item in cands:
+            if int(item.get("number")) == number:
+                matched = item
+                break
+
+        if not matched:
+            return (
+                f"未找到编号为 {user_input} 的公式，请重新输入正确编号。",
+                reply_templates.reply_invalid_formula_index(len(cands)),
+                False
+            )
+
+        # ---- 2. 找到旧 preference：FORMULANAME == current.indicator ----
+        old_key = None
+        old_prefs = graph.meta.get("preferences", {})
+
+        for key, pref in old_prefs.items():
+            if pref.get("FORMULANAME") == current["indicator"]:
+                old_key = key
+                break
+
+        # 如果找不到，说明用户从未对这个公式产生偏好，也无所谓
+        if old_key:
+            graph.meta["preferences"][old_key] = {
+                "FORMULAID": matched["FORMULAID"],
+                "FORMULANAME": matched["FORMULANAME"],
+            }
+            logger.info(f"🔄 clarify 重选偏好更新：{old_key} => {matched['FORMULANAME']}")
+
+        # ---- 3. 更新 current（不更新 node）----
+        current["formula"] = matched["FORMULAID"]
+        current["indicator"] = matched["FORMULANAME"]
+        current["slot_status"]["formula"] = "filled"
+
+        return None, None, True
+
+    # =======================================
+    # 以下为第一次 clarify 的普通逻辑
+    # =======================================
+
+    # --- 数字编号选择 ---
     if user_input.isdigit():
         # 数字选择：匹配 candidate["number"] == user_input
         matched = None
@@ -479,61 +574,54 @@ def _handle_formula_choice(current, user_input: str, graph: ContextGraph):
                 reply_templates.reply_invalid_formula_index(len(cands)),
                 False
             )
-        chosen = matched
-        # === 新增：记录用户偏好 ===
-        # 确保 current 包含原始用户输入指标名
-        user_indicator_input = current.get("indicator")
-        graph.add_preference(user_indicator_input, chosen["FORMULAID"], chosen["FORMULANAME"])
-        current["formula"] = chosen["FORMULAID"]
-        current["indicator"] = chosen["FORMULANAME"]
+
+        # 添加偏好（首次输入 key = current.indicator）
+        graph.add_preference(current["indicator"], matched["FORMULAID"], matched["FORMULANAME"])
+
+        current["formula"] = matched["FORMULAID"]
+        current["indicator"] = matched["FORMULANAME"]
         current["slot_status"]["formula"] = "filled"
         return None, None, True
-    
-    # ---------------------------
-    # 2) 名称选择（完整或模糊）
-    # ---------------------------
-    # 先尝试精确匹配（忽略大小写）
+
+    # --- 名称精确匹配 ---
     exact_matches = [
         item for item in cands
         if item["FORMULANAME"].lower() == user_input.lower()
     ]
-
     if len(exact_matches) == 1:
         chosen = exact_matches[0]
-        # === 新增：记录用户偏好 ===
-        # 确保 current 包含原始用户输入指标名
-        user_indicator_input = current.get("indicator") or user_input
-        graph.add_preference(user_indicator_input, chosen["FORMULAID"], chosen["FORMULANAME"])
+        graph.add_preference(current["indicator"], chosen["FORMULAID"], chosen["FORMULANAME"])
+
         current["formula"] = chosen["FORMULAID"]
         current["indicator"] = chosen["FORMULANAME"]
         current["slot_status"]["formula"] = "filled"
         return None, None, True
 
-    # 模糊匹配
+    # --- 模糊匹配 ---
     fuzzy_matches = [
         item for item in cands
         if user_input.lower() in item["FORMULANAME"].lower()
     ]
-
     if len(fuzzy_matches) == 1:
         chosen = fuzzy_matches[0]
+        graph.add_preference(current["indicator"], chosen["FORMULAID"], chosen["FORMULANAME"])
+
         current["formula"] = chosen["FORMULAID"]
         current["indicator"] = chosen["FORMULANAME"]
         current["slot_status"]["formula"] = "filled"
         return None, None, True
 
     if len(fuzzy_matches) > 1:
-        # 返回列表让用户选择
-        names = [f"{item['number']}. {item['FORMULANAME']}" for i, item in enumerate(fuzzy_matches)]
         reply = (
             f"找到多个公式名称包含「{user_input}」，请通过编号选择：\n" +
-            "\n".join(names)
+            "\n".join(f"{i['number']}. {i['FORMULANAME']}" for i in fuzzy_matches)
         )
         return reply, reply_templates.reply_formula_name_ambiguous(user_input, fuzzy_matches), False
 
-    # 都没匹配，替换当前指标，后续重新查询，实际情况应该会llm判定为single_query，不会进这个方法
+    # --- 无匹配，替换 indicator ---
     current["indicator"] = user_input
-    return None, None, True    
+    return None, None, True
+
 
 # ------------------------- 批量查询 -------------------------
 async def handle_list_query(

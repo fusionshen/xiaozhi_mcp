@@ -28,6 +28,8 @@ FORMULA_CSV_NAME = os.getenv("FORMULA_CSV_NAME")
 TEXT_SCORE_WEIGHT_FILE = os.getenv("TEXT_SCORE_WEIGHT_FILE")
 ENABLE_TEXT_SCORE_WEIGHT = os.getenv("ENABLE_TEXT_SCORE_WEIGHT") in ["True", "true", "1"]
 
+ENABLE_GRAGH_DEBUG_JSON = os.getenv("ENABLE_GRAGH_DEBUG_JSON") in ["True", "true", "1"]
+
 with open(TEXT_SCORE_WEIGHT_FILE, "r", encoding="utf-8") as f:
     raw_cfg = json.load(f)
 
