@@ -73,7 +73,7 @@ async def handle_single_query(user_id: str, user_input: str, graph: ContextGraph
     # ----------------------------
     # step 3 : 公式选择
     # ----------------------------
-    formula_reply, human_reply = await _resolve_formula(current)
+    formula_reply, human_reply = await _resolve_formula(current, graph)
     if formula_reply:                                         # 用户需要手动选择
         return _finish(user_id, graph, user_input, intent_info, formula_reply, human_reply)
     # ----------------------------
@@ -127,12 +127,19 @@ def _finish(user_id: str,graph: ContextGraph, user_input, intent_info, reply, hu
     if intent_info == {}:
         graph.clear_main_intent()
     set_graph(user_id, graph)
-    print(json.dumps(graph.to_state(), indent=2, ensure_ascii=False))
     return reply, human_reply, graph.to_state()
 
-async def _resolve_formula(current):
+async def _resolve_formula(current, graph: ContextGraph):
     # 仅仅用formula 已确定，不能判断，因为如果因为网络问题导致最后一步平台接口失败，重新询问一遍会导致指标名称被覆盖，这个时候必须再查一遍
     if current["status"] == "completed":
+        return None, None
+    
+    # ==== 0) 优先检查用户偏好 ====
+    pref = graph.get_preference(current.get("indicator"))
+    if pref:
+        current["formula"] = pref["FORMULAID"]
+        current["indicator"] = pref["FORMULANAME"]
+        current["slot_status"]["formula"] = "filled"
         return None, None
 
     resp = await asyncio.to_thread(formula_api.formula_query_dict, current["indicator"])
@@ -319,7 +326,7 @@ async def handle_slot_fill(
             ind["slot_status"]["time"] = "filled"
 
         # --- 3.2 补公式（复用 single_query 的流程） ---
-        formula_reply, human_reply_formula = await _resolve_formula(ind)
+        formula_reply, human_reply_formula = await _resolve_formula(ind, graph)
         if formula_reply:
             # 缺公式 → 返回候选列表
             return _finish(
@@ -394,13 +401,13 @@ async def handle_clarify(
     # ==== 2. 加载 indicator（优先 active；无则恢复；再无则 default） ====
     current = _load_or_init_indicator(intent_info, graph)
     # ==== 3. 如果是数字，则尝试选择候选公式，如果使用大模型判断，假如在有备选列表情况下，用户完整输入某个指标名称，user_input不是数字，也会是clarify ====
-    reply, human_reply, done = _handle_formula_choice(current, user_input)
+    reply, human_reply, done = _handle_formula_choice(current, user_input, graph)
     if not done:
         # 说明还需要用户继续选择
         return _finish(user_id, graph, user_input, intent_info, reply, human_reply)
     # ==== 4. 若公式未确定，调用 _resolve_formula ====
     if current["slot_status"]["formula"] != "filled":
-        reply, human_reply = await _resolve_formula(current)
+        reply, human_reply = await _resolve_formula(current, graph)
         if reply:
             # “请选择…” 或 “未找到公式” 之类的提示
             return _finish(user_id, graph, user_input, intent_info, reply, human_reply)
@@ -441,7 +448,7 @@ async def handle_clarify(
     # ==== 8. 单查询完成，重置 intent ====
     return _finish(user_id, graph, user_input, {}, reply, human_reply)
 
-def _handle_formula_choice(current, user_input: str):
+def _handle_formula_choice(current, user_input: str, graph: ContextGraph):
     """
     返回 (reply, done)
     done=True 表示已经选择完成，可以继续下一步
@@ -473,6 +480,10 @@ def _handle_formula_choice(current, user_input: str):
                 False
             )
         chosen = matched
+        # === 新增：记录用户偏好 ===
+        # 确保 current 包含原始用户输入指标名
+        user_indicator_input = current.get("indicator")
+        graph.add_preference(user_indicator_input, chosen["FORMULAID"], chosen["FORMULANAME"])
         current["formula"] = chosen["FORMULAID"]
         current["indicator"] = chosen["FORMULANAME"]
         current["slot_status"]["formula"] = "filled"
@@ -489,6 +500,10 @@ def _handle_formula_choice(current, user_input: str):
 
     if len(exact_matches) == 1:
         chosen = exact_matches[0]
+        # === 新增：记录用户偏好 ===
+        # 确保 current 包含原始用户输入指标名
+        user_indicator_input = current.get("indicator") or user_input
+        graph.add_preference(user_indicator_input, chosen["FORMULAID"], chosen["FORMULANAME"])
         current["formula"] = chosen["FORMULAID"]
         current["indicator"] = chosen["FORMULANAME"]
         current["slot_status"]["formula"] = "filled"
@@ -594,7 +609,7 @@ async def handle_list_query(
             return _finish(user_id, graph, user_input, intent_info, reply, reply_templates.reply_ask_indicator())
         
         # 3.2 解析公式
-        reply, human_reply = await _resolve_formula(entry)
+        reply, human_reply = await _resolve_formula(entry, graph)
         if reply:
             # 需要用户选择公式
             return _finish(user_id, graph, user_input, intent_info, reply, human_reply)
@@ -733,7 +748,7 @@ async def handle_compare(
                 return _finish(user_id, graph, user_input, intent_info, "请告诉我您要对比的指标名称。", reply_templates.reply_ask_indicator())
 
             # resolve formula (uses your existing helper that returns (reply, human_reply) when needs user)
-            formula_reply, human_reply = await _resolve_formula(item)
+            formula_reply, human_reply = await _resolve_formula(item, graph)
             if formula_reply:
                 # persist intent_info and ask user to choose formula / re-enter
                 return _finish(user_id, graph, user_input, intent_info, formula_reply, human_reply)
@@ -851,7 +866,7 @@ async def handle_compare(
             return _finish(user_id, graph, user_input, intent_info, "请告诉我您要对比的指标名称。", reply_templates.reply_ask_indicator())
 
         # resolve formula
-        formula_reply, human_reply = await _resolve_formula(current_indicator)
+        formula_reply, human_reply = await _resolve_formula(current_indicator, graph)
         if formula_reply:
             return _finish(user_id, graph, user_input, intent_info, formula_reply, human_reply)
 

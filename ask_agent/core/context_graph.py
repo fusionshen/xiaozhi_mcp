@@ -66,6 +66,22 @@ class ContextGraph:
         return self.meta.get("history", [])
     
     # ---------------------
+    # 用户偏好管理
+    # ---------------------
+    def add_preference(self, user_indicator_input: str, formula_id: str, formula_name: str):
+        prefs = self.meta.setdefault("preferences", {})
+        prefs[user_indicator_input] = {
+            "FORMULAID": formula_id,
+            "FORMULANAME": formula_name
+        }
+        logger.info(f"💡 add_preference: '{user_indicator_input}' -> {formula_name} ({formula_id})")
+
+    def get_preference(self, user_indicator_input: str) -> dict | None:
+        prefs = self.meta.get("preferences", {})
+        logger.info(f"🧩 从用户偏好恢复 {user_indicator_input} -> {prefs.get(user_indicator_input)}")
+        return prefs.get(user_indicator_input)
+
+    # ---------------------
     # 总体意图管理
     # ---------------------
     def set_main_intent(self, intent: dict | str):
