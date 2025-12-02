@@ -137,21 +137,43 @@ class ContextGraph:
 
     def add_node(self, indicator_entry: dict) -> int:
         """
-        添加成功查询节点，同时保存当时的 intent_info
-        indicator_entry: 包含 id/formula/indicator/time/value/note/slot_status/formula_candidates
+        添加成功查询节点：
+        - 如果 indicator + timeString 已存在 → 更新该节点
+        - 否则 → 新增节点
         """
+
+        indicator = indicator_entry.get("indicator")
+        timeString = indicator_entry.get("timeString")
+
+        # ----------- 检查是否已有同 indicator + timeString 的节点 -----------
+        for node in self.nodes:
+            e = node.get("indicator_entry", {})
+            if e.get("indicator") == indicator and e.get("timeString") == timeString:
+                # 直接更新（覆盖最新结果，但保留 node.id）
+                node["indicator_entry"] = copy.deepcopy(indicator_entry)
+                node["intent_info_snapshot"] = copy.deepcopy(self.get_intent_info())
+
+                logger.info(
+                    "♻️ ContextGraph.add_node: 更新已有节点 id=%s (indicator=%s, time=%s)",
+                    node["id"], indicator, timeString
+                )
+                return node["id"]
+
+        # ----------- 不存在 → 新增节点 -----------
         nid = self._alloc_id()
         node = {
             "id": nid,
-            "indicator_entry": copy.deepcopy(indicator_entry),  # 保存当时 indicator
+            "indicator_entry": copy.deepcopy(indicator_entry),
             "intent_info_snapshot": copy.deepcopy(self.get_intent_info())
         }
         self.nodes.append(node)
-        logger.info("🆕 ContextGraph.add_node -> id=%s, indicator=%s, time=%s",
-                    nid,
-                    indicator_entry.get("indicator"),
-                    indicator_entry.get("timeString"))
+
+        logger.info(
+            "🆕 ContextGraph.add_node: 新建节点 id=%s, indicator=%s, time=%s",
+            nid, indicator, timeString
+        )
         return nid
+
 
     def find_node(self, indicator: Optional[str] = None, timeString: Optional[str] = None) -> Optional[int]:
         for n in self.nodes:

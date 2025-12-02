@@ -702,16 +702,19 @@ async def handle_list_query(
     for entry in indicators:
         # 3.1 缺指标
         if not entry.get("indicator"):
-            reply = "请告诉我您要查询的每个指标名称。"
-            return _finish(user_id, graph, user_input, intent_info, reply, reply_templates.reply_ask_indicator())
+            # 从 last node 恢复
+            last = graph.get_last_completed_node()
+            if last and last.get("indicator_entry", {}).get("indicator"):
+                last_entry = last["indicator_entry"]
+                logger.info("🧩 从最近节点恢复 indicator 指标和公式: %s", last_entry.get("indicator"))
+                entry["indicator"] = last_entry.get("indicator")
+                entry["formula"] = last_entry.get("formula")
+                entry["slot_status"]["formula"] = "filled"
+            else:
+                reply = "请告诉我您要查询的每个指标名称。"
+                return _finish(user_id, graph, user_input, intent_info, reply, reply_templates.reply_ask_indicator())
         
-        # 3.2 解析公式
-        reply, human_reply = await _resolve_formula(entry, graph)
-        if reply:
-            # 需要用户选择公式
-            return _finish(user_id, graph, user_input, intent_info, reply, human_reply)
-        
-        # 3.3 补齐时间
+         # 3.3 补齐时间
         if entry["slot_status"]["time"] != "filled":
             # 从 last node 恢复
             last = graph.get_last_completed_node()
@@ -725,7 +728,13 @@ async def handle_list_query(
                 reply = f"要查【{entry['indicator']}】，请告诉我时间。"
                 human_reply = reply_templates.reply_ask_time(entry["indicator"])
                 return _finish(user_id, graph, user_input, intent_info, reply, human_reply)
-
+            
+        # 3.2 解析公式
+        reply, human_reply = await _resolve_formula(entry, graph)
+        if reply:
+            # 需要用户选择公式
+            return _finish(user_id, graph, user_input, intent_info, reply, human_reply)
+        
         # 3.4 查询缓存节点
         nid = graph.find_node(entry["indicator"], entry["timeString"])
         if nid:
