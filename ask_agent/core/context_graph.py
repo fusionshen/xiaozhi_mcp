@@ -80,6 +80,37 @@ class ContextGraph:
         prefs = self.meta.get("preferences", {})
         logger.info(f"🧩 从用户偏好恢复 {user_indicator_input} -> {prefs.get(user_indicator_input)}")
         return prefs.get(user_indicator_input)
+    
+    # ---------------------
+    # clarify 重选时更新旧偏好
+    # ---------------------
+    def update_preference(self, current_indicator: str, matched: dict) -> bool:
+        """
+        clarify 重选时，根据 current["indicator"] 找到旧 preference，并更新为 matched。
+        参数：
+            current_indicator: 当前 需要替换的指标名称
+            matched: 选中的公式候选项（包含 FORMULAID, FORMULANAME, number）
+        返回：
+            True - 成功更新
+            False - 没找到匹配
+        """
+        prefs = self.meta.get("preferences", {})
+        old_key = None
+
+        for key, pref in prefs.items():
+            if pref.get("FORMULANAME") == current_indicator:
+                old_key = key
+                break
+
+        if old_key:
+            prefs[old_key] = {
+                "FORMULAID": matched["FORMULAID"],
+                "FORMULANAME": matched["FORMULANAME"]
+            }
+            logger.info(f"🔄 clarify 重选偏好更新：{old_key} => {matched['FORMULANAME']}")
+            return True
+
+        return False
 
     # ---------------------
     # 总体意图管理

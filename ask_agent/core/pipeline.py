@@ -45,6 +45,6 @@ async def process_message(user_id: str, user_input: str, current_intent: dict | 
     elif intent == "list_query":
         return await handle_list_query(user_id, user_input, graph, current_intent)
     elif intent == "clarify":
-        return await handle_clarify(user_id, user_input, graph)
+        return await handle_clarify(user_id, user_input, graph, current_intent)
     else:
         return await handle_single_query(user_id, user_input, graph)

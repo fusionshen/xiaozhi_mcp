@@ -211,6 +211,8 @@ def _load_or_init_indicator(intent_info, graph: ContextGraph, allow_append: bool
         }
         if allow_append:
             indicators.append(new_one)
+        else:
+            intent_info["indicators"] = [new_one]
         return new_one
     # 创建默认 indicator
     logger.info("⚠️ 无历史节点可用，创建默认 indicator。")
@@ -388,7 +390,7 @@ async def handle_slot_fill(
     return _finish(user_id, graph, user_input, {}, machine_reply, reply_templates.reply_success_list(entries_results))
 
 # ==== 2. 判断是否为重选场景 ====
-def _is_reselect_intent(intent_info: dict, current_intent: dict | None, user_input: str) -> bool:
+def _is_reselect_intent(intent_info: dict, user_input: str) -> bool:
     """
     判断是否为“重选”场景：
     - intent_list 最后两项均为 clarify（连续两次 clarify）
@@ -400,9 +402,6 @@ def _is_reselect_intent(intent_info: dict, current_intent: dict | None, user_inp
         return True
     # 另外判断 user_input 本身（比如 "重选 2" / "重新选第2项"）
     if re.search(r"重选|重新|再选|换个|选第|选", user_input):
-        return True
-    # 若 current_intent 明确带 candidates，也视为可能重选
-    if current_intent and current_intent.get("candidates"):
         return True
     return False
 
@@ -428,12 +427,13 @@ async def handle_clarify(
     intent_info.setdefault("user_input_list", []).append(user_input)
     intent_info.setdefault("intent_list", []).append("clarify")
     # ==== 2. 判断是否为重选场景 ====
-    is_reselect = _is_reselect_intent(intent_info, current_intent, user_input)
+    is_reselect = _is_reselect_intent(intent_info, user_input)
+    logger.info(f"🔄 clarify 重选判定: is_reselect={is_reselect}")
     # ==== 3. 加载 indicator（若是重选，不直接 append 新 active） ====
     # 如果是重选，我们不希望 _load_or_init_indicator 把 "重选 2" 等临时 active 写入 intent_info.indicators
     current = _load_or_init_indicator(intent_info, graph, allow_append=not is_reselect)
     # ==== 3. 如果是数字，则尝试选择候选公式，如果使用大模型判断，假如在有备选列表情况下，用户完整输入某个指标名称，user_input不是数字，也会是clarify ====
-    reply, human_reply, done = _handle_formula_choice(current, user_input, graph)
+    reply, human_reply, done = _handle_formula_choice(current, user_input, graph, is_reselect, current_intent)
     if not done:
         # 说明还需要用户继续选择
         return _finish(user_id, graph, user_input, intent_info, reply, human_reply)
@@ -443,6 +443,11 @@ async def handle_clarify(
         if reply:
             # “请选择…” 或 “未找到公式” 之类的提示
             return _finish(user_id, graph, user_input, intent_info, reply, human_reply)
+
+    # 时间 slot 判断
+    current["slot_status"]["time"] = (
+        "filled" if current.get("timeString") and current.get("timeType") else "missing"
+    )
 
     # ==== 5. 若时间未填写 ====
     if current["slot_status"]["time"] != "filled":
@@ -513,51 +518,14 @@ def _handle_formula_choice(
     # =======================================
     # clarify 重选逻辑（用户输入的是编号）
     # =======================================
-    if is_reselect and user_input.isdigit():
-        number = int(user_input)
-
-        # ---- 1. 找到编号相同的候选项 ----
-        matched = None
-        for item in cands:
-            if int(item.get("number")) == number:
-                matched = item
-                break
-
-        if not matched:
-            return (
-                f"未找到编号为 {user_input} 的公式，请重新输入正确编号。",
-                reply_templates.reply_invalid_formula_index(len(cands)),
-                False
-            )
-
-        # ---- 2. 找到旧 preference：FORMULANAME == current.indicator ----
-        old_key = None
-        old_prefs = graph.meta.get("preferences", {})
-
-        for key, pref in old_prefs.items():
-            if pref.get("FORMULANAME") == current["indicator"]:
-                old_key = key
-                break
-
-        # 如果找不到，说明用户从未对这个公式产生偏好，也无所谓
-        if old_key:
-            graph.meta["preferences"][old_key] = {
-                "FORMULAID": matched["FORMULAID"],
-                "FORMULANAME": matched["FORMULANAME"],
-            }
-            logger.info(f"🔄 clarify 重选偏好更新：{old_key} => {matched['FORMULANAME']}")
-
-        # ---- 3. 更新 current（不更新 node）----
-        current["formula"] = matched["FORMULAID"]
-        current["indicator"] = matched["FORMULANAME"]
-        current["slot_status"]["formula"] = "filled"
-
-        return None, None, True
+    if is_reselect:
+        updated = update_preference_for_reselect(graph, current, current_intent)
+        if updated:
+            return None, None, True
 
     # =======================================
     # 以下为第一次 clarify 的普通逻辑
     # =======================================
-
     # --- 数字编号选择 ---
     if user_input.isdigit():
         # 数字选择：匹配 candidate["number"] == user_input
@@ -622,7 +590,48 @@ def _handle_formula_choice(
     current["indicator"] = user_input
     return None, None, True
 
+# ---------------------
+# 用户偏好反向更新（clarify 重选）
+# ---------------------
+def update_preference_for_reselect(
+    graph: ContextGraph,
+    current: dict,
+    current_intent: dict
+) -> bool:
+    """
+    clarify 重选时更新用户偏好和 current。
+    前置条件：
+    - current_intent.get("candidates")[0] 是选中的公式编号（数字字符串）
+    - current 包含当前 indicator, formula_candidates 等
+    返回：
+    - True 表示成功更新 current 和 preference
+    - False 表示未找到匹配
+    """
+    try:
+        if not current_intent or "candidates" not in current_intent or not current_intent["candidates"]:
+            return False
 
+        parsed_number = int(current_intent["candidates"][0])
+        cands = current.get("formula_candidates") or []
+
+        # 找到编号匹配的候选项
+        matched = next((item for item in cands if int(item.get("number")) == parsed_number), None)
+        if not matched:
+            logger.warning(f"⚠️ 重选编号 {parsed_number} 在 formula_candidates 中未找到")
+            return False
+
+        updated = graph.update_preference(current.get("indicator"), matched)
+        if updated:
+            # 已更新 current 和 preference
+            current["formula"] = matched["FORMULAID"]
+            current["indicator"] = matched["FORMULANAME"]
+            current["slot_status"]["formula"] = "filled"
+            return True
+        
+    except Exception as e:
+        logger.error(f"❌ update_preference_for_reselect 异常: {e}")
+        return False
+        
 # ------------------------- 批量查询 -------------------------
 async def handle_list_query(
         user_id: str, 
