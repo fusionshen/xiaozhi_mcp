@@ -66,7 +66,7 @@ async def startup_event():
     # asyncio.run(load_all_graphs())
     # 可选：启动后台定时持久化
     asyncio.create_task(persist_all_graphs_task(300))
-    logger.info("🧹 已启动 session 定期清理任务。")
+    logger.info("🧹 已启动 graph 定期持久任务。")
 
 @app.get("/chat")
 async def chat_get(

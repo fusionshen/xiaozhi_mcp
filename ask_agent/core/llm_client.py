@@ -2,16 +2,16 @@
 import os
 import logging
 import re
-for key in ["HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy"]:
-    os.environ.pop(key, None)
 import json
 import httpx
 from langchain.schema import HumanMessage
-from config import (
-    REMOTE_OLLAMA_URL, REMOTE_MODEL, LOCAL_MODEL
-)
+from config import REMOTE_OLLAMA_URL, REMOTE_MODEL, LOCAL_MODEL
 
-# 日志配置（被导入时确保仅配置一次）
+# ===================== 强制禁用系统代理 =====================
+for key in ["HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy"]:
+    os.environ.pop(key, None)
+
+# ===================== Logger =====================
 logger = logging.getLogger("llm_client")
 if not logger.handlers:
     logging.basicConfig(
@@ -31,35 +31,56 @@ except ImportError:
         from langchain.chat_models import ChatOllama
         logger.info("⚠️ Using ChatOllama from old langchain (may be deprecated)")
 
+# ===================== 全局共享直连 AsyncClient =====================
+_global_client: httpx.AsyncClient | None = None
 
+def get_global_client(timeout: float = 10.0) -> httpx.AsyncClient:
+    """
+    返回全局共享 AsyncClient，保证完全直连远程 Ollama，不走系统代理。
+    """
+    global _global_client
+    if _global_client is None:
+        transport = httpx.AsyncHTTPTransport(retries=0)
+        _global_client = httpx.AsyncClient(
+            timeout=timeout,
+            transport=transport,
+            trust_env=False,  # ⭐ 不使用系统代理
+        )
+    return _global_client
+
+# ===================== 自定义 ChatOllama =====================
+class DirectChatOllama(ChatOllama):
+    """
+    强制直连远程 Ollama，完全忽略系统代理。
+    """
+    def __init__(self, *args, **kwargs):
+        timeout = kwargs.pop("timeout", 10.0)
+        kwargs["client"] = get_global_client(timeout)
+        super().__init__(*args, **kwargs)
+
+# ===================== 检查远程 Ollama =====================
 async def is_remote_ollama_available(base_url: str, timeout: float = 3.0) -> bool:
-    """
-    检查远程 Ollama 服务是否可访问。
-    """
     try:
-        async with httpx.AsyncClient(timeout=timeout) as client:
-            resp = await client.get(f"{base_url}/api/tags")
-            if resp.status_code == 200:
-                #print(f"🌐 Remote Ollama available at {base_url}")
-                return True
+        client = get_global_client(timeout)
+        resp = await client.get(f"{base_url}/api/tags")
+        return resp.status_code == 200
     except Exception as e:
         logger.info(f"⚠️ Remote Ollama not reachable: {e}")
-    return False
+        return False
 
-
-async def get_llm() -> ChatOllama:
+# ===================== 获取 LLM =====================
+async def get_llm() -> DirectChatOllama:
     """
-    优先使用远程 gemma3:27b，如果远程不可用则回退到本地 qwen2.5:1.5b。
+    优先使用远程 Ollama 模型，如果远程不可用则回退到本地模型。
     """
     if await is_remote_ollama_available(REMOTE_OLLAMA_URL):
-        #print(f"✅ Using remote model: {REMOTE_MODEL}")
-        return ChatOllama(model=REMOTE_MODEL, base_url=REMOTE_OLLAMA_URL)
+        logger.info(f"🌐 Using remote Ollama model: {REMOTE_MODEL}")
+        return DirectChatOllama(model=REMOTE_MODEL, base_url=REMOTE_OLLAMA_URL)
     else:
         logger.info(f"🔄 Falling back to local model: {LOCAL_MODEL}")
-        return ChatOllama(model=LOCAL_MODEL)
+        return DirectChatOllama(model=LOCAL_MODEL)
 
-
-# ===================== 通用 LLM 调用函数 =====================
+# ===================== 安全解析 JSON =====================
 async def safe_llm_parse(prompt: str) -> dict:
     """
     安全解析 LLM 返回内容为 JSON。
@@ -83,37 +104,28 @@ async def safe_llm_parse(prompt: str) -> dict:
         start = text.find('{')
         end = text.rfind('}')
         if start != -1 and end != -1 and end > start:
-            json_str = text[start:end+1]
             try:
-                data = json.loads(json_str)
-                logger.info("✅ 从 LLM 输出中成功解析 JSON。")
-                return data
-            except json.JSONDecodeError as e_inner:
-                logger.warning("⚠️ 从首尾大括号提取的 JSON 解析失败: %s. 尝试正则兜底。", e_inner)
+                return json.loads(text[start:end+1])
+            except json.JSONDecodeError:
+                pass
 
-        # 兜底：如果上面失败，尝试用正则找所有 {...} 并依次尝试解析（处理多 JSON 或嵌套复杂输出）
         matches = re.findall(r"\{[\s\S]*?\}", text)
         for m in matches:
             try:
-                data = json.loads(m)
-                logger.info("✅ 正则兜底解析到 JSON。")
-                return data
+                return json.loads(m)
             except json.JSONDecodeError:
                 continue
 
         # 再兜底：key:value 简单解析（保守）
         pairs = re.findall(r'"(\w+)"\s*:\s*"([^"]*)"', text)
         if pairs:
-            data = {k: v for k, v in pairs}
-            logger.warning("⚠️ 使用正则键值对兜底解析 JSON。")
-            return data
+            return {k: v for k, v in pairs}
 
         logger.warning("⚠️ 未识别到 JSON 格式，返回空 dict。原文: %s", text[:400])
         return {}
     except Exception as e:
-        logger.exception("❌ safe_llm_parse 解析失败: %s", e)
+        logger.exception("❌ safe_llm_parse 解析失败:", e)
         return {}
-
 
 # ===================== 通用聊天函数 =====================
 async def safe_llm_chat(prompt: str) -> str:
@@ -127,3 +139,10 @@ async def safe_llm_chat(prompt: str) -> str:
     except Exception as e:
         logger.exception("❌ LLM 聊天失败:", e)
         return "抱歉，我暂时无法回答这个问题。"
+
+# ===================== 清理全局 AsyncClient（程序退出时可调用） =====================
+async def close_global_client():
+    global _global_client
+    if _global_client:
+        await _global_client.aclose()
+        _global_client = None
