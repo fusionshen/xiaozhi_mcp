@@ -348,12 +348,12 @@ def hierarchical_exact_match(user_input: str, df, combine_weight_list):
         candidate = user_input + suffix if suffix else user_input
 
         # 避免重复拼接，直接查找精确匹配
-        exact = df[df["FORMULANAME"] == candidate]
+        exact = df[df["FORMULANAME"].str.strip().str.strip('"').str.strip("'") == candidate]
         if not exact.empty:
             row = exact.iloc[0]
             return {
-                "FORMULAID": row["FORMULAID"],
-                "FORMULANAME": row["FORMULANAME"],
+                "FORMULAID": row["FORMULAID"].strip().strip('"').strip("'"),
+                "FORMULANAME": row["FORMULANAME"].strip().strip('"').strip("'"),
             }
 
     return None
@@ -397,7 +397,7 @@ def formula_query_dict(user_input: str, topn: int = 5, method: str = "hybrid") -
         }
 
     # ===== 1️⃣ 精确匹配 =====
-    exact = df[df["FORMULANAME"] == user_input]
+    exact = df[df["FORMULANAME"].str.strip().str.strip('"').str.strip("'") == user_input]
     if exact.empty:
         # 尝试 normalize_text 后匹配
         clean_input = normalize_text(user_input)
@@ -408,7 +408,7 @@ def formula_query_dict(user_input: str, topn: int = 5, method: str = "hybrid") -
     if not exact.empty:
         exact_matches = exact[["FORMULAID", "FORMULANAME"]].to_dict(orient="records")
         for item in exact_matches:
-            item["FORMULANAME"] = str(item["FORMULANAME"]).strip()
+            item["FORMULANAME"] = str(item["FORMULANAME"]).strip().strip('"').strip("'")
         return {
             "done": True,
             "message": f"Exact match found: {exact_matches[0]['FORMULANAME']}",

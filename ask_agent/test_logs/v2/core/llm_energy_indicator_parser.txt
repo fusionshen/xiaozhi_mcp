@@ -1,77 +1,89 @@
-(myenv) fusionshen@fusionshen-ThinkPad-T14-Gen-1:~/Desktop/LLM/ask_agent$ python -m core.llm_energy_indicator_parser
-2025-11-21 17:56:19,053 | INFO | llm_client | ✅ Using ChatOllama from langchain-ollama
-/home/fusionshen/myenv/lib/python3.12/site-packages/jieba/_compat.py:18: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+(ask_agent_venv) PS E:\Work\LLM\xiaozhi_mcp\ask_agent> python -m core.llm_energy_indicator_parser
+2025-12-03 17:36:51,710 | INFO | llm_client | ✅ Using ChatOllama from langchain-ollama
+E:\Work\LLM\xiaozhi_mcp\ask_agent\ask_agent_venv\Lib\site-packages\jieba\_compat.py:18: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
   import pkg_resources
 ✅ sentence-transformers 版本: 5.1.1
 <frozen runpy>:128: RuntimeWarning: 'core.llm_energy_indicator_parser' found in sys.modules after import of package 'core', but prior to execution of 'core.llm_energy_indicator_parser'; this may result in unpredictable behaviour
-2025-11-21 17:56:21,570 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:56:22,677 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+2025-12-03 17:36:56,345 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:36:56,346 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:36:59,008 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "indicator": "3高炉工序能耗实绩报出值",
+  "timeString": "2025-12",
+  "timeType": "MONTH"
+}
+```
+2025-12(MONTH)3高炉工序能耗实绩报出值 => {'indicator': '3高炉工序能耗实绩报出值', 'timeString': '2025-12', 'timeType': 'MONTH'}
+2025-12-03 17:37:00,381 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:37:00,382 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:37:03,389 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": null,
-  "timeString": "2025-10",
+  "timeString": "2025-11",
   "timeType": "MONTH"
 }
 ```
-2025-11-21 17:56:23,740 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-上个月 => {'indicator': None, 'timeString': '2025-10', 'timeType': 'MONTH'}
-2025-11-21 17:56:23,807 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:56:24,980 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+上个月 => {'indicator': None, 'timeString': '2025-11', 'timeType': 'MONTH'}
+2025-12-03 17:37:04,453 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:37:04,473 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:37:07,120 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "高炉电耗",
-  "timeString": "2025-11",
+  "timeString": "2025-12",
   "timeType": "MONTH"
 }
 ```
-2025-11-21 17:56:26,012 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-本月的高炉电耗是多少 => {'indicator': '高炉电耗', 'timeString': '2025-11', 'timeType': 'MONTH'}
-2025-11-21 17:56:26,109 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:56:27,201 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+本月的高炉电耗是多少 => {'indicator': '高炉电耗', 'timeString': '2025-12', 'timeType': 'MONTH'}
+2025-12-03 17:37:08,328 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:37:08,329 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:37:10,961 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "高炉工序能耗计划值",
-  "timeString": "2025-11",
+  "timeString": "2025-12",
   "timeType": "MONTH"
 }
 ```
-2025-11-21 17:56:28,486 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-本月高炉工序能耗的计划值 => {'indicator': '高炉工序能耗计划值', 'timeString': '2025-11', 'timeType': 'MONTH'}
-2025-11-21 17:56:28,580 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:56:29,696 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+本月高炉工序能耗的计划值 => {'indicator': '高炉工序能耗计划值', 'timeString': '2025-12', 'timeType': 'MONTH'}
+2025-12-03 17:37:12,231 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:37:12,232 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:37:14,968 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "1号高炉工序能耗",
-  "timeString": "2025-11",
+  "timeString": "2025-12",
   "timeType": "MONTH"
 }
 ```
-2025-11-21 17:56:30,900 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-本月1号高炉工序能耗 => {'indicator': '1号高炉工序能耗', 'timeString': '2025-11', 'timeType': 'MONTH'}
-2025-11-21 17:56:31,000 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:56:32,147 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+本月1号高炉工序能耗 => {'indicator': '1号高炉工序能耗', 'timeString': '2025-12', 'timeType': 'MONTH'}
+2025-12-03 17:37:16,264 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:37:16,265 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:37:18,872 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "2号高炉工序能耗",
-  "timeString": "2025-11",
+  "timeString": "2025-12",
   "timeType": "MONTH"
 }
 ```
-2025-11-21 17:56:33,340 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-本月2号高炉工序能耗 => {'indicator': '2号高炉工序能耗', 'timeString': '2025-11', 'timeType': 'MONTH'}
-2025-11-21 17:56:33,438 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:56:34,540 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+本月2号高炉工序能耗 => {'indicator': '2号高炉工序能耗', 'timeString': '2025-12', 'timeType': 'MONTH'}
+2025-12-03 17:37:20,143 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:37:20,144 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:37:22,522 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "高炉工序能耗累计",
-  "timeString": "2025-11",
+  "timeString": "2025-12",
   "timeType": "MONTH"
 }
 ```
-2025-11-21 17:56:35,796 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-本月累计的高炉工序能耗是多少 => {'indicator': '高炉工序能耗累计', 'timeString': '2025-11', 'timeType': 'MONTH'}
-2025-11-21 17:56:35,889 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:56:37,062 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+本月累计的高炉工序能耗是多少 => {'indicator': '高炉工序能耗累计', 'timeString': '2025-12', 'timeType': 'MONTH'}
+2025-12-03 17:37:23,743 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:37:23,743 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:37:26,169 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "1号高炉工序能耗计划",
@@ -79,10 +91,10 @@
   "timeType": null
 }
 ```
-2025-11-21 17:56:38,053 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
 1号高炉工序能耗计划 => {'indicator': '1号高炉工序能耗计划', 'timeString': None, 'timeType': None}
-2025-11-21 17:56:38,149 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:56:39,271 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+2025-12-03 17:37:27,247 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:37:27,248 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:37:29,651 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "1号高炉工序能耗计划",
@@ -90,21 +102,21 @@
   "timeType": "YEAR"
 }
 ```
-2025-11-21 17:56:40,474 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
 2022年1号高炉工序能耗计划 => {'indicator': '1号高炉工序能耗计划', 'timeString': '2022', 'timeType': 'YEAR'}
-2025-11-21 17:56:40,574 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:56:41,724 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+2025-12-03 17:37:30,880 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:37:30,880 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:37:33,398 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "1号高炉工序能耗",
-  "timeString": "2025-11-21",
+  "timeString": "2025-12-03",
   "timeType": "DAY"
 }
 ```
-2025-11-21 17:56:43,071 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-1号高炉工序能耗今天是什么日期 => {'indicator': '1号高炉工序能耗', 'timeString': '2025-11-21', 'timeType': 'DAY'}
-2025-11-21 17:56:43,170 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:56:44,244 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+1号高炉工序能耗今天是什么日期 => {'indicator': '1号高炉工序能耗', 'timeString': '2025-12-03', 'timeType': 'DAY'}
+2025-12-03 17:37:34,775 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:37:34,776 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:37:37,204 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": null,
@@ -112,10 +124,10 @@
   "timeType": "MONTH"
 }
 ```
-2025-11-21 17:56:45,509 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
 2023上半年 => {'indicator': None, 'timeString': '2023-01~2023-06', 'timeType': 'MONTH'}
-2025-11-21 17:56:45,577 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:56:46,790 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+2025-12-03 17:37:38,525 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:37:38,526 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:37:40,933 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": null,
@@ -123,10 +135,10 @@
   "timeType": "MONTH"
 }
 ```
-2025-11-21 17:56:47,982 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
 2023年上半年 => {'indicator': None, 'timeString': '2023-01~2023-06', 'timeType': 'MONTH'}
-2025-11-21 17:56:48,059 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:56:49,254 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+2025-12-03 17:37:42,219 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:37:42,220 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:37:44,586 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "吨钢蒸汽消耗",
@@ -134,10 +146,10 @@
   "timeType": "MONTH"
 }
 ```
-2025-11-21 17:56:50,560 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
 一月到三月的吨钢蒸汽消耗 => {'indicator': '吨钢蒸汽消耗', 'timeString': '2025-01~2025-03', 'timeType': 'MONTH'}
-2025-11-21 17:56:50,661 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:56:51,809 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+2025-12-03 17:37:46,005 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:37:46,006 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:37:48,462 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "吨钢用水量",
@@ -145,10 +157,10 @@
   "timeType": "MONTH"
 }
 ```
-2025-11-21 17:56:53,116 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
 去年一月到8月吨钢用水量 => {'indicator': '吨钢用水量', 'timeString': '2024-01~2024-08', 'timeType': 'MONTH'}
-2025-11-21 17:56:53,215 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:56:54,318 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+2025-12-03 17:37:49,846 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:37:49,847 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:37:52,286 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "吨钢用水量",
@@ -156,10 +168,10 @@
   "timeType": "MONTH"
 }
 ```
-2025-11-21 17:56:55,643 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
 去年一、二月吨钢用水量 => {'indicator': '吨钢用水量', 'timeString': '2024-01~2024-02', 'timeType': 'MONTH'}
-2025-11-21 17:56:55,746 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:56:56,882 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+2025-12-03 17:37:53,674 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:37:53,675 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:37:56,176 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "计划",
@@ -167,10 +179,10 @@
   "timeType": "MONTH"
 }
 ```
-2025-11-21 17:56:58,186 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
 上半年计划 => {'indicator': '计划', 'timeString': '2025-01~2025-06', 'timeType': 'MONTH'}
-2025-11-21 17:56:58,288 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:56:59,399 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+2025-12-03 17:37:57,480 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:37:57,481 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:37:59,927 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "纯水消耗",
@@ -178,10 +190,10 @@
   "timeType": "MONTH"
 }
 ```
-2025-11-21 17:57:00,719 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
 下半年纯水消耗 => {'indicator': '纯水消耗', 'timeString': '2025-07~2025-12', 'timeType': 'MONTH'}
-2025-11-21 17:57:00,818 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:57:01,883 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+2025-12-03 17:38:01,310 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:38:01,310 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:38:03,842 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "高炉能耗",
@@ -189,21 +201,21 @@
   "timeType": "DAY"
 }
 ```
-2025-11-21 17:57:03,411 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
 2024年9月1日到9月7日高炉能耗 => {'indicator': '高炉能耗', 'timeString': '2024-09-01~2024-09-07', 'timeType': 'DAY'}
-2025-11-21 17:57:03,513 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:57:04,609 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+2025-12-03 17:38:05,398 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:38:05,399 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:38:07,831 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "连退纯水使用量",
-  "timeString": "2025-11-21",
+  "timeString": "2025-12-03",
   "timeType": "DAY"
 }
 ```
-2025-11-21 17:57:05,853 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-今天的连退纯水使用量 => {'indicator': '连退纯水使用量', 'timeString': '2025-11-21', 'timeType': 'DAY'}
-2025-11-21 17:57:05,952 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:57:07,118 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+今天的连退纯水使用量 => {'indicator': '连退纯水使用量', 'timeString': '2025-12-03', 'timeType': 'DAY'}
+2025-12-03 17:38:09,119 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:38:09,120 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:38:11,552 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": null,
@@ -211,10 +223,10 @@
   "timeType": "DAY"
 }
 ```
-2025-11-21 17:57:08,231 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
 2022年10月2日 => {'indicator': None, 'timeString': '2022-10-02', 'timeType': 'DAY'}
-2025-11-21 17:57:08,328 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:57:09,523 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+2025-12-03 17:38:12,700 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:38:12,700 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:38:15,144 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "450酸轧纯水使用量",
@@ -222,10 +234,10 @@
   "timeType": null
 }
 ```
-2025-11-21 17:57:10,555 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
 450酸轧纯水使用量 => {'indicator': '450酸轧纯水使用量', 'timeString': None, 'timeType': None}
-2025-11-21 17:57:10,621 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:57:11,755 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+2025-12-03 17:38:16,203 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:38:16,204 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:38:18,615 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "2030酸轧纯水使用量",
@@ -233,21 +245,21 @@
   "timeType": "YEAR"
 }
 ```
-2025-11-21 17:57:12,990 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
 查询今年的2030酸轧纯水使用量 => {'indicator': '2030酸轧纯水使用量', 'timeString': '2025', 'timeType': 'YEAR'}
-2025-11-21 17:57:13,087 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:57:14,160 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+2025-12-03 17:38:19,881 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:38:19,882 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:38:22,288 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "酸轧纯水使用量",
-  "timeString": "2025-11-21",
+  "timeString": "2025-12-03",
   "timeType": "DAY"
 }
 ```
-2025-11-21 17:57:15,445 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-今天的酸轧纯水使用量 => {'indicator': '酸轧纯水使用量', 'timeString': '2025-11-21', 'timeType': 'DAY'}
-2025-11-21 17:57:15,543 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:57:16,676 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+今天的酸轧纯水使用量 => {'indicator': '酸轧纯水使用量', 'timeString': '2025-12-03', 'timeType': 'DAY'}
+2025-12-03 17:38:23,593 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:38:23,593 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:38:26,067 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "热轧蒸汽消耗",
@@ -255,10 +267,10 @@
   "timeType": "MONTH"
 }
 ```
-2025-11-21 17:57:17,789 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
 9月份热轧蒸汽消耗 => {'indicator': '热轧蒸汽消耗', 'timeString': '2025-09', 'timeType': 'MONTH'}
-2025-11-21 17:57:17,884 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:57:18,989 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+2025-12-03 17:38:27,240 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:38:27,241 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:38:29,683 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "酸轧纯水使用量",
@@ -266,21 +278,21 @@
   "timeType": null
 }
 ```
-2025-11-21 17:57:19,927 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
 酸轧纯水使用量 => {'indicator': '酸轧纯水使用量', 'timeString': None, 'timeType': None}
-2025-11-21 17:57:20,024 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:57:21,102 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+2025-12-03 17:38:30,684 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:38:30,685 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:38:33,151 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": null,
-  "timeString": "2025-11-20",
+  "timeString": "2025-12-02",
   "timeType": "DAY"
 }
 ```
-2025-11-21 17:57:22,212 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-昨天 => {'indicator': None, 'timeString': '2025-11-20', 'timeType': 'DAY'}
-2025-11-21 17:57:22,279 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:57:23,368 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+昨天 => {'indicator': None, 'timeString': '2025-12-02', 'timeType': 'DAY'}
+2025-12-03 17:38:34,298 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:38:34,299 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:38:36,690 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "纯水损失率",
@@ -288,10 +300,10 @@
   "timeType": "WEEK"
 }
 ```
-2025-11-21 17:57:24,510 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
 2025年第41周纯水损失率 => {'indicator': '纯水损失率', 'timeString': '2025 W41', 'timeType': 'WEEK'}
-2025-11-21 17:57:24,607 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:57:25,764 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+2025-12-03 17:38:37,852 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:38:37,853 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:38:40,217 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "酸轧纯水使用量",
@@ -299,54 +311,54 @@
   "timeType": "DAY"
 }
 ```
-2025-11-21 17:57:27,030 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
 今年10月14日酸轧纯水使用量 => {'indicator': '酸轧纯水使用量', 'timeString': '2025-10-14', 'timeType': 'DAY'}
-2025-11-21 17:57:27,129 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:57:28,311 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+2025-12-03 17:38:41,550 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:38:41,551 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:38:44,051 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": null,
-  "timeString": "2025 W48",
+  "timeString": "2025 W52",
   "timeType": "WEEK"
 }
 ```
-2025-11-21 17:57:29,346 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-本周 => {'indicator': None, 'timeString': '2025 W48', 'timeType': 'WEEK'}
-2025-11-21 17:57:29,445 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:57:30,552 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+本周 => {'indicator': None, 'timeString': '2025 W52', 'timeType': 'WEEK'}
+2025-12-03 17:38:45,118 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:38:45,119 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:38:47,518 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "吨钢用水量",
-  "timeString": "2025 W42",
+  "timeString": "2025 W51",
   "timeType": "WEEK"
 }
 ```
-2025-11-21 17:57:31,699 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-上周的吨钢用水量 => {'indicator': '吨钢用水量', 'timeString': '2025 W42', 'timeType': 'WEEK'}
-2025-11-21 17:57:31,797 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:57:32,972 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+上周的吨钢用水量 => {'indicator': '吨钢用水量', 'timeString': '2025 W51', 'timeType': 'WEEK'}
+2025-12-03 17:38:48,688 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:38:48,688 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:38:50,994 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "热轧蒸汽消耗",
-  "timeString": "2025-11-20 早班",
+  "timeString": "2025-12-02 早班",
   "timeType": "SHIFT"
 }
 ```
-2025-11-21 17:57:34,154 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-昨天早班的热轧蒸汽消耗 => {'indicator': '热轧蒸汽消耗', 'timeString': '2025-11-20 早班', 'timeType': 'SHIFT'}
-2025-11-21 17:57:34,252 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:57:35,308 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+昨天早班的热轧蒸汽消耗 => {'indicator': '热轧蒸汽消耗', 'timeString': '2025-12-02 早班', 'timeType': 'SHIFT'}
+2025-12-03 17:38:52,298 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:38:52,299 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:38:54,696 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "轧制水耗",
-  "timeString": "2025-11-22 02",
+  "timeString": "2025-12-04 02",
   "timeType": "HOUR"
 }
 ```
-2025-11-21 17:57:36,603 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-明天凌晨2点的轧制水耗 => {'indicator': '轧制水耗', 'timeString': '2025-11-22 02', 'timeType': 'HOUR'}
-2025-11-21 17:57:36,700 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:57:37,819 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+明天凌晨2点的轧制水耗 => {'indicator': '轧制水耗', 'timeString': '2025-12-04 02', 'timeType': 'HOUR'}
+2025-12-03 17:38:56,040 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:38:56,041 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:38:58,476 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "吨钢用水量",
@@ -354,10 +366,10 @@
   "timeType": "MONTH"
 }
 ```
-2025-11-21 17:57:38,954 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
 去年12月份的吨钢用水量 => {'indicator': '吨钢用水量', 'timeString': '2024-12', 'timeType': 'MONTH'}
-2025-11-21 17:57:39,048 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:57:40,123 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+2025-12-03 17:38:59,649 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:38:59,649 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:39:02,064 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "纯水损失率",
@@ -365,10 +377,10 @@
   "timeType": "QUARTER"
 }
 ```
-2025-11-21 17:57:41,246 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
 2025年第4季度纯水损失率 => {'indicator': '纯水损失率', 'timeString': '2025 Q4', 'timeType': 'QUARTER'}
-2025-11-21 17:57:41,346 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:57:42,467 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+2025-12-03 17:39:03,220 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:39:03,221 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:39:05,599 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "热轧蒸汽消耗",
@@ -376,54 +388,54 @@
   "timeType": "TENDAYS"
 }
 ```
-2025-11-21 17:57:43,715 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
 2025年10月上旬热轧蒸汽消耗 => {'indicator': '热轧蒸汽消耗', 'timeString': '2025-10 上旬', 'timeType': 'TENDAYS'}
-2025-11-21 17:57:43,813 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:57:44,930 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+2025-12-03 17:39:06,838 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:39:06,839 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:39:09,252 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "高炉工序能耗",
-  "timeString": "2025-11-21",
+  "timeString": "2025-12-03",
   "timeType": "DAY"
 }
 ```
-2025-11-21 17:57:46,205 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-今天的高炉工序能耗是多少 => {'indicator': '高炉工序能耗', 'timeString': '2025-11-21', 'timeType': 'DAY'}
-2025-11-21 17:57:46,310 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:57:47,431 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+今天的高炉工序能耗是多少 => {'indicator': '高炉工序能耗', 'timeString': '2025-12-03', 'timeType': 'DAY'}
+2025-12-03 17:39:10,553 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:39:10,554 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:39:12,911 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "高炉工序能耗",
-  "timeString": "2025-11-21",
+  "timeString": "2025-12-03",
   "timeType": "DAY"
 }
 ```
-2025-11-21 17:57:48,712 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-高炉今天的工序能耗是多少 => {'indicator': '高炉工序能耗', 'timeString': '2025-11-21', 'timeType': 'DAY'}
-2025-11-21 17:57:48,777 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:57:49,978 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+高炉今天的工序能耗是多少 => {'indicator': '高炉工序能耗', 'timeString': '2025-12-03', 'timeType': 'DAY'}
+2025-12-03 17:39:14,208 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:39:14,209 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:39:16,628 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "1号高炉工序能耗",
-  "timeString": "2025-11-20",
+  "timeString": "2025-12-02",
   "timeType": "DAY"
 }
 ```
-2025-11-21 17:57:51,241 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-1号高炉昨天的工序能耗是多少 => {'indicator': '1号高炉工序能耗', 'timeString': '2025-11-20', 'timeType': 'DAY'}
-2025-11-21 17:57:51,344 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:57:52,462 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+1号高炉昨天的工序能耗是多少 => {'indicator': '1号高炉工序能耗', 'timeString': '2025-12-02', 'timeType': 'DAY'}
+2025-12-03 17:39:17,989 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:39:17,990 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:39:20,404 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "高炉工序能耗",
-  "timeString": "2024-11-21",
+  "timeString": "2024-12-03",
   "timeType": "DAY"
 }
 ```
-2025-11-21 17:57:53,717 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-去年今天的高炉工序能耗是多少 => {'indicator': '高炉工序能耗', 'timeString': '2024-11-21', 'timeType': 'DAY'}
-2025-11-21 17:57:53,811 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:57:54,990 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+去年今天的高炉工序能耗是多少 => {'indicator': '高炉工序能耗', 'timeString': '2024-12-03', 'timeType': 'DAY'}
+2025-12-03 17:39:21,704 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:39:21,705 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:39:24,144 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "1高炉工序能耗",
@@ -431,10 +443,10 @@
   "timeType": "DAY"
 }
 ```
-2025-11-21 17:57:56,272 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
 2021年10月23日的1高炉工序能耗是多少 => {'indicator': '1高炉工序能耗', 'timeString': '2021-10-23', 'timeType': 'DAY'}
-2025-11-21 17:57:56,370 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:57:57,466 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+2025-12-03 17:39:25,473 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:39:25,474 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:39:27,852 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "2高炉工序能耗",
@@ -442,10 +454,10 @@
   "timeType": "DAY"
 }
 ```
-2025-11-21 17:57:58,771 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
 2023年10月22日的2高炉工序能耗是多少 => {'indicator': '2高炉工序能耗', 'timeString': '2023-10-22', 'timeType': 'DAY'}
-2025-11-21 17:57:58,869 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:58:00,006 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+2025-12-03 17:39:29,187 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:39:29,187 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:39:31,605 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "1高炉工序能耗",
@@ -453,10 +465,10 @@
   "timeType": "DAY"
 }
 ```
-2025-11-21 17:58:01,319 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
 时间：2021-10-23，1高炉工序能耗是多少 => {'indicator': '1高炉工序能耗', 'timeString': '2021-10-23', 'timeType': 'DAY'}
-2025-11-21 17:58:01,416 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:58:02,643 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+2025-12-03 17:39:32,934 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:39:32,935 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:39:35,398 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "高炉工序能耗",
@@ -464,54 +476,54 @@
   "timeType": null
 }
 ```
-2025-11-21 17:58:03,454 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
 高炉工序能耗是多少 => {'indicator': '高炉工序能耗', 'timeString': None, 'timeType': None}
-2025-11-21 17:58:03,551 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:58:04,683 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+2025-12-03 17:39:36,387 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:39:36,388 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:39:38,802 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "1、2号高炉工序能耗",
-  "timeString": "2025-11",
+  "timeString": "2025-12",
   "timeType": "MONTH"
 }
 ```
-2025-11-21 17:58:05,963 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-本月1、2号高炉工序能耗是多少 => {'indicator': '1、2号高炉工序能耗', 'timeString': '2025-11', 'timeType': 'MONTH'}
-2025-11-21 17:58:06,060 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:58:07,208 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+本月1、2号高炉工序能耗是多少 => {'indicator': '1、2号高炉工序能耗', 'timeString': '2025-12', 'timeType': 'MONTH'}
+2025-12-03 17:39:40,107 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:39:40,108 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:39:42,446 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "高炉工序能耗计划",
-  "timeString": "2025-11",
+  "timeString": "2025-12",
   "timeType": "MONTH"
 }
 ```
-2025-11-21 17:58:08,428 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-高炉工序能耗本月计划是多少 => {'indicator': '高炉工序能耗计划', 'timeString': '2025-11', 'timeType': 'MONTH'}
-2025-11-21 17:58:08,525 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:58:09,711 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+高炉工序能耗本月计划是多少 => {'indicator': '高炉工序能耗计划', 'timeString': '2025-12', 'timeType': 'MONTH'}
+2025-12-03 17:39:43,665 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:39:43,666 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:39:46,095 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "高炉工序能耗计划值",
-  "timeString": "2025-11",
+  "timeString": "2025-12",
   "timeType": "MONTH"
 }
 ```
-2025-11-21 17:58:10,866 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-本月高炉工序能耗的计划值是多少 => {'indicator': '高炉工序能耗计划值', 'timeString': '2025-11', 'timeType': 'MONTH'}
-2025-11-21 17:58:10,965 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:58:12,089 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+本月高炉工序能耗的计划值是多少 => {'indicator': '高炉工序能耗计划值', 'timeString': '2025-12', 'timeType': 'MONTH'}
+2025-12-03 17:39:47,341 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:39:47,342 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:39:49,702 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "高炉电使用量",
-  "timeString": "2025-11",
+  "timeString": "2025-12",
   "timeType": "MONTH"
 }
 ```
-2025-11-21 17:58:13,235 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-本月的高炉电使用量是多少 => {'indicator': '高炉电使用量', 'timeString': '2025-11', 'timeType': 'MONTH'}
-2025-11-21 17:58:13,335 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:58:14,445 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+本月的高炉电使用量是多少 => {'indicator': '高炉电使用量', 'timeString': '2025-12', 'timeType': 'MONTH'}
+2025-12-03 17:39:50,894 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:39:50,895 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:39:53,300 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "高炉煤气耗",
@@ -519,21 +531,21 @@
   "timeType": null
 }
 ```
-2025-11-21 17:58:15,327 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
 高炉的煤气耗是多少 => {'indicator': '高炉煤气耗', 'timeString': None, 'timeType': None}
-2025-11-21 17:58:15,426 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:58:16,597 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+2025-12-03 17:39:54,235 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:39:54,235 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:39:56,612 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "10号高炉工序能耗",
-  "timeString": "2025-11-21",
+  "timeString": "2025-12-03",
   "timeType": "DAY"
 }
 ```
-2025-11-21 17:58:17,937 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-10号高炉今天的工序能耗是多少 => {'indicator': '10号高炉工序能耗', 'timeString': '2025-11-21', 'timeType': 'DAY'}
-2025-11-21 17:58:18,036 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:58:19,230 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+10号高炉今天的工序能耗是多少 => {'indicator': '10号高炉工序能耗', 'timeString': '2025-12-03', 'timeType': 'DAY'}
+2025-12-03 17:39:57,987 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:39:57,987 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:40:00,374 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "冷轧蒸汽消耗累计",
@@ -541,16 +553,16 @@
   "timeType": "YEAR"
 }
 ```
-2025-11-21 17:58:20,264 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
 今年累计的冷轧蒸汽消耗是多少 => {'indicator': '冷轧蒸汽消耗累计', 'timeString': '2025', 'timeType': 'YEAR'}
-2025-11-21 17:58:20,351 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
-2025-11-21 17:58:21,510 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+2025-12-03 17:40:01,500 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-03 17:40:01,501 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-03 17:40:03,850 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
 ```json
 {
   "indicator": "吨钢用水量",
-  "timeString": "2025-11-19",
-  "timeType": "DAY"
+  "timeString": "2025-12-01 夜班",
+  "timeType": "SHIFT"
 }
 ```
-2025-11-21 17:58:22,695 | INFO | llm_client | ✅ 从 LLM 输出中成功解析 JSON。
-前天晚班的吨钢用水量 => {'indicator': '吨钢用水量', 'timeString': '2025-11-19', 'timeType': 'DAY'}
+前天晚班的吨钢用水量 => {'indicator': '吨钢用水量', 'timeString': '2025-12-01 夜班', 'timeType': 'SHIFT'}
+(ask_agent_venv) PS E:\Work\LLM\xiaozhi_mcp\ask_agent> 

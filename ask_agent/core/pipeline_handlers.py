@@ -655,6 +655,11 @@ async def handle_list_query(
     graph.set_main_intent("list_query")
     indicators = intent_info.setdefault("indicators", [])
 
+    # --- llm 指标扩展 ---
+    from core.llm_indicator_expander import expand_indicator_candidates
+    last_indicator_entry = (graph.get_last_completed_node() or {}).get("indicator_entry")
+    current_intent = await expand_indicator_candidates(last_indicator_entry, current_intent)
+
     # --- Slot-fill 情况：无 candidates，则保持原 indicators ---
     candidates = (current_intent or {}).get("candidates") or []
 
@@ -725,8 +730,8 @@ async def handle_list_query(
                 entry["timeType"] = last_entry.get("timeType")
                 entry["slot_status"]["time"] = "filled"
             else:
-                reply = f"要查【{entry['indicator']}】，请告诉我时间。"
-                human_reply = reply_templates.reply_ask_time(entry["indicator"])
+                reply = f"我不太确定您查询时间范围，请告诉我您要查询的具体时间。"
+                human_reply = reply_templates.reply_ask_time_unknown()
                 return _finish(user_id, graph, user_input, intent_info, reply, human_reply)
             
         # 3.2 解析公式
