@@ -228,6 +228,9 @@ def reply_api_error():
 def reply_ask_time_unknown():
     return "我不太确定您说的时间范围，可以再具体一点吗？"
 
+def reply_time_range_normalized_error():
+    return "您提供的时间已经是最小粒度，无法提取用于趋势分析的时间范围，请重新输入，例如 '2025-01~2025-09'、'本月'。"
+
 def reply_time_parse_error():
     return "我没能理解时间，请再试一次，例如：昨天 / 上周 / 2024年10月。"
 
@@ -523,3 +526,66 @@ def compare_summary(left_entry: dict, right_entry: dict, analysis: str, image_na
     chart_md = build_chart(diffs)
 
     return f"### 📊 指标对比结果\n\n{table_md}\n\n### 📝 对比总结\n\n{summary_md}{chart_md}"
+
+def reply_analysis(entries_results: list, image_name: str | None = None):
+    """
+    批量查询的人性化 Markdown 输出（支持多指标绘制同一张趋势图）
+    """
+    from core import utils
+
+    if not entries_results:
+        return "没有成功的查询结果。"
+
+    if len(entries_results) == 1:
+        return reply_success_single(entries_results[0])
+
+    headers = ["指标", "公式", "时间", "数值"]
+    rows = ["| " + " | ".join(headers) + " |", "|------|------|------|------|"]
+
+    # 用于同图绘制多指标
+    multi_series_data = {}
+
+    for entry in entries_results:
+        result = entry.get("value")
+        indicator_name = entry.get("indicator", "未知指标")
+        formula = entry.get("formula", "未知公式")
+        t = human_time(entry.get("timeString"), entry.get("timeType"))
+
+        if result is None:
+            value_str = "暂无数据"
+        elif isinstance(result, dict):
+            val = result.get("value") or next(iter(result.values()), None)
+            unit = result.get("unit", "")
+            value_str = f"{val} {unit}".strip() if val is not None else "暂无数据"
+        elif isinstance(result, list) and result:
+            lines = []
+            series_data = []
+            for r in result:
+                timestamp = r.get("clock") or r.get("time") or r.get("timestamp")
+                v = r.get("itemValue") or r.get("value") or r.get("v") or "暂无数据"
+                lines.append(f"{timestamp}: {v}")
+                if v != "暂无数据":
+                    try:
+                        series_data.append((timestamp, float(v)))
+                    except:
+                        series_data.append((timestamp, v))
+            value_str = "<br>".join(lines)
+            if series_data and any(isinstance(v, (int, float)) for _, v in series_data):
+                multi_series_data[indicator_name] = series_data
+        else:
+            value_str = str(result)
+
+        row = [indicator_name, formula, t, value_str]
+        rows.append("| " + " | ".join(row) + " |")
+
+    table_md = "\n".join(rows)
+
+    chart_md = ""
+    if multi_series_data:
+        try:
+            img_url = utils.save_multi_series_chart(image_name, multi_series_data, title="多指标趋势")
+            chart_md = f"\n\n#### 📈 多指标趋势图\n\n![]({img_url})"
+        except Exception as e:
+            chart_md = f"\n\n⚠️ 趋势图生成失败：{e}"
+
+    return f"### ✅ 批量查询结果\n\n{table_md}\n\n{chart_md}\n\n如需继续查询其他指标，随时告诉我～"

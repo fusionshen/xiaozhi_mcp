@@ -1,0 +1,357 @@
+(ask_agent_venv) PS E:\Work\LLM\xiaozhi_mcp\ask_agent> python -m tests.test_llm_time_range_normalizer
+2025-12-04 18:22:01,599 | INFO | llm_client | ✅ Using ChatOllama from langchain-ollama
+E:\Work\LLM\xiaozhi_mcp\ask_agent\ask_agent_venv\Lib\site-packages\jieba\_compat.py:18: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+✅ sentence-transformers 版本: 5.1.1
+=== Running Time Range Normalizer Tests ===
+
+Input: timeString=2025, timeType=YEAR
+2025-12-04 18:22:06,365 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-04 18:22:06,365 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-04 18:22:08,460 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+    "timeString": "2025-01~2025-12",
+    "timeType": "MONTH"
+}
+```
+Output: {'timeString': '2025-01~2025-12', 'timeType': 'MONTH'}
+------------------------------------------------------------
+Input: timeString=2024, timeType=YEAR
+2025-12-04 18:22:09,599 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-04 18:22:09,600 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-04 18:22:11,652 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+    "timeString": "2024-01~2024-09",
+    "timeType": "MONTH"
+}
+```
+Output: {'timeString': '2024-01~2024-09', 'timeType': 'MONTH'}
+------------------------------------------------------------
+Input: timeString=2025-Q1, timeType=QUARTER
+2025-12-04 18:22:12,818 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-04 18:22:12,819 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-04 18:22:14,805 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+    "timeString": "2025-01~2025-03",
+    "timeType": "MONTH"
+}
+```
+Output: {'timeString': '2025-01~2025-03', 'timeType': 'MONTH'}
+------------------------------------------------------------
+Input: timeString=2025-Q2, timeType=QUARTER
+2025-12-04 18:22:15,875 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-04 18:22:15,876 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-04 18:22:17,971 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+    "timeString": "2025-04~2025-06",
+    "timeType": "MONTH"
+}
+```
+Output: {'timeString': '2025-04~2025-06', 'timeType': 'MONTH'}
+------------------------------------------------------------
+Input: timeString=2025-Q3, timeType=QUARTER
+2025-12-04 18:22:19,098 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-04 18:22:19,099 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-04 18:22:21,153 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+    "timeString": "2025-07~2025-09",
+    "timeType": "MONTH"
+}
+```
+Output: {'timeString': '2025-07~2025-09', 'timeType': 'MONTH'}
+------------------------------------------------------------
+Input: timeString=2025-Q4, timeType=QUARTER
+2025-12-04 18:22:22,249 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-04 18:22:22,250 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-04 18:22:24,287 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+    "timeString": "2025-10~2025-12",
+    "timeType": "MONTH"
+}
+```
+Output: {'timeString': '2025-10~2025-12', 'timeType': 'MONTH'}
+------------------------------------------------------------
+Input: timeString=2024-08, timeType=MONTH
+2025-12-04 18:22:25,430 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-04 18:22:25,431 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-04 18:22:27,476 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+    "timeString": "2024-08-01~2024-08-31",
+    "timeType": "DAY"
+}
+```
+Output: {'timeString': '2024-08-01~2024-08-31', 'timeType': 'DAY'}
+------------------------------------------------------------
+Input: timeString=2025-10, timeType=MONTH
+2025-12-04 18:22:28,726 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-04 18:22:28,727 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-04 18:22:30,755 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+    "timeString": "2025-10-01~2025-10-31",
+    "timeType": "DAY"
+}
+```
+Output: {'timeString': '2025-10-01~2025-10-31', 'timeType': 'DAY'}
+------------------------------------------------------------
+Input: timeString=2025-10上旬, timeType=TENDAYS
+2025-12-04 18:22:32,056 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-04 18:22:32,057 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-04 18:22:34,133 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+    "timeString": "2025-10-01~2025-10-10",
+    "timeType": "DAY"
+}
+```
+Output: {'timeString': '2025-10-01~2025-10-10', 'timeType': 'DAY'}
+------------------------------------------------------------
+Input: timeString=2025-10中旬, timeType=TENDAYS
+2025-12-04 18:22:35,426 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-04 18:22:35,427 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-04 18:22:37,459 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+    "timeString": "2025-10-11~2025-10-20",
+    "timeType": "DAY"
+}
+```
+Output: {'timeString': '2025-10-11~2025-10-20', 'timeType': 'DAY'}
+------------------------------------------------------------
+Input: timeString=2025-10下旬, timeType=TENDAYS
+2025-12-04 18:22:38,754 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-04 18:22:38,755 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-04 18:22:40,811 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+    "timeString": "2025-10-21~2025-10-31",
+    "timeType": "DAY"
+}
+```
+Output: {'timeString': '2025-10-21~2025-10-31', 'timeType': 'DAY'}
+------------------------------------------------------------
+Input: timeString=2025-W10, timeType=WEEK
+2025-12-04 18:22:42,115 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-04 18:22:42,116 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-04 18:22:44,169 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+    "timeString": "2025-03-10~2025-03-16",
+    "timeType": "DAY"
+}
+```
+Output: {'timeString': '2025-03-10~2025-03-16', 'timeType': 'DAY'}
+------------------------------------------------------------
+Input: timeString=2025-W31, timeType=WEEK
+2025-12-04 18:22:45,460 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-04 18:22:45,461 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-04 18:22:47,518 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+    "timeString": "2025-07-28~2025-08-03",
+    "timeType": "DAY"
+}
+```
+Output: {'timeString': '2025-07-28~2025-08-03', 'timeType': 'DAY'}
+------------------------------------------------------------
+Input: timeString=2025-W52, timeType=WEEK
+2025-12-04 18:22:48,791 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-04 18:22:48,792 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-04 18:22:50,875 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+    "timeString": "2025-12-23~2025-12-29",
+    "timeType": "DAY"
+}
+```
+Output: {'timeString': '2025-12-23~2025-12-29', 'timeType': 'DAY'}
+------------------------------------------------------------
+Input: timeString=2025-10-15, timeType=DAY
+2025-12-04 18:22:52,156 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-04 18:22:52,157 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-04 18:22:54,363 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+    "timeString": "2025-10-15 00~2025-10-15 23",
+    "timeType": "HOUR"
+}
+```
+Output: {'timeString': '2025-10-15 00~2025-10-15 23', 'timeType': 'HOUR'}
+------------------------------------------------------------
+Input: timeString=2024-12-31, timeType=DAY
+2025-12-04 18:22:55,767 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-04 18:22:55,768 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-04 18:22:58,029 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+    "timeString": "2024-12-31 00~2024-12-31 23",
+    "timeType": "HOUR"
+}
+```
+Output: {'timeString': '2024-12-31 00~2024-12-31 23', 'timeType': 'HOUR'}
+------------------------------------------------------------
+Input: timeString=2025-10-15 14, timeType=HOUR
+2025-12-04 18:22:59,500 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-04 18:22:59,500 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-04 18:23:01,563 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+    "timeString": "2025-10-15 14",
+    "timeType": "HOUR"
+}
+```
+Output: {'timeString': '2025-10-15 14', 'timeType': 'HOUR'}
+------------------------------------------------------------
+Input: timeString=2025-10-01 00, timeType=HOUR
+2025-12-04 18:23:02,630 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-04 18:23:02,631 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-04 18:23:04,700 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+    "timeString": "2025-10-01 00",
+    "timeType": "HOUR"
+}
+```
+Output: {'timeString': '2025-10-01 00', 'timeType': 'HOUR'}
+------------------------------------------------------------
+Input: timeString=2025-10-15 白班, timeType=SHIFT
+2025-12-04 18:23:05,741 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-04 18:23:05,741 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-04 18:23:07,812 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+    "timeString": "2025-10-15 白班",
+    "timeType": "SHIFT"
+}
+```
+Output: {'timeString': '2025-10-15 白班', 'timeType': 'SHIFT'}
+------------------------------------------------------------
+Input: timeString=2025-10-15 夜班, timeType=SHIFT
+2025-12-04 18:23:08,906 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-04 18:23:08,907 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-04 18:23:11,011 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+    "timeString": "2025-10-15 夜班",
+    "timeType": "SHIFT"
+}
+```
+Output: {'timeString': '2025-10-15 夜班', 'timeType': 'SHIFT'}
+------------------------------------------------------------
+Input: timeString=今天, timeType=DAY
+2025-12-04 18:23:12,058 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-04 18:23:12,060 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-04 18:23:14,167 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+    "timeString": "2025-12-04 00~2025-12-04 23",
+    "timeType": "HOUR"
+}
+```
+Output: {'timeString': '2025-12-04 00~2025-12-04 23', 'timeType': 'HOUR'}
+------------------------------------------------------------
+Input: timeString=昨天, timeType=DAY
+2025-12-04 18:23:15,631 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-04 18:23:15,632 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-04 18:23:17,675 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+    "timeString": "2025-12-03 00~2025-12-03 23",
+    "timeType": "HOUR"
+}
+```
+Output: {'timeString': '2025-12-03 00~2025-12-03 23', 'timeType': 'HOUR'}
+------------------------------------------------------------
+Input: timeString=本周, timeType=WEEK
+2025-12-04 18:23:19,103 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-04 18:23:19,103 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-04 18:23:21,168 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+    "timeString": "2025-12-02~2025-12-08",
+    "timeType": "DAY"
+}
+```
+Output: {'timeString': '2025-12-02~2025-12-08', 'timeType': 'DAY'}
+------------------------------------------------------------
+Input: timeString=上周, timeType=WEEK
+2025-12-04 18:23:22,457 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-04 18:23:22,458 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-04 18:23:24,492 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+    "timeString": "2025-11-25~2025-12-01",
+    "timeType": "DAY"
+}
+```
+Output: {'timeString': '2025-11-25~2025-12-01', 'timeType': 'DAY'}
+------------------------------------------------------------
+Input: timeString=本月, timeType=MONTH
+2025-12-04 18:23:25,818 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-04 18:23:25,819 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-04 18:23:27,853 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+    "timeString": "2025-12-01~2025-12-31",
+    "timeType": "DAY"
+}
+```
+Output: {'timeString': '2025-12-01~2025-12-31', 'timeType': 'DAY'}
+------------------------------------------------------------
+Input: timeString=上个月, timeType=MONTH
+2025-12-04 18:23:29,113 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-04 18:23:29,114 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-04 18:23:31,118 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+    "timeString": "2024-11-01~2024-11-30",
+    "timeType": "DAY"
+}
+```
+Output: {'timeString': '2024-11-01~2024-11-30', 'timeType': 'DAY'}
+------------------------------------------------------------
+Input: timeString=今年, timeType=YEAR
+2025-12-04 18:23:32,337 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-04 18:23:32,338 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-04 18:23:34,331 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+    "timeString": "2025-01~2025-12",
+    "timeType": "MONTH"
+}
+```
+Output: {'timeString': '2025-01~2025-12', 'timeType': 'MONTH'}
+------------------------------------------------------------
+Input: timeString=去年, timeType=YEAR
+2025-12-04 18:23:35,413 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-04 18:23:35,414 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-04 18:23:37,476 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+    "timeString": "2024-01~2024-12",
+    "timeType": "MONTH"
+}
+```
+Output: {'timeString': '2024-01~2024-12', 'timeType': 'MONTH'}
+------------------------------------------------------------
+Input: timeString=2025-10-15 05, timeType=HOUR
+2025-12-04 18:23:38,577 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-04 18:23:38,577 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-04 18:23:40,583 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+    "timeString": "2025-10-15 05",
+    "timeType": "HOUR"
+}
+```
+Output: {'timeString': '2025-10-15 05', 'timeType': 'HOUR'}
+------------------------------------------------------------
+
+=== All tests done. ===

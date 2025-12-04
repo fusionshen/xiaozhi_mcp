@@ -39,7 +39,7 @@ async def process_message(user_id: str, user_input: str, current_intent: dict | 
     if intent == "compare":
         return await handle_compare(user_id, user_input, graph, current_intent)
     elif intent == "analysis":
-        return await handle_analysis(user_id, user_input, graph)
+        return await handle_analysis(user_id, user_input, graph, current_intent)
     elif intent == "slot_fill":
         return await handle_slot_fill(user_id, user_input, graph, current_intent)
     elif intent == "list_query":
