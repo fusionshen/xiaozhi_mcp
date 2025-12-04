@@ -10,6 +10,7 @@ from tools import formula_api, platform_api
 from core.pipeline_context import set_graph, get_graph
 from core.llm_indicator_compare import call_compare_llm
 from core import reply_templates
+from core.llm_indicator_expander import expand_indicator_candidates
 
 
 logger = logging.getLogger("pipeline.handlers")
@@ -656,7 +657,6 @@ async def handle_list_query(
     indicators = intent_info.setdefault("indicators", [])
 
     # --- llm 指标扩展 ---
-    from core.llm_indicator_expander import expand_indicator_candidates
     last_indicator_entry = (graph.get_last_completed_node() or {}).get("indicator_entry")
     current_intent = await expand_indicator_candidates(last_indicator_entry, current_intent)
 
@@ -807,24 +807,28 @@ async def handle_compare(
     graph.set_main_intent("compare")
     indicators = intent_info.setdefault("indicators", [])
 
-    # Acquire candidates from current_intent if present
-    candidates = []
-    if current_intent and isinstance(current_intent, dict):
-        candidates = current_intent.get("candidates") or []
+    # --- llm 指标扩展 ---
+    last_indicator_entry = (graph.get_last_completed_node() or {}).get("indicator_entry")
+    current_intent = await expand_indicator_candidates(last_indicator_entry, current_intent)
+
+    # --- Slot-fill 情况：无 candidates，则保持原 indicators ---
+    candidates = (current_intent or {}).get("candidates") or []
 
     # ------------------------- 辅助局部函数 -------------------------
-    async def _record_and_finish_after_compare(sid, tid, left_entry, right_entry):
+    async def _record_and_finish_after_compare(left_node, right_node):
         """
         记录 relation、清理 intent、写 history，并返回统一格式（reply, human_reply, state）
         reply: 机器文本简短提示
         human_reply: 人性化 Markdown（表格 + LLM 分析）
         """
         # call LLM comparator (pass the two indicator_entry objects)
+        left_entry = left_node.get("indicator_entry") or {}
+        right_entry = right_node.get("indicator_entry") or {}   
         analysis = await call_compare_llm(left_entry, right_entry)
         # record relation
-        graph.add_relation("compare", source_id=sid, target_id=tid,
+        graph.add_relation("compare", source_id=left_node.get("id"), target_id=right_node.get("id") ,
                            meta={"via": "pipeline.compare", "user_input": intent_info.get("user_input_list"), "result": analysis})
-        return _finish(user_id, graph, user_input, {}, analysis, reply_templates.compare_summary(left_entry, right_entry))
+        return _finish(user_id, graph, user_input, {}, analysis, reply_templates.compare_summary(left_entry, right_entry, analysis))
 
     async def _one_step_flow():
         """
@@ -853,7 +857,7 @@ async def handle_compare(
         # replace intent indicators
         intent_info["indicators"] = parsed_items
 
-        node_pairs = []  # tuples of (node_id, indicator_entry, platform_result)
+        node_compares = []
         for item in parsed_items:
             if not item.get("indicator"):
                 return _finish(user_id, graph, user_input, intent_info, "请告诉我您要对比的指标名称。", reply_templates.reply_ask_indicator())
@@ -879,7 +883,7 @@ async def handle_compare(
                 item["note"] = ie.get("note")
                 item["status"] = "completed"
                 graph.set_intent_info(intent_info)
-                node_pairs.append((nid, ie))
+                node_compares.append(node)
                 continue
 
             # execute platform query
@@ -892,18 +896,13 @@ async def handle_compare(
             # 写入 graph.node
             node_id = graph.add_node(item)
             node_obj = graph.get_node(node_id)
-            node_pairs.append((node_id, node_obj.get("indicator_entry")))
+            node_compares.append(node_obj)
 
         # must have two entries
-        if len(node_pairs) != 2:
+        if len(node_compares) != 2:
             return _finish(user_id, graph, user_input, intent_info, "对比失败，未能获得两条有效数据。", reply_templates.reply_compare_no_data())
 
-        left_entry = node_pairs[0][1]
-        right_entry = node_pairs[1][1]
-
-        sid = node_pairs[0][0]
-        tid = node_pairs[1][0]
-        return await _record_and_finish_after_compare(sid, tid, left_entry, right_entry)
+        return await _record_and_finish_after_compare(node_compares[0], node_compares[1])
     
     async def _two_step_flow():
         """
@@ -959,18 +958,6 @@ async def handle_compare(
         except Exception as e:
             logger.warning("parse_user_input 单 candidate 解析失败: %s -> %s", candidates[0], e)
 
-        # special handling: shorthand "计划" -> replace base_indicator wording
-        def _convert_to_plan_name(last_indicator: str, new_partial_indicator: str):
-            if not new_partial_indicator:
-                return new_partial_indicator
-            if new_partial_indicator in ("计划", "计划值", "计划报出值"):
-                mapping = {"实绩": "计划", "实绩值": "计划值", "实绩报出值": "计划报出值"}
-                for k, v in mapping.items():
-                    if k in (last_indicator or ""):
-                        return (last_indicator or "").replace(k, v)
-            return new_partial_indicator
-
-        current_indicator["indicator"] = _convert_to_plan_name(base_indicator.get("indicator"), current_indicator.get("indicator"))
         current_indicator["slot_status"]["time"] = "filled" if current_indicator.get("timeString") and current_indicator.get("timeType") else "missing"
 
         if not current_indicator.get("indicator"):
@@ -999,9 +986,7 @@ async def handle_compare(
             base_node_id = graph.find_node(base_indicator.get("indicator"), base_indicator.get("timeString"))
             base_node_obj = graph.get_node(base_node_id) if base_node_id else {"indicator_entry": base_indicator}
 
-            sid = base_node_id
-            tid = nid
-            return await _record_and_finish_after_compare(sid, tid, base_node_obj, ie)
+            return await _record_and_finish_after_compare(base_node_obj, node_obj)
         else:
             # execute query
             reply, human_reply, done = await _execute_query(current_indicator)
@@ -1017,7 +1002,7 @@ async def handle_compare(
             base_node_id = graph.find_node(base_indicator.get("indicator"), base_indicator.get("timeString"))
             base_node_obj = graph.get_node(base_node_id) if base_node_id else {"indicator_entry": base_indicator}
 
-            return await _record_and_finish_after_compare(base_node_id, nid_new, base_node_obj, new_node)
+            return await _record_and_finish_after_compare(base_node_obj, new_node)
 
     async def _three_step_flow():
         """
@@ -1027,12 +1012,7 @@ async def handle_compare(
         if len(graph.nodes) >= 2:
             node1 = graph.nodes[-2]
             node2 = graph.nodes[-1]
-            ie1 = node1.get("indicator_entry", {})
-            ie2 = node2.get("indicator_entry", {})
-
-            sid = node1.get("id")
-            tid = node2.get("id")
-            return await _record_and_finish_after_compare(sid, tid, ie1, ie2)
+            return await _record_and_finish_after_compare(node1, node2)
 
         # not enough history
         reply = "当前没有足够的历史查询结果用于对比，请先进行查询以生成两条数据。"
@@ -1067,21 +1047,19 @@ async def main():
     graph = get_graph(user_id) or ContextGraph()
     set_graph(user_id, graph)
 
+    # 测试单指标查询
+    reply, _, _ = await handle_single_query(user_id, "今天的高炉工序能耗是多少", graph)
+    print("Single Query Reply:", reply)
+
     from core.llm_energy_intent_parser import EnergyIntentParser
     parser = EnergyIntentParser()
-    user_input = "本月1、2号高炉工序能耗是多少"
+    user_input = "对比上月有什么变化"
     current_info = await parser.parse_intent(user_input)
     print(current_info)
 
-    # 测试批量查询
-    _, reply, graph_state = await handle_list_query(user_id, user_input, graph, current_info)
-    print("Single Query Reply 1:", reply)
-    print(json.dumps(graph_state, indent=2, ensure_ascii=False))
-
-    # 测试输入备选
-    _, reply, graph_state = await handle_single_query(user_id, "高炉工序能耗本月计划是多少", graph)
-    print("Single Query Reply 3:", reply)
-    print(json.dumps(graph_state, indent=2, ensure_ascii=False))
+    # 测试二步对比
+    reply, _, _ = await handle_compare(user_id, user_input, graph, current_info)
+    print("Single Query Reply 2:", reply)
 
     # 测试一步对比
     # reply, _, graph_state = await handle_compare(user_id, user_input, graph, current_info)

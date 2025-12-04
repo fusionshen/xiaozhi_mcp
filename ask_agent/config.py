@@ -30,6 +30,8 @@ ENABLE_TEXT_SCORE_WEIGHT = os.getenv("ENABLE_TEXT_SCORE_WEIGHT") in ["True", "tr
 
 ENABLE_GRAGH_DEBUG_JSON = os.getenv("ENABLE_GRAGH_DEBUG_JSON") in ["True", "true", "1"]
 
+ENABLE_REMOVE_SYMBOLS = os.getenv("ENABLE_REMOVE_SYMBOLS") in ["True", "true", "1"]
+
 with open(TEXT_SCORE_WEIGHT_FILE, "r", encoding="utf-8") as f:
     raw_cfg = json.load(f)
 

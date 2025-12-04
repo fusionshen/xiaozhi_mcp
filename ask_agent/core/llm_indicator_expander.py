@@ -1,6 +1,8 @@
 # core/llm_indicator_expander.py
 import logging
 from core.llm_client import safe_llm_parse
+from config import ENABLE_REMOVE_SYMBOLS
+from core.utils import normalize_symbol_in_string
 
 logger = logging.getLogger("llm_indicator_expander")
 if not logger.handlers:
@@ -10,26 +12,46 @@ if not logger.handlers:
     )
 
 
+# ============================================================
+# 动态清洗示例函数
+# ============================================================
+def normalize_symbol_example(s: str) -> str:
+    """
+    根据 ENABLE_REMOVE_SYMBOLS 动态清洗示例字符串：
+    - ENABLE_REMOVE_SYMBOLS=True  -> 删除 # 和 号
+    - ENABLE_REMOVE_SYMBOLS=False -> 保留原样
+    """
+    if ENABLE_REMOVE_SYMBOLS:
+        return s.replace("#", "").replace("号", "")
+    return s
+
+# ============================================================
+# 允许在 format_map 中执行 norm("xxx") 的 dict
+# ============================================================
+class FormatDict(dict):
+    def __missing__(self, key):
+        try:
+            # 允许在 {norm("xxx")} 结构中执行 Python 表达式
+            return eval(key, {"norm": normalize_symbol_in_string})
+        except Exception:
+            return "{" + key + "}"
+
+
+# ============================================================
+# 主逻辑：不改动你的任何业务内容，只替换 prompt 构造方式
+# ============================================================
 async def expand_indicator_candidates(
         last_indicator_entry: dict | None,
         parsed: dict
 ):
     """
-    通用指标扩展器（支持 list_query / compare / multi-query）
+    通用指标扩展器（支持 list_query / compare ）
 
     参数:
     - last_indicator_entry: 最近成功节点，例如 graph.get_last_completed_node()["indicator_entry"]
-    - parsed: EnergyIntentParser.parse(...) 返回的结构，如:
-        {
-            "intent": "list_query",
-            "candidates": ["1#高炉","2#高炉"]
-        }
+    - parsed: EnergyIntentParser.parse(...) 返回的结构
 
-    返回：
-    {
-        "intent": "list_query",
-        "candidates": ["2025-12(MONTH)1高炉工序能耗实绩报出值", ...]
-    }
+    返回扩展后的结构
     """
 
     if not last_indicator_entry:
@@ -51,8 +73,12 @@ async def expand_indicator_candidates(
         logger.info("⚠️ 历史节点无 indicator，不扩展。")
         return parsed
 
+    # ============================================================
+    # 动态提示词（核心：使用 {norm("xxx")} 来根据配置生成示例）
+    # ============================================================
+
     # 给 LLM 的指令
-    prompt = f"""
+    prompt_template  = """
 你是一个专业的能源指标自动补全助手。
 
 【已知历史上下文】
@@ -64,26 +90,27 @@ async def expand_indicator_candidates(
 【用户当前意图】
 - intent: {intent}
 - 用户拆分后的子项: {candidates}
+- 是否启用去除特殊符号"#|号"功能: {enable_remove_symbols}
 
 【你的任务】
 基于“最近成功查询的指标”为模板，对用户提供的每个子项进行指标补全。
 
 补全规则：
 1. 完整的指标名称通常包含工序名称+具体指标名称（如“高炉工序能耗实绩报出值”、“1高炉工序能耗计划累计值”、“年度计划指标高炉炼铁工序能耗能源指标实绩累计值”）。
-2. 拆分后子项通常只包含部分信息（如“1#高炉”，“本月2#高炉”，“本年度计划”），需要你根据历史指标补全为完整指标名称。
+2. 拆分后子项通常只包含部分信息（如“1#高炉”，“本月2号高炉”，“本年度计划”），需要你根据历史指标补全为完整指标名称。
 3. 如果子项中包含时间信息，补全时需保留子项中的时间信息（如“今日”、“本月”、“本年度”），并将其放置在指标名称的开头位置。
     例如：
         输入子项 "今天1#高炉"
         若原指标为 "高炉工序能耗实绩报出值"
         则补全结果：
-        "今天1高炉工序能耗实绩报出值"
+        "{norm('今天1#高炉工序能耗实绩报出值')}"
 4. 如果子项中不包含时间信息，则使用历史指标的时间信息进行补全。 
    你需要把它补全为：时间 + 工序名称 + 具体指标名称
     例如：
-        输入子项 "1#高炉"
+        输入子项 "1号高炉"
         若原指标为 "高炉工序能耗实绩报出值"
         则补全结果：
-        "{time_string}({time_type})1高炉工序能耗实绩报出值"
+        "{time_string}({time_type}){norm('1号高炉工序能耗实绩报出值')}"
 5. 若子项中只包含时间，则使用完整指标名称进行补齐。
     例如：
         输入子项 "上一年"
@@ -101,18 +128,18 @@ async def expand_indicator_candidates(
         输入子项 "2#高炉本年度计划"
         若原指标为 "高炉工序能耗实绩报出值"
         则补全结果：
-            "本年度计划2高炉工序能耗实绩报出值"
+            "{norm('本年度2#高炉工序能耗计划报出值')}"
 8. 若子项已经是完整指标名称，则无需补全，直接返回该名称。
     例如：  
-        输入子项 "本年度1高炉工序能耗实绩报出值"
+        输入子项 "本年度1#高炉工序能耗实绩报出值"
         则补全结果：    
-            "本年度1高炉工序能耗实绩报出值"
+            "{norm('本年度1#高炉工序能耗实绩报出值')}"
 9. 在具体指标名称中“实绩”和“计划”, “报出”和“累计”是互斥的，需要进行替换。
     例如：
         输入子项 "2#高炉本年度计划"
         若原指标为 "高炉工序能耗实绩报出值"
         则补全结果：
-            "本年度2高炉工序能耗计划报出值"
+            "{norm('本年度2#高炉工序能耗计划报出值')}"
         输入子项 "本月累计"
         若原指标为 "高炉工序能耗实绩报出值"
         则补全结果：
@@ -121,13 +148,30 @@ async def expand_indicator_candidates(
     例如：
         输入子项 "???"
         则补全结果：
-            "???"   
-11. 最终以严格 JSON 返回：
+            "???"
+11. 不管是否启用去除特殊符号"#|号"功能，不要在补全时随意添加特殊符号"#"或"号"。 
+    例如：
+        若原指标为 "高炉工序能耗实绩报出值"
+        若启用该功能，输入子项 "本年度1高炉"，补全结果应为 "本年度1高炉工序能耗实绩报出值"（而非 "本年度1#高炉工序能耗实绩报出值"）
+        若未启用该功能，输入子项 "本年度1高炉"，补全结果应为 "本年度1高炉工序能耗实绩报出值"（而非 "本年度1#高炉工序能耗实绩报出值"）
+12. 最终以严格 JSON 返回：
 {{
   "intent": "{intent}",
   "candidates": ["补全后的1", "补全后的2", ...]
 }}
 """
+ # ============================================================
+    # 用动态 FormatDict 插值
+    # ============================================================
+    prompt = prompt_template.format_map(FormatDict(
+        base_indicator=base_indicator,
+        base_formula=base_formula,
+        time_string=time_string,
+        time_type=time_type,
+        intent=intent,
+        candidates=candidates,
+        enable_remove_symbols=ENABLE_REMOVE_SYMBOLS,
+    ))
 
     try:
         logger.info("🧩 调用 LLM 进行指标补全")
@@ -165,7 +209,7 @@ if __name__ == "__main__":
         # Rule 3：包含时间信息，需保持用户时间
         {
             "desc": "规则3：包含时间（今天），需保留时间前缀",
-            "parsed": {"intent": "list_query", "candidates": ["今天1#高炉"]},
+            "parsed": {"intent": "list_query", "candidates": ["今天1号高炉"]},
         },
 
         # Rule 4：不包含时间，则使用历史时间

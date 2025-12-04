@@ -13,9 +13,10 @@ from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from rapidfuzz import process, fuzz
+from core.utils import normalize_symbol_in_string
 
 from config import (
-    EMBEDDING_CACHE_NAME, FORMULA_CSV_NAME, COMBINE_WEIGHT_LIST, DEFAULT_COMBINE_BOOST, ENABLE_TEXT_SCORE_WEIGHT
+    EMBEDDING_CACHE_NAME, FORMULA_CSV_NAME, COMBINE_WEIGHT_LIST, ENABLE_REMOVE_SYMBOLS, ENABLE_TEXT_SCORE_WEIGHT
 )
 
 try:
@@ -385,7 +386,8 @@ def formula_query_dict(user_input: str, topn: int = 5, method: str = "hybrid") -
     user_input = str(user_input or "").strip().strip('"').strip("'")
     if not user_input:
         return {"done": False, "message": "Empty input.", "candidates": []}
-
+    # 解决1号高炉工序能耗在当前excel版本下无法匹配的问题
+    user_input = normalize_symbol_in_string(user_input)
     # 0️⃣ 层级精确查找
     hier = hierarchical_exact_match(user_input, df, COMBINE_WEIGHT_LIST)
     if hier:

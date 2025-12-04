@@ -1,0 +1,157 @@
+(ask_agent_venv) PS E:\Work\LLM\xiaozhi_mcp\ask_agent> python -m core.llm_indicator_expander
+2025-12-04 11:24:14,070 | INFO | llm_client | ✅ Using ChatOllama from langchain-ollama
+E:\Work\LLM\xiaozhi_mcp\ask_agent\ask_agent_venv\Lib\site-packages\jieba\_compat.py:18: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+✅ sentence-transformers 版本: 5.1.1
+
+========================================
+🧪 Test 1: 规则2：只包含工序号，应补全时间 + 工序 + 指标名
+========================================
+2025-12-04 11:24:18,613 | INFO | llm_indicator_expander | 🧩 调用 LLM 进行指标补全
+2025-12-04 11:24:18,902 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-04 11:24:18,903 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-04 11:24:28,053 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "intent": "list_query",
+  "candidates": [
+    "2025-12(MONTH)1高炉工序能耗实绩报出值"
+  ]
+}
+```
+2025-12-04 11:24:29,498 | INFO | llm_indicator_expander | 🎯 LLM 扩展成功: {'intent': 'list_query', 'candidates': ['2025-12(MONTH)1高炉工序能耗实绩报出值']}
+➡️ 输入: {'intent': 'list_query', 'candidates': ['1#高炉']}
+⬅️ LLM 返回: {'intent': 'list_query', 'candidates': ['2025-12(MONTH)1高炉工序能耗实绩报出值']}
+
+========================================
+🧪 Test 2: 规则3：包含时间（今天），需保留时间前缀
+========================================
+2025-12-04 11:24:29,499 | INFO | llm_indicator_expander | 🧩 调用 LLM 进行指标补全
+2025-12-04 11:24:29,543 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-04 11:24:29,544 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-04 11:24:31,690 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "intent": "list_query",
+  "candidates": [
+    "今天1高炉工序能耗实绩报出值"
+  ]
+}
+```
+2025-12-04 11:24:32,860 | INFO | llm_indicator_expander | 🎯 LLM 扩展成功: {'intent': 'list_query', 'candidates': ['今天1高炉工序能耗实绩报出值']} 
+➡️ 输入: {'intent': 'list_query', 'candidates': ['今天1号高炉']}
+⬅️ LLM 返回: {'intent': 'list_query', 'candidates': ['今天1高炉工序能耗实绩报出值']}
+
+========================================
+🧪 Test 3: 规则4：无时间，自动补上历史时间
+========================================
+2025-12-04 11:24:32,861 | INFO | llm_indicator_expander | 🧩 调用 LLM 进行指标补全
+2025-12-04 11:24:32,885 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-04 11:24:32,894 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-04 11:24:34,985 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "intent": "list_query",
+  "candidates": [
+    "2025-12(MONTH)2高炉工序能耗实绩报出值"
+  ]
+}
+```
+2025-12-04 11:24:36,414 | INFO | llm_indicator_expander | 🎯 LLM 扩展成功: {'intent': 'list_query', 'candidates': ['2025-12(MONTH)2高炉工序能耗实绩报出值']}
+➡️ 输入: {'intent': 'list_query', 'candidates': ['2#高炉']}
+⬅️ LLM 返回: {'intent': 'list_query', 'candidates': ['2025-12(MONTH)2高炉工序能耗实绩报出值']}
+
+========================================
+🧪 Test 4: 规则5：只包含时间，应补全完整指标名称
+========================================
+2025-12-04 11:24:36,416 | INFO | llm_indicator_expander | 🧩 调用 LLM 进行指标补全
+2025-12-04 11:24:36,452 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-04 11:24:36,454 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-04 11:24:38,521 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "intent": "list_query",
+  "candidates": [
+    "上一年高炉工序能耗实绩报出值"
+  ]
+}
+```
+2025-12-04 11:24:39,709 | INFO | llm_indicator_expander | 🎯 LLM 扩展成功: {'intent': 'list_query', 'candidates': ['上一年高炉工序能耗实绩报出值']}
+➡️ 输入: {'intent': 'list_query', 'candidates': ['上一年']}
+⬅️ LLM 返回: {'intent': 'list_query', 'candidates': ['上一年高炉工序能耗实绩报出值']}
+
+========================================
+🧪 Test 5: 规则6：缺少工序名称，应继承历史工序
+========================================
+2025-12-04 11:24:39,709 | INFO | llm_indicator_expander | 🧩 调用 LLM 进行指标补全
+2025-12-04 11:24:39,744 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-04 11:24:39,744 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-04 11:24:41,837 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "intent": "list_query",
+  "candidates": [
+    "本月高炉工序能耗计划报出值"
+  ]
+}
+```
+2025-12-04 11:24:42,971 | INFO | llm_indicator_expander | 🎯 LLM 扩展成功: {'intent': 'list_query', 'candidates': ['本月高炉工序能耗计划报出值']}  
+➡️ 输入: {'intent': 'list_query', 'candidates': ['本月计划报出值']}
+⬅️ LLM 返回: {'intent': 'list_query', 'candidates': ['本月高炉工序能耗计划报出值']}
+
+========================================
+🧪 Test 6: 规则7：缺少指标名，应继承历史指标名
+========================================
+2025-12-04 11:24:42,972 | INFO | llm_indicator_expander | 🧩 调用 LLM 进行指标补全
+2025-12-04 11:24:42,994 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-04 11:24:42,995 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-04 11:24:45,059 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "intent": "list_query",
+  "candidates": [
+    "本年度2高炉工序能耗计划报出值"
+  ]
+}
+```
+2025-12-04 11:24:46,198 | INFO | llm_indicator_expander | 🎯 LLM 扩展成功: {'intent': 'list_query', 'candidates': ['本年度2高炉工序能耗计划报出值']}
+➡️ 输入: {'intent': 'list_query', 'candidates': ['2#高炉本年度计划']}
+⬅️ LLM 返回: {'intent': 'list_query', 'candidates': ['本年度2高炉工序能耗计划报出值']}
+
+========================================
+🧪 Test 7: 规则8：子项已完整，无需补全
+========================================
+2025-12-04 11:24:46,199 | INFO | llm_indicator_expander | 🧩 调用 LLM 进行指标补全
+2025-12-04 11:24:46,221 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-04 11:24:46,222 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-04 11:24:48,284 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "intent": "list_query",
+  "candidates": [
+    "本年度1高炉工序能耗实绩报出值"
+  ]
+}
+```
+2025-12-04 11:24:49,516 | INFO | llm_indicator_expander | 🎯 LLM 扩展成功: {'intent': 'list_query', 'candidates': ['本年度1高炉工序能耗实绩报出值']}
+➡️ 输入: {'intent': 'list_query', 'candidates': ['本年度1高炉工序能耗实绩报出值']}
+⬅️ LLM 返回: {'intent': 'list_query', 'candidates': ['本年度1高炉工序能耗实绩报出值']}
+
+========================================
+🧪 Test 8: 规则9：未知内容，保持不变
+========================================
+2025-12-04 11:24:49,518 | INFO | llm_indicator_expander | 🧩 调用 LLM 进行指标补全
+2025-12-04 11:24:49,539 | INFO | httpx | HTTP Request: GET http://10.8.0.178:11434/api/tags "HTTP/1.1 200 OK"
+2025-12-04 11:24:49,540 | INFO | llm_client | 🌐 Using remote Ollama model: gemma3:27b
+2025-12-04 11:24:51,583 | INFO | httpx | HTTP Request: POST http://10.8.0.178:11434/api/chat "HTTP/1.1 200 OK"
+```json
+{
+  "intent": "list_query",
+  "candidates": [
+    "???",
+  ]
+}
+```
+2025-12-04 11:24:52,421 | INFO | llm_indicator_expander | 🎯 LLM 扩展成功: {'intent': 'list_query'}
+➡️ 输入: {'intent': 'list_query', 'candidates': ['???']}
+⬅️ LLM 返回: {'intent': 'list_query'}

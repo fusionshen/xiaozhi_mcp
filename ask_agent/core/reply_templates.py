@@ -340,8 +340,9 @@ def reply_success_list(entries_results: list, image_name: str | None = None):
 
     return f"### ✅ 批量查询结果\n\n{table_md}\n\n{chart_md}\n\n如需继续查询其他指标，随时告诉我～"
 
-def compare_summary(left_entry: dict, right_entry: dict, image_name: str | None = None) -> str:
+def compare_summary(left_entry: dict, right_entry: dict, analysis: str, image_name: str | None = None) -> str:
     """
+    指标对比（时间相同 / 时间不同的两种模式自动切换）
     对比并返回 Markdown（表格 + 文本 + 若有则插入 /images/{filename}.png）。
     - left_entry/right_entry:
         {
@@ -394,101 +395,131 @@ def compare_summary(left_entry: dict, right_entry: dict, image_name: str | None 
         except:
             return [("单值", val)]
 
-    left_vals = _get_value_list(left_entry) or []
-    right_vals = _get_value_list(right_entry) or []
+    # 预处理
+    left_vals = _get_value_list(left_entry)
+    right_vals = _get_value_list(right_entry)
 
-    # -------------------------------
-    # 生成对比表格（每个时间节点数据 + 差值）
-    # -------------------------------
-    left_name = left_entry.get("indicator", "左指标")
-    right_name = right_entry.get("indicator", "右指标")
-    table_rows = [
-        f"| 时间 | 左指标-{left_name} | 右指标-{right_name} | 差值 | 对比 |",
-        "|------|--------|--------|------|------|"
-    ]
+    if left_vals is None or right_vals is None:
+        return analysis
 
-    timestamps = sorted(
-        set([t for t, _ in left_vals] + [t for t, _ in right_vals]),
-        key=lambda x: str(x)
-    )
+    left_indicator = left_entry.get("indicator", "")
+    right_indicator = right_entry.get("indicator", "")
+    left_time = left_entry.get("timeString")
+    right_time = right_entry.get("timeString")
 
-    diffs = []
+    # 是否是时间区间
+    is_range = "~" in (left_time or "")
 
-    for t in timestamps:
-        lv = next((v for ts, v in left_vals if ts == t), None)
-        rv = next((v for ts, v in right_vals if ts == t), None)
+    # ============================================================
+    # 公共：生成 “差值列表” 与 “表格行”
+    # ============================================================
+    def build_diff_table(left_label: str, right_label: str):
+        """返回：(table_md, diffs_list)"""
 
-        lv_str = f"{lv:.4f}" if isinstance(lv, (int, float)) else str(lv) if lv is not None else "-"
-        rv_str = f"{rv:.4f}" if isinstance(rv, (int, float)) else str(rv) if rv is not None else "-"
-
-        if lv is None or rv is None:
-            diff_str = "-"
-            direction = "⚠️ 缺少数据"
-        else:
-            diff = lv - rv
-            diffs.append((t, diff))
-            diff_str = f"{diff:+.4f}"
-            if diff > 0:
-                direction = "↑ 左指标更高"
-            elif diff < 0:
-                direction = "↓ 左指标更低"
-            else:
-                direction = "— 持平"
-
-        table_rows.append(f"| {t} | {lv_str} | {rv_str} | {diff_str} | {direction} |")
-
-    table_md = "\n".join(table_rows)
-
-    # -------------------------------
-    # 生成总结文本
-    # -------------------------------
-    def human_time(time_str, time_type=None):
-        return str(time_str) if time_str else "-"
-
-    t_str = human_time(left_entry.get("timeString"), left_entry.get("timeType"))
-
-
-    summary_lines = [f"对比 **{left_name}** 与 **{right_name}**，时间：{t_str}。"]
-
-    is_range = "~" in (left_entry.get("timeString") or "")
-
-    if diffs and is_range:
-        values = [d for _, d in diffs]
-        avg_diff = sum(values) / len(values)
-        max_diff, min_diff = max(values), min(values)
-        max_time = next(t for t, d in diffs if d == max_diff)
-        min_time = next(t for t, d in diffs if d == min_diff)
-        summary_lines.append(
-            f"平均差值：{avg_diff:+.4f}；"
-            f"最大差值 {max_diff:+.4f} 出现在 {max_time}；"
-            f"最小差值 {min_diff:+.4f} 出现在 {min_time}。"
+        timestamps = sorted(
+            {t for t, _ in left_vals} | {t for t, _ in right_vals},
+            key=lambda x: str(x)
         )
-    elif diffs:
-        _, diff = diffs[0]
-        if diff > 0:
-            summary_lines.append(f"左指标高于右指标，差值为 {diff:+.4f}。")
-        elif diff < 0:
-            summary_lines.append(f"左指标低于右指标，差值为 {diff:+.4f}。")
+
+        rows = [
+            f"| 时间 | {left_label} | {right_label} | 差值 | 对比 |",
+            "|------|--------|--------|------|------|"
+        ]
+
+        diffs = []
+
+        for t in timestamps:
+            lv = next((v for ts, v in left_vals if ts == t), None)
+            rv = next((v for ts, v in right_vals if ts == t), None)
+
+            lv_s = f"{lv:.4f}" if isinstance(lv, (int, float)) else str(lv) if lv is not None else "-"
+            rv_s = f"{rv:.4f}" if isinstance(rv, (int, float)) else str(rv) if rv is not None else "-"
+
+            if lv is None or rv is None:
+                diff_s = "-"
+                direction = "⚠️ 缺少数据"
+            else:
+                diff = lv - rv
+                diffs.append((t, diff))
+                diff_s = f"{diff:+.4f}"
+                direction = "↑ 左更高" if diff > 0 else "↓ 左更低" if diff < 0 else "— 持平"
+
+            rows.append(f"| {t} | {lv_s} | {rv_s} | {diff_s} | {direction} |")
+
+        return "\n".join(rows), diffs
+
+    # ============================================================
+    # 公共：生成文字总结
+    # ============================================================
+    def build_summary(prefix: str, diffs: list):
+        """prefix 为第一行叙述，diffs 为 [(t, diff)]"""
+        lines = [prefix]
+
+        if not diffs:
+            lines.append("⚠️ 数据不足，无法计算差值。")
+            return "\n".join(lines)
+
+        # 区间 → 做平均值/最大/最小分析
+        if is_range:
+            values = [d for _, d in diffs]
+            avg_d = sum(values) / len(values)
+            max_d, min_d = max(values), min(values)
+            max_t = next(t for t, d in diffs if d == max_d)
+            min_t = next(t for t, d in diffs if d == min_d)
+
+            lines.append(
+                f"平均差值：{avg_d:+.4f}；"
+                f"最大差值 {max_d:+.4f} 出现在 {max_t}；"
+                f"最小差值 {min_d:+.4f} 出现在 {min_t}。"
+            )
         else:
-            summary_lines.append("两指标持平。")
-    else:
-        summary_lines.append("⚠️ 数据不足，无法计算差值。")
+            # 单点
+            _, d = diffs[0]
+            if d > 0:
+                lines.append(f"左指标高于右指标，差值为 {d:+.4f}。")
+            elif d < 0:
+                lines.append(f"左指标低于右指标，差值为 {d:+.4f}。")
+            else:
+                lines.append("两指标持平。")
 
-    summary_md = "\n".join(summary_lines)
+        return "\n".join(lines)
 
-    # -------------------------------
-    # 可选折线图
-    # -------------------------------
-    chart_md = ""
-    if diffs and is_range:
+    # ============================================================
+    # 公共：可选折线图
+    # ============================================================
+    def build_chart(diffs):
+        if not (diffs and is_range):
+            return ""
         try:
             from core import utils
             img_url = utils.save_diff_chart(image_name, diffs)
-            chart_md = f"\n\n#### 📈 差值趋势图\n\n![]({img_url})"
+            return f"\n\n#### 📈 差值趋势图\n\n![]({img_url})"
         except Exception as e:
-            summary_lines.append(f"⚠️ 折线图生成失败：{e}")
+            return f"\n\n⚠️ 折线图生成失败：{e}"
 
-    # -------------------------------
-    # 返回 Markdown
-    # -------------------------------
+    # ============================================================
+    # 模式 A：指标相同 + 时间不同（切换维度）
+    # ============================================================
+    if left_indicator == right_indicator and left_time != right_time:
+        left_label = f"左指标-{left_time}"
+        right_label = f"右指标-{right_time}"
+        table_md, diffs = build_diff_table(left_label, right_label)
+
+        prefix = f"对比 **{left_indicator}** 在 **{human_time(left_time, left_entry.get('timeType'))}** 与 **{human_time(right_time, right_entry.get('timeType'))}** 的差异。"
+        summary_md = build_summary(prefix, diffs)
+        chart_md = build_chart(diffs)
+
+        return f"### 📊 指标对比结果\n\n{table_md}\n\n### 📝 对比总结\n\n{summary_md}{chart_md}"
+
+    # ============================================================
+    # 模式 B：指标不同 + 时间相同（原逻辑）
+    # ============================================================
+    left_label = f"左指标-{left_indicator}"
+    right_label = f"右指标-{right_indicator}"
+    table_md, diffs = build_diff_table(left_label, right_label)
+
+    prefix = f"对比 **{left_indicator}** 与 **{right_indicator}**，时间：{human_time(left_time, left_entry.get('timeType'))}。"
+    summary_md = build_summary(prefix, diffs)
+    chart_md = build_chart(diffs)
+
     return f"### 📊 指标对比结果\n\n{table_md}\n\n### 📝 对比总结\n\n{summary_md}{chart_md}"
