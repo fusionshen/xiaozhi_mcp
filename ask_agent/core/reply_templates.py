@@ -336,14 +336,14 @@ def reply_success_list(entries_results: list, image_name: str | None = None):
     chart_md = ""
     if multi_series_data:
         try:
-            img_url = utils.save_multi_series_chart(image_name, multi_series_data, title="多指标趋势")
+            img_url = utils.save_multi_series_chart(image_name, multi_series_data, title="多指标趋势", ma_window=0, enable_smooth=False, mark_extrema=False)
             chart_md = f"\n\n#### 📈 多指标趋势图\n\n![]({img_url})"
         except Exception as e:
             chart_md = f"\n\n⚠️ 趋势图生成失败：{e}"
 
     return f"### ✅ 批量查询结果\n\n{table_md}\n\n{chart_md}\n\n如需继续查询其他指标，随时告诉我～"
 
-def compare_summary(left_entry: dict, right_entry: dict, analysis: str, image_name: str | None = None) -> str:
+def reply_compare(left_entry: dict, right_entry: dict, analysis: str, image_name: str | None = None) -> str:
     """
     指标对比（时间相同 / 时间不同的两种模式自动切换）
     对比并返回 Markdown（表格 + 文本 + 若有则插入 /images/{filename}.png）。
@@ -527,22 +527,117 @@ def compare_summary(left_entry: dict, right_entry: dict, analysis: str, image_na
 
     return f"### 📊 指标对比结果\n\n{table_md}\n\n### 📝 对比总结\n\n{summary_md}{chart_md}"
 
-def reply_analysis(entries_results: list, image_name: str | None = None):
+def reply_analysis(entries_results: list, analysis: str | None, image_name: str | None = None):
     """
-    批量查询的人性化 Markdown 输出（支持多指标绘制同一张趋势图）
+    统一的人性化 Markdown 输出（兼容单条/多条指标，单条时保留 reply_success_single 的展示风格，但不直接 return）：
+    - entries_results: list of indicator entries (same structure as in graph/node)
+    - analysis: LLM 生成的趋势分析文本（放在最后）
+    - image_name: 可选图片名称（省去随机名生成）
     """
     from core import utils
+    import numpy as np
 
     if not entries_results:
         return "没有成功的查询结果。"
 
+    # 如果只有一条结果，则尽量保留 reply_success_single 的输出风格
     if len(entries_results) == 1:
-        return reply_success_single(entries_results[0])
+        entry = entries_results[0]
+        t = human_time(entry.get("timeString"), entry.get("timeType"))
 
+        result = entry.get("value") or None
+
+        # -------- result is None --------
+        if result is None:
+            # 以单值样式渲染，但仍生成空图/无图（因为没有数值点）
+            table_md = (
+                f"### ✅ 查询结果\n\n"
+                f"- 指标：**{entry.get('indicator')}**\n"
+                f"- 公式：**{entry.get('formula')}**\n"
+                f"- 时间：**{t}**\n"
+                f"- 数值：**（该时间段暂无数据）**\n\n"
+            )
+
+            chart_md = ""  # 无数据点，不画图
+            summary_md = f"\n---\n### 🧠 趋势总结（AI 分析）\n{analysis}" if analysis else ""
+            return f"{table_md}{chart_md}{summary_md}\n如需继续查询其他指标，随时告诉我～"
+
+        # -------- result is dict (single scalar) --------
+        if isinstance(result, dict):
+            value = result.get("value") or next(iter(result.values()), None)
+            unit = result.get("unit", "")
+            value_str = f"**{value} {unit}**" if value is not None else "（该时间段暂无数据）"
+
+            table_md = (
+                f"### ✅ 查询结果\n\n"
+                f"- 指标：**{entry.get('indicator')}**\n"
+                f"- 公式：**{entry.get('formula')}**\n"
+                f"- 时间：**{t}**\n"
+                f"- 数值：**{value_str}**\n\n"
+            )
+
+            chart_md = ""  # 单值无法画时间序列图
+            summary_md = f"\n---\n### 🧠 趋势总结（AI 分析）\n{analysis}" if analysis else ""
+            return f"{table_md}{chart_md}{summary_md}\n如需继续查询其他指标，随时告诉我～"
+
+        # -------- result is list (time series) --------
+        if isinstance(result, list) and result:
+            # 构建时间序列表格（与原 reply_success_single 保持一致）
+            rows = ["| 时间 | 数值 |", "|------|------|"]
+            series_data = []  # 用于画图的 list[(timestamp, float)]
+            for r in result:
+                timestamp = r.get("clock") or r.get("time") or r.get("timestamp") or ""
+                v = r.get("itemValue") or r.get("value") or r.get("v")
+                display_v = v if v is not None else "暂无数据"
+                rows.append(f"| {timestamp} | {display_v} |")
+
+                # 尝试解析为数值用于画图
+                if v is not None:
+                    try:
+                        series_data.append((timestamp, float(v)))
+                    except:
+                        # 非数值用 nan 占位，不放入 series_data
+                        pass
+
+            table_md = (
+                f"### ✅ 查询结果（时间序列）\n\n"
+                f"- 指标：**{entry.get('indicator')}**\n"
+                f"- 公式：**{entry.get('formula')}**\n"
+                f"- 时间：**{t}**\n\n"
+                f"#### 📊 数据列表\n"
+                f"{chr(10).join(rows)}\n\n"
+            )
+
+            # 画图（即便只有一条指标也画）
+            chart_md = ""
+            if series_data:
+                multi_series_data = {entry.get("indicator", "指标"): series_data}
+                try:
+                    img_url = utils.save_multi_series_chart(image_name, multi_series_data, title=entry.get("indicator", "趋势图"))
+                    chart_md = f"\n#### 📈 趋势图\n\n![]({img_url})\n"
+                except Exception as e:
+                    chart_md = f"\n⚠️ 趋势图生成失败：{e}\n"
+
+            summary_md = f"\n---\n### 🧠 趋势总结（AI 分析）\n{analysis}" if analysis else ""
+            return f"{table_md}{chart_md}{summary_md}\n如需继续查询其他指标，随时告诉我～"
+
+        # -------- 其他未知类型 --------
+        table_md = (
+            f"### ✅ 查询结果\n\n"
+            f"- 指标：**{entry.get('indicator')}**\n"
+            f"- 公式：**{entry.get('formula')}**\n"
+            f"- 时间：**{t}**\n"
+            f"- 数值：**{result}**\n\n"
+        )
+        summary_md = f"\n---\n### 🧠 趋势总结（AI 分析）\n{analysis}" if analysis else ""
+        return f"{table_md}{summary_md}\n如需继续查询其他指标，随时告诉我～"
+
+    # --------------------------
+    # 多指标情况（len >= 2）
+    # --------------------------
     headers = ["指标", "公式", "时间", "数值"]
     rows = ["| " + " | ".join(headers) + " |", "|------|------|------|------|"]
 
-    # 用于同图绘制多指标
     multi_series_data = {}
 
     for entry in entries_results:
@@ -561,25 +656,24 @@ def reply_analysis(entries_results: list, image_name: str | None = None):
             lines = []
             series_data = []
             for r in result:
-                timestamp = r.get("clock") or r.get("time") or r.get("timestamp")
-                v = r.get("itemValue") or r.get("value") or r.get("v") or "暂无数据"
-                lines.append(f"{timestamp}: {v}")
-                if v != "暂无数据":
+                timestamp = r.get("clock") or r.get("time") or r.get("timestamp") or ""
+                v = r.get("itemValue") or r.get("value") or r.get("v") or None
+                lines.append(f"{timestamp}: {v if v is not None else '暂无数据'}")
+                if v is not None:
                     try:
                         series_data.append((timestamp, float(v)))
                     except:
-                        series_data.append((timestamp, v))
+                        # 非数值忽略
+                        pass
             value_str = "<br>".join(lines)
-            if series_data and any(isinstance(v, (int, float)) for _, v in series_data):
+            if series_data:
                 multi_series_data[indicator_name] = series_data
         else:
             value_str = str(result)
 
-        row = [indicator_name, formula, t, value_str]
-        rows.append("| " + " | ".join(row) + " |")
+        rows.append("| " + " | ".join([indicator_name, formula, t, value_str]) + " |")
 
     table_md = "\n".join(rows)
-
     chart_md = ""
     if multi_series_data:
         try:
@@ -588,4 +682,31 @@ def reply_analysis(entries_results: list, image_name: str | None = None):
         except Exception as e:
             chart_md = f"\n\n⚠️ 趋势图生成失败：{e}"
 
-    return f"### ✅ 批量查询结果\n\n{table_md}\n\n{chart_md}\n\n如需继续查询其他指标，随时告诉我～"
+    summary_md = f"\n\n---\n### 🧠 趋势总结（AI 分析）\n{analysis}" if analysis else ""
+    # 趋势箭头计算
+    def compute_trend_arrow(series: list[tuple]):
+        """
+        输入：[(timestamp, value)...]
+        输出："📈 上升", "📉 下降", "➖ 持平"
+        """
+        vals = [v for _, v in series if isinstance(v, (int, float))]
+        if len(vals) < 2:
+            return "➖ 数据不足"
+
+        start, end = vals[0], vals[-1]
+        if end > start:
+            return f"📈 上升（{((end-start)/start)*100:.1f}%）"
+        elif end < start:
+            return f"📉 下降（{((end-start)/start)*100:.1f}%）"
+        else:
+            return "➖ 持平"
+    # 趋势箭头总结
+    if multi_series_data:
+        trend_summary = []
+        for name, series in multi_series_data.items():
+            trend_summary.append(f"- **{name}**：{compute_trend_arrow(series)}")
+
+        arrows_md = "\n".join(trend_summary)
+        chart_md = f"\n\n### 趋势方向\n{arrows_md}\n" + chart_md
+
+    return f"### ✅ 批量查询结果\n\n{table_md}\n\n{chart_md}{summary_md}\n\n如需继续查询其他指标，随时告诉我～"

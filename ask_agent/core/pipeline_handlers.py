@@ -8,7 +8,7 @@ from core.context_graph import ContextGraph, default_indicators
 from core.llm_energy_indicator_parser import parse_user_input
 from tools import formula_api, platform_api
 from core.pipeline_context import set_graph, get_graph
-from core.llm_indicator_compare import call_compare_llm
+from core.llm_compare_analyzer import call_compare_llm
 from core import reply_templates
 from core.llm_indicator_expander import expand_indicator_candidates
 
@@ -809,7 +809,7 @@ async def handle_compare(
         # record relation
         graph.add_relation("compare", source_id=left_node.get("id"), target_id=right_node.get("id") ,
                            meta={"via": "pipeline.compare", "user_input": intent_info.get("user_input_list"), "result": analysis})
-        return _finish(user_id, graph, user_input, {}, analysis, reply_templates.compare_summary(left_entry, right_entry, analysis))
+        return _finish(user_id, graph, user_input, {}, analysis, reply_templates.reply_compare(left_entry, right_entry, analysis))
 
     async def _one_step_flow():
         """
@@ -1138,13 +1138,10 @@ async def handle_analysis(
     # ④ 所有指标完成 → 写关系、输出回复
     # -------------------------------------------------------
     logger.info("🟦 所有指标已完成 batch 查询 (%s 个)", len(entries_results))
-
-    # 1) 从每个 entry 取 note（保证非 None 并去除两端空白）
-    # 2) 拼接成一个最终字符串（每个指标之间用两个换行或分隔线更易读）
-    machine_reply = "\n".join(item.get("note", "").strip() for item in entries_results if item.get("note")) or "没有成功的查询结果。"
+    from core.llm_trend_analyzer import call_trend_llm
+    machine_reply = await call_trend_llm(entries_results)
     # 写 group 关系
     sids = [graph.find_node(item["indicator"],item["timeString"]) for item in entries_results ]
-    
     # write relation and history
     graph.add_relation("analysis", 
                        meta={
@@ -1156,7 +1153,7 @@ async def handle_analysis(
                     )
     logger.info("✅ analysis 完成")
     # 成功查询重置意图
-    return _finish(user_id, graph, user_input, {}, machine_reply, reply_templates.reply_analysis(entries_results))
+    return _finish(user_id, graph, user_input, {}, machine_reply, reply_templates.reply_analysis(entries_results, machine_reply))
 
 # ------------------------- 测试 main -------------------------
 async def main():

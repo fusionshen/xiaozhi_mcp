@@ -47,7 +47,6 @@ def ensure_images_dir():
     if not os.path.exists(IMAGES_DIR):
         os.makedirs(IMAGES_DIR, exist_ok=True)
 
-
 def save_diff_chart(image_name: str | None, diffs: list[tuple]) -> str:
     """
     生成差值曲线图并返回可访问 URL
@@ -90,44 +89,102 @@ def format_file_path(filename: str):
     base = f"http://{host}:{port}"
     return f"{base}/images/{filename}"
 
-def save_multi_series_chart(image_name: str, series_dict: dict[str, list[tuple]], title: str = "") -> str:
+def save_multi_series_chart(
+    image_name: str,
+    series_dict: dict[str, list[tuple]],
+    title: str = "",
+    ma_window: int = 5,          # 移动平均窗口
+    enable_smooth: bool = True,  # 是否启用平滑曲线
+    mark_extrema: bool = True    # 是否标注最高/最低值
+):
     """
-    保存多指标时间序列折线图到一张图，统一时间轴，缺失点显示为空
-    - filename: 图片文件名，例如 '多指标.png'
-    - series_dict: {"指标名": [(timestamp, value), ...], ...}
-    - title: 图表标题
-    返回相对路径 Markdown 可直接引用
+    画趋势图（多指标），包含：
+    - 自动趋势箭头
+    - 平滑曲线（轻量 LOESS）
+    - 移动平均线（MA）
+    - 标注最大/最小值
     """
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    from scipy.signal import savgol_filter   # 更稳健的平滑
     ensure_images_dir()
-    if not series_dict:
-        raise ValueError("series_dict 为空，无法生成图表")
-    
+
     if not image_name:
         image_name = str(uuid.uuid4())
     filename = f"{image_name}.png"
-
     file_path = os.path.join(IMAGES_DIR, filename)
-    # 统一时间轴
-    all_timestamps = sorted({t for series in series_dict.values() for t, _ in series}, key=str)
-    plt.figure(figsize=(10, 5))
 
-    for name, series_data in series_dict.items():
-        ts_to_val = {t: v if isinstance(v, (int, float)) else np.nan for t, v in series_data}
-        y = [ts_to_val.get(t, np.nan) for t in all_timestamps]
-        plt.plot(all_timestamps, y, marker='o', linestyle='-', label=name)
+    if not series_dict:
+        raise ValueError("series_dict 为空，无法生成图表")
 
-    plt.xticks(rotation=30, ha='right')
+    # ---------------------------
+    # 收集全部时间戳（排序）
+    # ---------------------------
+    all_ts = sorted({t for series in series_dict.values() for t, _ in series}, key=str)
+
+    plt.figure(figsize=(12, 6))
+
+    for name, series in series_dict.items():
+        # ---------------------
+        # 原始数据对齐
+        # ---------------------
+        ts_to_val = {
+            t: float(v) if isinstance(v, (int, float)) else np.nan
+            for t, v in series
+        }
+        y = np.array([ts_to_val.get(t, np.nan) for t in all_ts])
+        x = np.arange(len(all_ts))
+
+        # 绘制原始折线
+        plt.plot(all_ts, y, marker='o', linestyle='-', label=f"{name} 原始")
+
+        # ---------------------
+        # 移动平均线
+        # ---------------------
+        if ma_window > 1 and np.count_nonzero(~np.isnan(y)) > ma_window:
+            y_ma = pd.Series(y).rolling(ma_window, min_periods=1).mean().values
+            plt.plot(all_ts, y_ma, linestyle='--', alpha=0.8, label=f"{name} MA{ma_window}")
+
+        # ---------------------
+        # 平滑曲线（LOESS-lite）
+        # ---------------------
+        if enable_smooth and np.count_nonzero(~np.isnan(y)) >= 5:
+            # 使用 Savitzky-Golay filter 更稳定
+            try:
+                y_smooth = savgol_filter(pd.Series(y).interpolate().values, 5, 2)
+                plt.plot(all_ts, y_smooth, alpha=0.8, label=f"{name} 平滑")
+            except:
+                pass
+
+        # ---------------------
+        # 最大/最小值标注
+        # ---------------------
+        if mark_extrema and np.count_nonzero(~np.isnan(y)) > 0:
+            valid_idx = np.where(~np.isnan(y))[0]
+            vmax_idx = valid_idx[np.argmax(y[valid_idx])]
+            vmin_idx = valid_idx[np.argmin(y[valid_idx])]
+
+            # 标注最大值
+            plt.scatter(all_ts[vmax_idx], y[vmax_idx], color='red')
+            plt.text(all_ts[vmax_idx], y[vmax_idx], f"↑Max: {y[vmax_idx]:.2f}", color='red')
+
+            # 标注最小值
+            plt.scatter(all_ts[vmin_idx], y[vmin_idx], color='blue')
+            plt.text(all_ts[vmin_idx], y[vmin_idx], f"↓Min: {y[vmin_idx]:.2f}", color='blue')
+
     plt.title(title)
     plt.xlabel("时间")
     plt.ylabel("数值")
-    plt.grid(True, linestyle='--', alpha=0.5)
-    plt.legend()
+    plt.grid(True, linestyle='--', alpha=0.3)
+
+    plt.xticks(rotation=30, ha='right')
+    plt.legend(loc="upper left", bbox_to_anchor=(1.01, 1))
+
     plt.tight_layout()
     plt.savefig(file_path, dpi=150)
     plt.close()
 
     return format_file_path(filename)
-
 
 def get_local_ip():
     """
