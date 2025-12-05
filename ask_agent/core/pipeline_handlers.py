@@ -1,5 +1,4 @@
 # core/pipeline_handlers.py
-import json
 import asyncio
 import logging
 import inspect
@@ -112,6 +111,14 @@ async def handle_single_query(user_id: str, user_input: str, graph: ContextGraph
             return await handle_list_query(
                 user_id,
                 f"{user_input} -> system:完成 single query 并检测到 list_query 上下文，继续执行 handle_list_query...",
+                graph
+            )
+        
+        if main_intent == "analysis":
+            logger.info("🔄 single query 完成并检测到 analysis 上下文，继续执行 handle_analysis...")
+            return await handle_analysis(
+                user_id,
+                f"{user_input} -> system:完成 single query 并检测到 analysis 上下文，继续执行 handle_analysis...",
                 graph
             )
         return _finish(user_id, graph, user_input, {}, reply, human_reply)
@@ -364,7 +371,7 @@ async def handle_slot_fill(
     # step 4: 意图跳转 compare / list_query
     # ----------------------------
     main_intent = graph.get_main_intent() or None
-    if "compare" == main_intent:
+    if main_intent == "compare":
         logger.info("🔄 solt_fill 完成并检测到 compare 上下文，继续执行 handle_compare...")
         return await handle_compare(
             user_id, 
@@ -372,11 +379,18 @@ async def handle_slot_fill(
             graph
         )
     
-    if "list_query" == main_intent:
+    if main_intent == "list_query":
         logger.info("🔄 solt_fill 完成并检测到 list_query 上下文，继续执行 handle_list_query...")
         return await handle_list_query(
             user_id, 
             f"{user_input} -> system:完成 solt_fill 并检测到 list_query 上下文，继续执行 handle_list_query...", 
+            graph
+        )
+    if main_intent == "analysis":
+        logger.info("🔄 solt_fill 完成并检测到 analysis 上下文，继续执行 handle_analysis...")
+        return await handle_analysis(
+            user_id,
+            f"{user_input} -> system:完成 solt_fill 并检测到 analysis 上下文，继续执行 handle_analysis...",
             graph
         )
     # ----------------------------
@@ -468,7 +482,7 @@ async def handle_clarify(
     graph.add_node(current)
     # ==== 7. 判断 compare / list_query 是否继续 ====
     main_intent = graph.get_main_intent() or None
-    if "compare" == main_intent:
+    if main_intent == "compare":
         logger.info("🔄 clarify 完成并检测到 compare 上下文，继续执行 handle_compare...")
         # 连续判断需要找到当前intent中active的indicator，作为当前current_info传入即可
         current_intents = [
@@ -476,13 +490,29 @@ async def handle_clarify(
             for ind in intent_info.get("indicators")
             if ind.get("status") == "active" and ind.get("indicator")
         ]
-        print(f"current_intents:{current_intents}")
-        return await handle_compare(user_id, f"{user_input} -> system:完成 clarify 并检测到 compare 上下文，继续执行 handle_compare...", graph, current_intent={"candidates": current_intents})
+        return await handle_compare(
+            user_id, 
+            f"{user_input} -> system:完成 clarify 并检测到 compare 上下文，继续执行 handle_compare...", 
+            graph, 
+            current_intent={"candidates": current_intents}
+        )
 
-    if "list_query" == main_intent:
+    if main_intent == "list_query":
         logger.info("🔄 clarify 完成并检测到 list_query 上下文，继续执行 handle_list_query...")
-        return await handle_list_query(user_id, f"{user_input} -> system:完成 clarify 并检测到 list_query 上下文，继续执行 handle_list_query...", graph)
-        
+        return await handle_list_query(
+            user_id, 
+            f"{user_input} -> system:完成 clarify 并检测到 list_query 上下文，继续执行 handle_list_query...", 
+            graph
+        )
+
+    if main_intent == "analysis":
+        logger.info("🔄 clarify 完成并检测到 analysis 上下文，继续执行 handle_analysis...")
+        return await handle_analysis(
+            user_id,
+            f"{user_input} -> system:完成 clarify 并检测到 analysis 上下文，继续执行 handle_analysis...",
+            graph
+        )
+    
     # ==== 8. 单查询完成，重置 intent ====
     return _finish(user_id, graph, user_input, {}, reply, human_reply)
 

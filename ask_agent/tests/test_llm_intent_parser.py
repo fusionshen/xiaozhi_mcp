@@ -1,7 +1,7 @@
 # test_llm_intent_parser.py
 import asyncio
 from datetime import datetime
-from llm_intent_parser import parse_intent  # 待实现
+from core.llm_intent_parser import parse_intent  # 待实现
 from agent_state import get_state, update_state
 
 # 模拟用户ID
@@ -45,4 +45,6 @@ async def run_test():
         print(f"解析详情: {intent_result}\n")
 
 if __name__ == "__main__":
+    import sys
+    sys.stdout.reconfigure(encoding='utf-8')
     loop.run_until_complete(run_test())
