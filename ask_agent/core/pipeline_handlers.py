@@ -6,7 +6,7 @@ import re
 from core.context_graph import ContextGraph, default_indicators
 from core.llm_energy_indicator_parser import parse_user_input
 from tools import formula_api, platform_api
-from core.pipeline_context import set_graph, get_graph
+from core.pipeline_context import set_graph
 from core.llm_compare_analyzer import call_compare_llm
 from core import reply_templates
 from core.llm_indicator_expander import expand_indicator_candidates
@@ -997,6 +997,9 @@ async def handle_compare(
             base_node_id = graph.find_node(base_indicator.get("indicator"), base_indicator.get("timeString"))
             base_node_obj = graph.get_node(base_node_id) if base_node_id else {"indicator_entry": base_indicator}
 
+            if base_node_id == nid:
+                return _three_step_flow()
+
             return await _record_and_finish_after_compare(base_node_obj, node_obj)
         else:
             # execute query
@@ -1012,6 +1015,9 @@ async def handle_compare(
 
             base_node_id = graph.find_node(base_indicator.get("indicator"), base_indicator.get("timeString"))
             base_node_obj = graph.get_node(base_node_id) if base_node_id else {"indicator_entry": base_indicator}
+
+            if base_node_id == nid_new:
+                return _three_step_flow()
 
             return await _record_and_finish_after_compare(base_node_obj, new_node)
 
@@ -1185,60 +1191,3 @@ async def handle_analysis(
     # 成功查询重置意图
     return _finish(user_id, graph, user_input, {}, machine_reply, reply_templates.reply_analysis(entries_results, machine_reply))
 
-# ------------------------- 测试 main -------------------------
-async def main():
-    from tools import formula_api
-    # 只初始化一次，不会重复加载
-    formula_api.initialize()
-
-    user_id = "test_user"
-    graph = get_graph(user_id) or ContextGraph()
-    set_graph(user_id, graph)
-
-    # 测试单指标查询
-    reply, _, _ = await handle_single_query(user_id, "今天的高炉工序能耗是多少", graph)
-    print("Single Query Reply:", reply)
-
-    from core.llm_energy_intent_parser import EnergyIntentParser
-    parser = EnergyIntentParser()
-    user_input = "对比上月有什么变化"
-    current_info = await parser.parse_intent(user_input)
-    print(current_info)
-
-    # 测试二步对比
-    reply, _, _ = await handle_compare(user_id, user_input, graph, current_info)
-    print("Single Query Reply 2:", reply)
-
-    # 测试一步对比
-    # reply, _, graph_state = await handle_compare(user_id, user_input, graph, current_info)
-    # print("Single Query Reply:", reply)
-    # print(json.dumps(graph_state, indent=2, ensure_ascii=False))
-
-    # # 测试选择备选
-    # reply, graph_state = await handle_clarify(user_id, 1, graph)
-    # print("Single Query Reply 2:", reply)
-    # print(json.dumps(graph_state, indent=2, ensure_ascii=False))
-
-    # # # 测试补齐时间
-    # reply, graph_state = await handle_slot_fill(user_id, "今天", graph, {"candidates": ["今天"]})
-    # print("Single Query Reply 3:", reply)
-    # print(json.dumps(graph_state, indent=2, ensure_ascii=False))
-
-    # # 测试问另外的时间
-    # reply, graph_state = await handle_slot_fill(user_id, "哪昨天呢？", graph, {"candidates": ["昨天"]})
-    # print("Single Query Reply 4:", reply)
-    # print(json.dumps(graph_state, indent=2, ensure_ascii=False))
-    
-    # 再查询一个指标（可测试对比）
-    # msg2 = "昨天高炉工序能耗是多少"
-    # reply2, graph_state2 = await handle_single_query(user_id, msg2, graph)
-    # print("Single Query Reply 2:", reply2)
-    # print(json.dumps(graph_state2, indent=2, ensure_ascii=False))
-
-    # # 对比
-    # cmp_reply, _ = await handle_compare(user_id, "对比最新两条数据", graph)
-    # print("Compare Reply:", cmp_reply)
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
