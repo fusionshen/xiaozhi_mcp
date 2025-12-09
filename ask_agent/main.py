@@ -1,4 +1,6 @@
 import os
+
+from domains.energy.services import formula_api
 for key in ["HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy"]:
     os.environ.pop(key, None)
 
@@ -9,9 +11,9 @@ from fastapi import FastAPI, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from agent_state import get_state, update_state, cleanup_expired_sessions
-from core.llm_energy_indicator_parser import parse_user_input
-from tools import formula_api, platform_api
+from tools.agent_state import get_state, update_state, cleanup_expired_sessions
+from domains.energy.llm.llm_energy_indicator_parser import parse_user_input
+from domains.energy.services import platform_api
 
 TOP_N = 5  # 显示候选数量
 
