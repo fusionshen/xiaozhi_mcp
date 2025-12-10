@@ -1,12 +1,10 @@
-# tests/test_time_normalizer.py
+# tests/unit/test_llm_time_range_normalizer.py
 import asyncio
 import re
 from datetime import datetime, timedelta
 from calendar import monthrange
-
 import pytest
-
-from domains.energy.llm.llm_time_range_normalizer import normalize_time_range
+from app.domains.energy.llm.llm_time_range_normalizer import normalize_time_range
 
 # --------------------------
 # 配置：固定测试时点（可按需修改）

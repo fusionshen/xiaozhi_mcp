@@ -1,5 +1,6 @@
+# app/domains/energy/tests/unit/test_llm_energy_intent_parser.py
 import asyncio
-from domains.energy.llm.llm_energy_intent_parser import EnergyIntentParser
+from app.domains import energy
 import json
 
 TSET_CASES = [
@@ -33,7 +34,7 @@ TSET_CASES = [
     ]
 
 async def main():
-    parser = EnergyIntentParser()
+    parser = energy.llm.EnergyIntentParser()
 
     test_inputs = ['它们对比呢？']
 

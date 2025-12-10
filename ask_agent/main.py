@@ -1,6 +1,6 @@
 import os
 
-from domains.energy.services import formula_api
+from app.domains import energy as energy_domain
 for key in ["HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy"]:
     os.environ.pop(key, None)
 
@@ -10,10 +10,7 @@ import logging
 from fastapi import FastAPI, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-
 from tools.agent_state import get_state, update_state, cleanup_expired_sessions
-from domains.energy.llm.llm_energy_indicator_parser import parse_user_input
-from domains.energy.services import platform_api
 
 TOP_N = 5  # 显示候选数量
 
@@ -48,7 +45,7 @@ async def startup_event():
     try:
         start = time.time()
         # 只初始化一次，不会重复加载
-        formula_api.initialize()
+        energy_domain.formula_api.initialize()
         logger.info(f"✅ formula_api 初始化完成，用时 {time.time() - start:.2f}s")
     except Exception as e:
         logger.exception("❌ 初始化 formula_api 失败: %s", e)
@@ -125,7 +122,7 @@ async def handle_chat(user_id: str, user_input: str):
 
                 # ✅ 调用平台接口
                 t1 = time.time()
-                result = await platform_api.query_platform(
+                result = await energy_domain.platform_api.query_platform(
                     formula=slots["formula"],
                     timeString=slots["timeString"],
                     timeType=slots["timeType"]
@@ -158,7 +155,7 @@ async def handle_chat(user_id: str, user_input: str):
             await update_state(user_id, state)
 
         # Step3️⃣ 调用 LLM 解析
-        parsed = await parse_user_input(user_input)
+        parsed = await energy_domain.llm.parse_user_input(user_input)
         logger.info(f"🔍 LLM 解析结果: {parsed}")
 
         # 合并 slots（仅补全缺失信息，不覆盖已有）
@@ -174,7 +171,7 @@ async def handle_chat(user_id: str, user_input: str):
         # Step5️⃣ 调用 formula_api 匹配公式
         if not slots.get("formula") and slots.get("indicator"):
             t0 = time.time()
-            formula_resp = await asyncio.to_thread(formula_api.formula_query_dict, slots["indicator"])
+            formula_resp = await asyncio.to_thread(energy_domain.formula_api.formula_query_dict, slots["indicator"])
             logger.info(f"✅ formula_api.formula_query_dict 用时 {time.time() - t0:.2f}s")
 
             if formula_resp.get("done"):
@@ -200,7 +197,7 @@ async def handle_chat(user_id: str, user_input: str):
                         
                         # 🆕 直接调用平台查询
                         t1 = time.time()
-                        result = await platform_api.query_platform(
+                        result = await energy_domain.platform_api.query_platform(
                             formula=slots["formula"],
                             timeString=slots["timeString"],
                             timeType=slots["timeType"]
@@ -236,7 +233,7 @@ async def handle_chat(user_id: str, user_input: str):
 
         # Step7️⃣ 调用平台接口
         t1 = time.time()
-        result = await platform_api.query_platform(
+        result = await energy_domain.platform_api.query_platform(
             formula=slots["formula"],
             timeString=slots["timeString"],
             timeType=slots["timeType"]

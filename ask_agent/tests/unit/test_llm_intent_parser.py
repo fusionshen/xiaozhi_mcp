@@ -1,7 +1,7 @@
-# test_llm_intent_parser.py
+# tests/unit/test_llm_intent_parser.py
 import asyncio
 from datetime import datetime
-from core.llm.llm_intent_parser import parse_intent  # 待实现
+from app import core
 from tools.agent_state import get_state, update_state
 
 # 模拟用户ID
@@ -28,7 +28,7 @@ test_cases = [
 async def run_test():
     for user_input, expected_intent in test_cases:
         # 调用 llm_intent_parser 解析意图
-        intent_result = await parse_intent(USER_ID, user_input)
+        intent_result = await core.parse_intent(USER_ID, user_input)
         
         # 更新 agent_state，模拟连续对话
         update_state(USER_ID, {

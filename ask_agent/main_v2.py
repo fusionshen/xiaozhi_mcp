@@ -8,15 +8,13 @@ import logging
 from fastapi import FastAPI, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from app.router.intent_router import route_intent
-from domains.energy.services import formula_api
+from app.application.intent_router import route_intent
+from app.domains import energy as energy_domain
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import uvicorn
-import config as config
-from core.graph_manager import load_all_graphs, persist_all_graphs_task
-
-
+import config # 导入配置
+from app import core
 
 # ----------------------
 # 初始化日志
@@ -58,14 +56,14 @@ async def startup_event():
     try:
         start = time.time()
         # 只初始化一次，不会重复加载
-        formula_api.initialize()
+        energy_domain.formula_api.initialize()
         logger.info(f"✅ formula_api 初始化完成，用时 {time.time() - start:.2f}s")
     except Exception as e:
         logger.exception("❌ 初始化 formula_api 失败: %s", e)
 
-    # asyncio.run(load_all_graphs())
+    # asyncio.run(core.load_all_graphs())
     # 可选：启动后台定时持久化
-    asyncio.create_task(persist_all_graphs_task(300))
+    asyncio.create_task(core.persist_all_graphs_task(300))
     logger.info("🧹 已启动 graph 定期持久任务。")
 
 @app.get("/chat")
