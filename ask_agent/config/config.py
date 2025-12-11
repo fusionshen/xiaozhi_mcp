@@ -4,6 +4,14 @@ import json
 from datetime import timedelta
 from dotenv import load_dotenv
 from pathlib import Path
+import logging
+
+logger = logging.getLogger("config")
+if not logger.handlers:
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s | %(levelname)s | %(name)s | %(message)s"
+    )
 
 
 # --- 1. 根目录 ---
@@ -28,6 +36,13 @@ RANGE_QUERY_URL = os.getenv("RANGE_QUERY_URL")
 TOKEN_EXPIRE_DURATION = timedelta(hours=float(os.getenv("TOKEN_EXPIRE_HOURS", 1)))
 
 # === 模型配置 ===
+LLM_CHAIN = os.getenv("LLM_CHAIN", "api,remote,local").lower().split(",")
+LLM_CHAIN = [x.strip() for x in LLM_CHAIN if x.strip()]
+logger.info(f"🔧 LLM_CHAIN={LLM_CHAIN}")
+
+LLM_API_URL = os.getenv("LLM_API_URL") 
+LLM_API_KEY = os.getenv("LLM_API_KEY") 
+LLM_API_TIMEOUT = os.getenv("LLM_API_TIMEOUT") 
 REMOTE_OLLAMA_URL = os.getenv("REMOTE_OLLAMA_URL")  # ← 修改为你的远程 Ollama 地址
 REMOTE_MODEL = os.getenv("REMOTE_MODEL")
 LOCAL_MODEL = os.getenv("LOCAL_MODEL")
@@ -58,8 +73,7 @@ PORT = int(os.getenv("PORT", 8000))
 # 校验关键配置
 required_vars = [
     TENANT_NAME, APP_KEY, APP_SECRET, USER_NAME,
-    LOGIN_URL, QUERY_URL, RANGE_QUERY_URL,
-    REMOTE_OLLAMA_URL, REMOTE_MODEL, LOCAL_MODEL,
+    LOGIN_URL, QUERY_URL, RANGE_QUERY_URL, LLM_CHAIN,
     EMBEDDING_CACHE_NAME, FORMULA_CSV_NAME, TEXT_SCORE_WEIGHT_FILE
 ]
 if not all(required_vars):

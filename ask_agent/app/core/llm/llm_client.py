@@ -3,9 +3,20 @@ import os
 import logging
 import re
 import json
+import asyncio
 import httpx
+from typing import Optional, Dict, Any
 from langchain.schema import HumanMessage
-from config import REMOTE_OLLAMA_URL, REMOTE_MODEL, LOCAL_MODEL
+
+from config import (
+    LLM_CHAIN,
+    LLM_API_URL,
+    LLM_API_KEY,
+    LLM_API_TIMEOUT,
+    REMOTE_OLLAMA_URL,
+    REMOTE_MODEL,
+    LOCAL_MODEL,
+)
 
 # ===================== 强制禁用系统代理 =====================
 for key in ["HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy"]:
@@ -31,7 +42,7 @@ except ImportError:
         from langchain.chat_models import ChatOllama
         logger.info("⚠️ Using ChatOllama from old langchain (may be deprecated)")
 
-# ===================== 全局共享直连 AsyncClient =====================
+# ===================== 全局直连 AsyncClient =====================
 _global_client: httpx.AsyncClient | None = None
 
 def get_global_client(timeout: float = 10.0) -> httpx.AsyncClient:
@@ -68,79 +79,173 @@ async def is_remote_ollama_available(base_url: str, timeout: float = 3.0) -> boo
         logger.info(f"⚠️ Remote Ollama not reachable: {e}")
         return False
 
-# ===================== 获取 LLM =====================
-async def get_llm() -> DirectChatOllama:
-    """
-    优先使用远程 Ollama 模型，如果远程不可用则回退到本地模型。
-    """
-    if await is_remote_ollama_available(REMOTE_OLLAMA_URL):
-        logger.info(f"🌐 Using remote Ollama model: {REMOTE_MODEL}")
-        return DirectChatOllama(model=REMOTE_MODEL, base_url=REMOTE_OLLAMA_URL)
-    else:
-        logger.info(f"🔄 Falling back to local model: {LOCAL_MODEL}")
-        return DirectChatOllama(model=LOCAL_MODEL)
 
-# ===================== 安全解析 JSON =====================
+# ============================================================
+#                STEP 1 — API 调用（Dify / 自定义 API）
+# ============================================================
+async def _try_api_call(prompt: str) -> Optional[str]:
+    if not LLM_API_URL or not LLM_API_KEY:
+        return None
+
+    headers = {
+        "Authorization": f"Bearer {LLM_API_KEY}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "inputs": {},
+        "query": prompt,
+        "response_mode": "blocking",
+        "conversation_id": "",
+        "user": "py_client"
+    }
+
+    timeout = httpx.Timeout(LLM_API_TIMEOUT)
+
+    async with httpx.AsyncClient(timeout=timeout) as client:
+        for attempt in range(2):
+            try:
+                resp = await client.post(LLM_API_URL, headers=headers, json=payload)
+                data = resp.json()
+
+                if resp.status_code == 200 and "answer" in data:
+                    return data["answer"].strip()
+
+                logger.warning(f"API 返回无效内容: {data}")
+
+            except Exception as e:
+                err = type(e).__name__
+                msg = str(e).split("\n")[0][:200]
+                logger.error(f"API 调用失败: {err} - {msg}")
+
+            await asyncio.sleep(1)
+
+    return None
+
+
+def _extract_json(text: str) -> Optional[Dict[Any, Any]]:
+    if not text:
+        return None
+
+    # 1️⃣ 删除 <think> 推理内容
+    text = re.sub(r'<think>.*?</think>\s*', '', text, flags=re.DOTALL).strip()
+
+    # 2️⃣ 清理常见包裹字符
+    text = text.replace("```json", "").replace("```", "").strip()
+    text = text.replace("JSON:", "").replace("json:", "").strip()
+
+    # 3️⃣ 提取最外层 JSON 找第一个 '{' 和最后一个 '}' —— 保证取到最外层 JSON（比非贪婪正则更稳）
+    start = text.find("{")
+    end = text.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        json_str = text[start:end + 1]
+        try:
+            return json.loads(json_str)
+        except json.JSONDecodeError:
+            pass  # 继续走下一步兜底
+
+    # 4️⃣ 非贪婪匹配多个 JSON，取第一个可解析的（旧逻辑）
+    matches = re.findall(r"\{[\s\S]*?\}", text)
+    for m in matches:
+        try:
+            return json.loads(m)
+        except json.JSONDecodeError:
+            continue
+
+    # 5️⃣ 再兜底：匹配 "key": "value" 的格式（旧逻辑）
+    pairs = re.findall(r'"(\w+)"\s*:\s*"([^"]*)"', text)
+    if pairs:
+        return {k: v for k, v in pairs}
+
+    return None
+
+
+
+# ============================================================
+#    STEP 2 — 构造统一 LLM：优先 API → remote → local
+# ============================================================
+async def _get_unified_answer(prompt: str) -> str:
+    """
+    通用统一 LLM 调度：
+    根据 LLM_CHAIN = ["api", "remote", "local"]
+    按顺序逐级尝试，成功则返回。
+    """
+
+    for provider in LLM_CHAIN:
+        provider = provider.strip()
+
+        # ===========================
+        # 1) API 调用
+        # ===========================
+        if provider == "api":
+            if LLM_API_URL and LLM_API_KEY:
+                logger.info("🔌 尝试 API 调用 …")
+                ans = await _try_api_call(prompt)
+                if ans:
+                    logger.info("🌐 API 成功")
+                    return ans
+                logger.warning("⚠️ API 失败，尝试下一个 provider")
+            else:
+                logger.warning("⚠️ 已配置 api 但缺少 LLM_API_URL 或 LLM_API_KEY")
+
+        # ===========================
+        # 2) remote_ollama
+        # ===========================
+        elif provider == "remote":
+            logger.info("🔌 检查 remote ollama …")
+            if await is_remote_ollama_available(REMOTE_OLLAMA_URL):
+                try:
+                    logger.info(f"🌐 尝试 remote ollama: {REMOTE_MODEL}")
+                    llm = DirectChatOllama(model=REMOTE_MODEL, base_url=REMOTE_OLLAMA_URL)
+                    resp = await llm.agenerate([[HumanMessage(content=prompt)]])
+                    return resp.generations[0][0].message.content.strip()
+                except Exception as e:
+                    logger.warning(f"⚠️ remote ollama 调用失败: {e}")
+            else:
+                logger.warning("⚠️ remote ollama 不可用，尝试下一个 provider")
+
+        # ===========================
+        # 3) local_ollama
+        # ===========================
+        elif provider == "local":
+            try:
+                logger.info(f"💻 尝试 local ollama: {LOCAL_MODEL}")
+                llm = DirectChatOllama(model=LOCAL_MODEL)
+                resp = await llm.agenerate([[HumanMessage(content=prompt)]])
+                return resp.generations[0][0].message.content.strip()
+            except Exception as e:
+                logger.warning(f"⚠️ local ollama 调用失败: {e}")
+
+        else:
+            logger.error(f"❌ 未识别的 LLM provider: {provider}")
+
+    # =================================================
+    # 所有 provider 失败，返回空字符串
+    # =================================================
+    logger.error("❌ 所有 provider 失败，返回空字符串")
+    return ""
+
+
+
+# ============================================================
+#                     对外统一接口
+# ============================================================
 async def safe_llm_parse(prompt: str) -> dict:
     """
-    安全解析 LLM 返回内容为 JSON。
-    支持以下场景：
-    - 模型返回纯 JSON
-    - 模型返回前后带解释文字
-    - 模型输出 markdown 代码块（如 ```json ... ```）
+    统一解析为 JSON，内部自动选择 API / Remote / Local
     """
-    llm = await get_llm()
-    try:
-        resp = await llm.agenerate([[HumanMessage(content=prompt)]])
-        response_text = resp.generations[0][0].message.content.strip()
-        print(response_text)
+    answer = await _get_unified_answer(prompt)
+    parsed = _extract_json(answer)
+    return parsed or {}
 
-        # 🧹 清理常见包裹字符
-        text = response_text.strip()
-        text = text.replace("```json", "").replace("```", "").strip()
-        text = text.replace("JSON:", "").replace("json:", "").strip()
 
-        # 找第一个 '{' 和最后一个 '}' —— 保证取到最外层 JSON（比非贪婪正则更稳）
-        start = text.find('{')
-        end = text.rfind('}')
-        if start != -1 and end != -1 and end > start:
-            try:
-                return json.loads(text[start:end+1])
-            except json.JSONDecodeError:
-                pass
-
-        matches = re.findall(r"\{[\s\S]*?\}", text)
-        for m in matches:
-            try:
-                return json.loads(m)
-            except json.JSONDecodeError:
-                continue
-
-        # 再兜底：key:value 简单解析（保守）
-        pairs = re.findall(r'"(\w+)"\s*:\s*"([^"]*)"', text)
-        if pairs:
-            return {k: v for k, v in pairs}
-
-        logger.warning("⚠️ 未识别到 JSON 格式，返回空 dict。原文: %s", text[:400])
-        return {}
-    except Exception as e:
-        logger.exception("❌ safe_llm_parse 解析失败:", e)
-        return {}
-
-# ===================== 通用聊天函数 =====================
 async def safe_llm_chat(prompt: str) -> str:
     """
-    让模型自由回答，返回纯文本。
+    统一聊天接口
     """
-    llm = await get_llm()
-    try:
-        resp = await llm.agenerate([[HumanMessage(content=prompt)]])
-        return resp.generations[0][0].message.content.strip()
-    except Exception as e:
-        logger.exception("❌ LLM 聊天失败:", e)
-        return "抱歉，我暂时无法回答这个问题。"
+    return await _get_unified_answer(prompt)
 
-# ===================== 清理全局 AsyncClient（程序退出时可调用） =====================
+
+# ===================== 清理全局 AsyncClient =====================
 async def close_global_client():
     global _global_client
     if _global_client:
